@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import parse from "node-html-parser";
 import {readFileSync} from "fs";
 import {findCustomeTags, resolveCustomTag} from "./resolve";
