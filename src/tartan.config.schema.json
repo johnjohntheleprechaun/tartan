@@ -1,0 +1,14 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+        "moduleShorthands": {
+            "type": "object",
+            "patternProperties": {
+                ".+": {
+                    "type": "string",
+                    "description": "The name of a Tartan compatible NPM package."
+                }
+            }
+        }
+    }
+}
