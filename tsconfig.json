@@ -8,6 +8,7 @@
         "skipLibCheck": true,
         "sourceMap": true,
         "strict": true,
-        "module": "CommonJS"
+        "module": "CommonJS",
+        "target": "ESNext"
     }
 }
