@@ -21,9 +21,13 @@ export function findCustomeTags(node: HTMLElement): Set<string> {
 }
 
 /**
- * Convert a tag name into a module reference
+ * Convert a tag name into a class name and module
  */
-export function resolveCustomTag(tagName: string): string {
+export type ResolvedTag = {
+    moduleName: string;
+    className: string;
+}
+export function resolveCustomTag(tagName: string): ResolvedTag {
     const result = tagRegex.exec(tagName);
     if (result === null) {
         throw new InvalidTagNameError();
@@ -53,9 +57,12 @@ export function resolveCustomTag(tagName: string): string {
     const moduleDir = path.join("node_modules", moduleName);
     const componentMapFile = fs.readFileSync(path.join(moduleDir, "tartan.components.json"));
     const componentMap = JSON.parse(componentMapFile.toString());
-    const componentPath = path.join(moduleDir, componentMap[componentName]);
+    const componentClass = componentMap[componentName];
 
-    return componentPath;
+    return {
+        moduleName: moduleName,
+        className: componentClass,
+    };
 }
 
 class InvalidTagNameError extends Error {
