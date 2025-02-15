@@ -5,22 +5,22 @@ import {createRequire} from "module";
 
 const require = createRequire(import.meta.url);
 
-export class TagNameResolver {
+export class ModuleResolver {
     private configFilePath: string;
     private config?: TartanConfig;
     public modules: TartanExport[] = [];
 
     public elementPrefixMap: {[key: string]: TartanExport} = {};
 
-    public static async create(configFile: string): Promise<TagNameResolver> {
-        return new TagNameResolver(configFile).init();
+    public static async create(configFile: string): Promise<ModuleResolver> {
+        return new ModuleResolver(configFile).init();
     }
 
     constructor(configFile: string) {
         this.configFilePath = configFile;
     }
 
-    public async init(): Promise<TagNameResolver> {
+    public async init(): Promise<ModuleResolver> {
         // load config
         const buffer = await fs.readFile(this.configFilePath);
         this.config = JSON.parse(buffer.toString()) as TartanConfig;

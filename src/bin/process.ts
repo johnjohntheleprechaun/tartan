@@ -1,4 +1,4 @@
-import {TagNameResolver} from "./resolve.js";
+import {ModuleResolver} from "./resolve.js";
 import fs from "fs/promises";
 import {Statement, importDeclaration, program, stringLiteral} from "@babel/types";
 import generate from "@babel/generator";
@@ -8,7 +8,7 @@ import parse, {HTMLElement} from "node-html-parser";
 export class HTMLProcessor {
     private readonly htmlFilePath: string;
     private rootNode: HTMLElement;
-    private readonly resolver: TagNameResolver;
+    private readonly resolver: ModuleResolver;
 
     /**
      * Create and initialize an instance of HTMLParser.
@@ -16,7 +16,7 @@ export class HTMLProcessor {
      * @param filePath The path to the HTML file to be processed.
      * @param resolver The resolver to use for... resolving.
      */
-    public static async create(filePath: string, resolver: TagNameResolver): Promise<HTMLProcessor> {
+    public static async create(filePath: string, resolver: ModuleResolver): Promise<HTMLProcessor> {
         return new HTMLProcessor(filePath, resolver).init();
     }
 
@@ -24,7 +24,7 @@ export class HTMLProcessor {
      * @param filePath The path of the HTML file.
      * @param resolver The (fully initialized) resolver to use.
      */
-    constructor(filePath: string, resolver: TagNameResolver) {
+    constructor(filePath: string, resolver: ModuleResolver) {
         this.htmlFilePath = filePath;
         this.resolver = resolver;
         this.rootNode = new HTMLElement("", {});

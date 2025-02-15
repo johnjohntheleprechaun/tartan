@@ -2,7 +2,7 @@
 
 import {HTMLProcessor} from "./process.js";
 import fs from "fs/promises";
-import {TagNameResolver} from "./resolve.js";
+import {ModuleResolver} from "./resolve.js";
 import {Command} from "@commander-js/extra-typings";
 
 const program = new Command();
@@ -13,7 +13,7 @@ program.command("build")
     .option("--config-file <path>", "The path to your tartan config file", "tartan.config.json")
     .option("-o, --ouput <path>", "The name of the file to output", "out.html")
     .action(async (entry, opts) => {
-        const resolver: TagNameResolver = await TagNameResolver.create(opts.configFile);
+        const resolver: ModuleResolver = await ModuleResolver.create(opts.configFile);
         const processor: HTMLProcessor = await HTMLProcessor.create(entry, resolver);
 
         const result = await processor.process();
