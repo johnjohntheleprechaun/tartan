@@ -27,7 +27,7 @@ export class ModuleResolver {
 
         // load the modules needed
         for (const moduleSpecifier of this.config.componentLibraries) {
-            const module = (await this.import(moduleSpecifier)).default as TartanExport;
+            const module = await this.import(moduleSpecifier) as TartanExport;
             this.modules.push(module);
 
             if (this.elementPrefixMap[module.defaultPrefix]) {
@@ -66,7 +66,7 @@ export class ModuleResolver {
 
     private async import(moduleSpecifier: string): Promise<any> {
         const modulePath = require.resolve(moduleSpecifier, {paths: [process.cwd()]});
-        return import(modulePath);
+        return import(modulePath).then(a => a.default);
     }
 }
 
