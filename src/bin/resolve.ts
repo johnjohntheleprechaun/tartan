@@ -27,8 +27,7 @@ export class TagNameResolver {
 
         // load the modules needed
         for (const moduleSpecifier of this.config.componentLibraries) {
-            const modulePath = require.resolve(moduleSpecifier, {paths: [process.cwd()]});
-            const module = (await import(modulePath)).default as TartanExport;
+            const module = (await this.import(moduleSpecifier)).default as TartanExport;
             this.modules.push(module);
 
             if (this.elementPrefixMap[module.defaultPrefix]) {
@@ -63,6 +62,11 @@ export class TagNameResolver {
         else {
             throw new TagNameNotFoundError(tagName);
         }
+    }
+
+    private async import(moduleSpecifier: string): Promise<any> {
+        const modulePath = require.resolve(moduleSpecifier, {paths: [process.cwd()]});
+        return import(modulePath);
     }
 }
 
