@@ -1,6 +1,6 @@
 import {TagNameResolver} from "./resolve.js";
 import fs from "fs/promises";
-import {ImportDeclaration, Statement, importDeclaration, importDefaultSpecifier, program, stringLiteral} from "@babel/types";
+import {Statement, importDeclaration, program, stringLiteral} from "@babel/types";
 import generate from "@babel/generator";
 import {build} from "esbuild";
 import parse, {HTMLElement} from "node-html-parser";
@@ -10,16 +10,29 @@ export class HTMLParser {
     private rootNode: HTMLElement;
     private readonly resolver: TagNameResolver;
 
+    /**
+     * Create and initialize an instance of HTMLParser.
+     *
+     * @param filePath The path to the HTML file to be processed.
+     * @param resolver The resolver to use for... resolving.
+     */
     public static async create(filePath: string, resolver: TagNameResolver): Promise<HTMLParser> {
         return new HTMLParser(filePath, resolver).init();
     }
 
+    /**
+     * @param filePath The path of the HTML file.
+     * @param resolver The (fully initialized) resolver to use.
+     */
     constructor(filePath: string, resolver: TagNameResolver) {
         this.htmlFilePath = filePath;
         this.resolver = resolver;
         this.rootNode = new HTMLElement("", {});
     }
 
+    /**
+     * Read the file from disk and parse the HTML
+     */
     public async init(): Promise<HTMLParser> {
         const htmlFile = await fs.readFile(this.htmlFilePath);
         this.rootNode = parse.default(htmlFile.toString());
@@ -27,7 +40,7 @@ export class HTMLParser {
     }
 
     /**
-     * Entirely process the HTML file, and return a complete HTML file
+     * Entirely process the HTML file, and return a complete HTML file with a script tag at the top of `body` which registers all the necessary web components.
      */
     public async process(): Promise<string> {
         console.log("------------------------------")
@@ -49,6 +62,11 @@ export class HTMLParser {
         return documentCopy.toString();
     }
 
+    /**
+     * Take a list of module specifiers that register web components, and return completely bundled code that imports all of those modules.
+     *
+     * @param moduleSpecifiers A list of module specifiers that need to be imported.
+     */
     private async bundleWebComponents(moduleSpecifiers: string[]) {
         const statements: Statement[] = [];
         for (const moduleSpecifier of moduleSpecifiers) {
@@ -77,6 +95,10 @@ export class HTMLParser {
         return bundledProgram.outputFiles[0].text;
     }
 
+    /**
+     * Recursive tree search that finds all elements that match any of the prefixes defined by component libraries.
+     * @param node If undefined, the root node is used.
+     */
     private findCustomTags(node?: HTMLElement): string[] {
         if (!node) {
             node = this.rootNode;
