@@ -5,7 +5,7 @@ import generate from "@babel/generator";
 import {build} from "esbuild";
 import parse, {HTMLElement} from "node-html-parser";
 
-export class HTMLParser {
+export class HTMLProcessor {
     private readonly htmlFilePath: string;
     private rootNode: HTMLElement;
     private readonly resolver: TagNameResolver;
@@ -16,8 +16,8 @@ export class HTMLParser {
      * @param filePath The path to the HTML file to be processed.
      * @param resolver The resolver to use for... resolving.
      */
-    public static async create(filePath: string, resolver: TagNameResolver): Promise<HTMLParser> {
-        return new HTMLParser(filePath, resolver).init();
+    public static async create(filePath: string, resolver: TagNameResolver): Promise<HTMLProcessor> {
+        return new HTMLProcessor(filePath, resolver).init();
     }
 
     /**
@@ -33,7 +33,7 @@ export class HTMLParser {
     /**
      * Read the file from disk and parse the HTML
      */
-    public async init(): Promise<HTMLParser> {
+    public async init(): Promise<HTMLProcessor> {
         const htmlFile = await fs.readFile(this.htmlFilePath);
         this.rootNode = parse.default(htmlFile.toString());
         return this;

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import {HTMLParser as HTMLProcessor} from "./process.js";
+import {HTMLProcessor} from "./process.js";
 import fs from "fs/promises";
 import {TagNameResolver} from "./resolve.js";
 
