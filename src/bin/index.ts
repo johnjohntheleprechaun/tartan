@@ -1,22 +1,13 @@
 #!/usr/bin/env node
 
-import parse from "node-html-parser";
-import {readFileSync, writeFileSync} from "fs";
-import {findCustomeTags, resolveCustomTag} from "./resolve";
-import {generateWebComponentJS} from "./code-gen";
-
-const textContent = readFileSync("test.html").toString();
-const page = parse(textContent);
-
-const tags = findCustomeTags(page);
+import {HTMLParser as HTMLProcessor} from "./process.js";
+import fs from "fs/promises";
+import {TagNameResolver} from "./resolve.js";
 
 (async () => {
-    const code = await generateWebComponentJS(Array.from(tags));
-    const body = page.querySelector("body");
-    if (!body) {
-        throw new Error("document doesn't have a body");
-    }
-    body.insertAdjacentHTML("afterbegin", `<script>${code}</script>`);
+    const resolver: TagNameResolver = await TagNameResolver.create("./tartan.config.json");
+    const processor: HTMLProcessor = await HTMLProcessor.create("./test.html", resolver);
 
-    writeFileSync("out.html", page.toString());
+    const result = await processor.process();
+    await fs.writeFile("./out.html", result);
 })();

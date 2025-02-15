@@ -4,24 +4,16 @@ Rules defining how custom tag names should be resolved into package references
 
 ## Tag Name Format
 
-`x-{package shorthand}-{element name}`
+`{prefix}-{element name}`
 
-## Resolving Package Shorthand
+### Step 1: Loading the modules
 
-Ideally I want this to be usable with no config... But that would require (I think) searching through all packages, which I definitely don't wanna do. I guess though, if I just did it once and had a cache? 
+`tartan.config.json` should contain a list of module names in the `componentLibraries` property. Modules are loaded in the order they appear in the list, and each one's default export is checked for required properties (a module missing a required property is a fatal error).
 
-### Resolve Steps:
+### Step 2: Scanning for custom elements
 
-#### Step 1: Finding the Package
+In this step we simply scan through all the elements in the document in order to generate a list of all the ones that match a prefix defined by any of the component libraries.
 
-Tartan will search the following places for shorthand definitions (in order):
+### Step 3: Resolving custom elements
 
-- User defined shorthand in the `shorthandMap` property of `tartan.config.json`.
-- Cached package defined shorthand in `.tartan/shorthand`. (not implemented yet)
-- Search through installed NPM packages, rebuilding the shorthand cache along the way. (not implemented yet)
-
-If a result was found in either `tartan.json` or the shorthand cache file, Tartan will check to see if the package is actually installed before returning a result, and fail if it isn't.
-
-#### Step 2: Resolving the Element Definition
-
-Element (not package) resolution is left up to individual component packages. Any valid Tartan package should be published with a `tartan.components.json` file that maps element names to a module who's only export is a class that extends `HTMLElement` (NOT built-ins like `HTMLImageElement`, since Safari doesn't support that)
+The modules should export either an explicit mapping of component names to module specifiers, or a function that takes in a component name and returns a module specifier. Those mappings are used to create a list of module specifiers that need to be imported for the specific web component to work properly.

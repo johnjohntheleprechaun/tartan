@@ -2,15 +2,16 @@
     "name": "tartan",
     "version": "1.0.0",
     "description": "A web component library that is easily used either dynamically with minimal JS or to generate static websites",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
+    "type": "module",
+    "main": "dist/bin/index.js",
+    "types": "dist/bin/index.d.ts",
     "files": [
         "dist"
     ],
     "scripts": {
         "build": "./build.sh"
     },
-    "bin": "dist/index.js",
+    "bin": "dist/bin/index.js",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/johnjohntheleprechaun/tartan.git"
@@ -25,6 +26,7 @@
         "@babel/generator": "^7.26.5",
         "@babel/types": "^7.26.7",
         "esbuild": "^0.24.2",
+        "json-schema-to-ts": "^3.1.1",
         "node-html-parser": "^7.0.1"
     },
     "devDependencies": {

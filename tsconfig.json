@@ -1,6 +1,6 @@
 {
-    "files": [
-        "src/bin/index.ts"
+    "include": [
+        "src"
     ],
     "compilerOptions": {
         "outDir": "dist",
@@ -8,7 +8,7 @@
         "skipLibCheck": true,
         "sourceMap": true,
         "strict": true,
-        "module": "CommonJS",
+        "module": "NodeNext",
         "target": "ESNext"
     }
 }
