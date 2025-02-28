@@ -20,6 +20,13 @@ export class ModuleResolver {
         this.configFilePath = configFile;
     }
 
+    public async getConfigForDir(dir: string): Promise<TartanConfig> {
+        if (!this.config) {
+            throw new Error("fckc");
+        }
+        return this.config;
+    }
+
     public async init(): Promise<ModuleResolver> {
         // load config
         const buffer = await fs.readFile(this.configFilePath);
@@ -64,7 +71,7 @@ export class ModuleResolver {
         }
     }
 
-    private async import(moduleSpecifier: string): Promise<any> {
+    async import(moduleSpecifier: string): Promise<any> {
         const modulePath = require.resolve(moduleSpecifier, {paths: [process.cwd()]});
         return import(modulePath).then(a => a.default);
     }

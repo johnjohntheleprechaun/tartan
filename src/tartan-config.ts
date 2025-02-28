@@ -9,6 +9,10 @@ export const tartanConfigSchema = {
                 type: "string",
             },
         },
+        defaultTemplate: {
+            type: "string",
+            description: "A path pointing to a handlebars template to insert page content into",
+        },
     },
     required: [
         "componentLibraries",
