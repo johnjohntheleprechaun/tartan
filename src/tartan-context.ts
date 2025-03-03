@@ -31,6 +31,7 @@ export const tartanContextSchema = {
             description: "A list of paths to include in the output directory. Usually asset dependencies are inferred from HTML content, but this is necessary for any instances where that might not be possible",
         },
     },
+    additionalProperties: false,
 } as const satisfies JSONSchema;
 
 export type TartanContext = FromSchema<typeof tartanContextSchema>;

@@ -17,6 +17,7 @@ export const tartanConfigSchema = {
     required: [
         "componentLibraries",
     ],
+    additionalProperties: false,
 } as const satisfies JSONSchema;
 
 export type TartanConfig = FromSchema<typeof tartanConfigSchema>;
