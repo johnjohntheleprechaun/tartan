@@ -28,6 +28,9 @@ export class DirectoryProcessor {
      */
     constructor(root: string, resolver: ModuleResolver) {
         this.rootDir = path.normalize(root);
+        if (!this.rootDir.endsWith(path.sep)) {
+            this.rootDir += path.sep;
+        }
         this.resolver = resolver;
     }
 
@@ -82,14 +85,16 @@ export class DirectoryProcessor {
             let currentContext: TartanContext = {};
 
             // get default context
-            if (defaultContextFilename) {
-                defaultContext = await this.loadContext(path.join(dir, defaultContextFilename.name));
+            const parentPath = path.normalize(path.join(dir, "../"));
+            if (defaultContextFilename && dir !== this.rootDir) {
+                const loadedContext = await this.loadContext(path.join(dir, defaultContextFilename.name));
+                defaultContext = this.mergeContexts(results[parentPath].defaultContext, loadedContext);
             }
             else if (dir === this.rootDir) {
-                defaultContext = this.rootContext;
+                defaultContext = this.mergeContexts({}, this.rootContext);
             }
             else {
-                defaultContext = results[path.normalize(path.join(dir, "../"))].defaultContext;
+                defaultContext = results[parentPath].defaultContext;
             }
 
             // get context
