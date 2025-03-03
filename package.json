@@ -3,8 +3,8 @@
     "version": "1.0.0",
     "description": "A web component library that is easily used either dynamically with minimal JS or to generate static websites",
     "type": "module",
-    "main": "dist/bin/index.js",
-    "types": "dist/bin/index.d.ts",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
     "files": [
         "dist"
     ],
