@@ -7,6 +7,7 @@ import {build} from "esbuild";
 import parse, {HTMLElement} from "node-html-parser";
 import {TartanConfig} from "../tartan-config.js";
 import {TartanContext} from "../tartan-context.js";
+import Handlebars from "handlebars";
 
 export class DirectoryProcessor {
     /**
@@ -17,10 +18,9 @@ export class DirectoryProcessor {
     private projectConfig?: TartanConfig;
     private contextTree: {[key: string]: TartanContext} = {};
     private rootContext: TartanContext = {
-        handlebarsParameters: {},
+        pageMode: "directory",
         pageSource: "index.html",
     }
-
 
     /**
      * @param root The path to the directory to process, relative to the current working directory
@@ -128,6 +128,7 @@ export class DirectoryProcessor {
         }
 
         return {
+            pageMode: b.pageMode ? b.pageMode : a.pageMode,
             handlebarsParameters: b.handlebarsParameters ? b.handlebarsParameters : a.handlebarsParameters,
             template: b.template ? b.template : a.template,
             pageSource: b.pageSource ? b.pageSource : a.pageSource,
@@ -160,65 +161,126 @@ export class DirectoryProcessor {
     }
 
     public async process() {
-        console.log(this.contextTree);
+        console.log(this.contextTree)
+        for (const page in this.contextTree) {
+            const context = this.contextTree[page];
+            const pageProcessor = new PageProcessor({
+                sourcePath: path.join(page, context.pageSource || ""),
+                context: context,
+                outputDir: path.join(this.projectConfig?.outputDir || "", path.relative(this.projectConfig?.rootDir || "", page)),
+            }, this.resolver);
+            await pageProcessor.process();
+        }
     }
 }
 
-export class HTMLProcessor {
-    private readonly htmlFilePath: string;
-    private rootNode: HTMLElement;
-    private readonly resolver: ModuleResolver;
-
+export interface PageProcessorConfig {
     /**
-     * Create and initialize an instance of HTMLParser.
-     *
-     * @param filePath The path to the HTML file to be processed.
-     * @param resolver The resolver to use for... resolving.
+     * The path to the actual source file.
      */
-    public static async create(filePath: string, resolver: ModuleResolver): Promise<HTMLProcessor> {
-        return new HTMLProcessor(filePath, resolver).init();
+    sourcePath: string;
+    /**
+     * The fully processed context for this page.
+     */
+    context: TartanContext;
+    /**
+     * The fully resolved output directory (as an absolute path).
+     */
+    outputDir: string;
+}
+export class PageProcessor {
+    private readonly resolver: ModuleResolver;
+    private readonly config: PageProcessorConfig;
+    private readonly context: TartanContext;
+
+    constructor(config: PageProcessorConfig, resolver: ModuleResolver) {
+        this.config = config;
+        this.resolver = resolver;
+        this.context = config.context;
     }
 
+    public async process() {
+        console.log(this.config);
+        try {
+            await fs.access(this.config.outputDir);
+        }
+        catch {
+            await fs.mkdir(this.config.outputDir);
+        }
+        // load and process the content
+        const pageContent = await fs.readFile(this.config.sourcePath);
+        const sourceProcessor: (content: string) => Promise<string> = this.context.sourceProcessor ? await this.resolver.import(this.context.sourceProcessor) : (a: string) => a;
+        const processed = await sourceProcessor(pageContent.toString());
+
+        // pass it into the handlebars template, if you need to
+        let finished: string;
+        if (!this.context.template) {
+            finished = processed;
+        }
+        else {
+            const config = this.resolver.getConfig();
+            const templatePath = config.templates ? config.templates[this.context.template] : undefined;
+            if (!templatePath) {
+                throw new Error("undefined template");
+            }
+
+            const templateFile = await fs.readFile(templatePath);
+            const template = Handlebars.compile(templateFile.toString());
+            finished = template({
+                pageContent: processed,
+                pageContext: this.context.handlebarsParameters,
+            });
+        }
+
+        // now run it through the HTMLProcessor
+        const processor = new HTMLProcessor(finished, this.resolver, this.config.sourcePath);
+        const processedHTML = await processor.process();
+
+        // now write to the output directory
+        const outputFilename = path.join(this.config.outputDir, "index.html");
+        await fs.writeFile(outputFilename, processedHTML.content);
+    }
+}
+
+export interface HTMLProcessorResult {
+    content: string;
+    dependencies: string[];
+}
+export class HTMLProcessor {
+    private readonly htmlContent: string;
+    private readonly rootNode: HTMLElement;
+    private readonly resolver: ModuleResolver;
+    private readonly pagePath: string | undefined;
+
     /**
-     * @param filePath The path of the HTML file.
+     * @param htmlContent The content to process.
      * @param resolver The (fully initialized) resolver to use.
      */
-    constructor(filePath: string, resolver: ModuleResolver) {
-        this.htmlFilePath = filePath;
+    constructor(htmlContent: string, resolver: ModuleResolver, pagePath?: string) {
+        this.htmlContent = htmlContent;
+        this.pagePath = pagePath;
         this.resolver = resolver;
-        this.rootNode = new HTMLElement("", {});
-    }
-
-    /**
-     * Read the file from disk and parse the HTML
-     */
-    public async init(): Promise<HTMLProcessor> {
-        const htmlFile = await fs.readFile(this.htmlFilePath);
-        this.rootNode = parse.default(htmlFile.toString());
-        return this;
+        this.rootNode = parse.default(this.htmlContent);
     }
 
     /**
      * Entirely process the HTML file, and return a complete HTML file with a script tag at the top of `body` which registers all the necessary web components.
      */
-    public async process(): Promise<string> {
-        console.log("------------------------------")
-        console.log(`Processing ${this.htmlFilePath}\n`)
+    public async process(): Promise<HTMLProcessorResult> {
         const customTags = this.findCustomTags();
-        console.log(`Found the following web components:\n${customTags.map(tag => `<${tag}>`).join("\n")}\n`);
 
         const moduleSpecifiers = customTags.map(tag => this.resolver.resolveTagName(tag));
 
-        console.log("Generating bundled script\n");
         const bundledCode = await this.bundleWebComponents(moduleSpecifiers);
 
         const documentCopy = this.rootNode.clone().parentNode;
         const bodyElement = documentCopy.querySelector("body");
         bodyElement?.insertAdjacentHTML("afterbegin", `<script>${bundledCode}</script>`);
-        console.log("Finished");
-        console.log("------------------------------")
 
-        return documentCopy.toString();
+        return {
+            content: documentCopy.toString(),
+            dependencies: this.findDependencies(),
+        };
     }
 
     /**
@@ -273,5 +335,28 @@ export class HTMLProcessor {
         }
 
         return customTags.filter((tag, i) => customTags.indexOf(tag) === i);
+    }
+
+    /**
+     * Recursive tree search that finds any dependencies (like images and the like)
+     * @param node If undefined, the root node is used.
+     */
+    private findDependencies(node?: HTMLElement): string[] {
+        if (!node) {
+            node = this.rootNode;
+        }
+        let dependencies: string[] = [];
+
+        dependencies = dependencies.concat([
+            node.getAttribute("href") || "",
+            node.getAttribute("src") || "",
+            node.getAttribute("srcset") || "",
+        ].filter((val) => val !== ""));
+
+        for (const child of node.children) {
+            dependencies = dependencies.concat(this.findDependencies(child));
+        }
+
+        return dependencies.filter((tag, i) => dependencies.indexOf(tag) === i);
     }
 }

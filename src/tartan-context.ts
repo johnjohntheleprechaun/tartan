@@ -7,17 +7,24 @@ export const tartanContextSchema = {
             type: "boolean",
             description: "Whether or not to inherit values from `tartan.context.default` files.",
         },
+        pageMode: {
+            enum: ["directory", "file"],
+        },
+        pagePattern: {
+            type: "string",
+            description: "A blob pattern to match files when `pageMode = `file`.",
+        },
         handlebarsParameters: {
             type: "object",
             additionalProperties: true,
         },
         template: {
             type: "string",
-            description: "A path pointing to the handlebars template to use (overrides the project-level `defaultTemplate`)",
+            description: "A path pointing to the handlebars template to use. If none is provided it's assumed that no template is used.",
         },
         pageSource: {
             type: "string",
-            description: "The file to use for the `pageContent` parameter passed into your template",
+            description: "The file to use for the index of the current directory, *regardless of `pageMode`*.",
         },
         sourceProcessor: {
             type: "string",
