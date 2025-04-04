@@ -39,7 +39,7 @@ export class DirectoryProcessor {
      * This usually involves things like loading config files, but should never write to the disk (only read)
      */
     public async init(): Promise<DirectoryProcessor> {
-        this.projectConfig = await this.resolver.getConfigForDir(this.rootDir);
+        this.projectConfig = this.resolver.getConfig();
 
         await this.loadContextTree();
 
@@ -160,7 +160,7 @@ export class DirectoryProcessor {
     }
 
     public async process() {
-
+        console.log(this.contextTree);
     }
 }
 

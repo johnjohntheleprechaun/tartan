@@ -20,7 +20,7 @@ export class ModuleResolver {
         this.configFilePath = configFile;
     }
 
-    public async getConfigForDir(dir: string): Promise<TartanConfig> {
+    public getConfig(): TartanConfig {
         if (!this.config) {
             throw new Error("fckc");
         }
