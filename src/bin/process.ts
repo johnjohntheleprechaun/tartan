@@ -1,5 +1,6 @@
 import {ModuleResolver} from "./resolve.js";
 import fs from "fs/promises";
+import fsSync from "fs";
 import path from "path";
 import {Statement, importDeclaration, program, stringLiteral} from "@babel/types";
 import generate from "@babel/generator";
@@ -8,6 +9,7 @@ import parse, {HTMLElement} from "node-html-parser";
 import {TartanConfig} from "../tartan-config.js";
 import {TartanContext} from "../tartan-context.js";
 import Handlebars from "handlebars";
+import {glob} from "glob";
 
 export class DirectoryProcessor {
     /**
@@ -64,29 +66,49 @@ export class DirectoryProcessor {
         const results: {[key: string]: {defaultContext: TartanContext, currentContext: TartanContext, mergedContext: TartanContext}} = {};
         let queueSize = 1;
         for (let i = 0; i < queueSize; i++) {
-            const dir = queue[i]
+            /**
+             * The current queue item being processed.
+             */
+            const item = queue[i]
+            console.log(item);
+            console.log(queue.slice(i));
 
-            // look for sub-directories
-            const dirContents = await fs.readdir(dir, {withFileTypes: true});
-            for (const child of dirContents) {
-                if (child.isDirectory()) {
-                    queue.push(
-                        path.normalize(path.join(dir, child.name, "./"))
-                    );
+            let dir: string;
+            let dirContents: fsSync.Dirent[];
+            let defaultContextFilename: fsSync.Dirent | undefined;
+            let contextFilename: fsSync.Dirent | undefined;
+
+            const isDirectory = (await fs.stat(item)).isDirectory();
+            console.log(isDirectory);
+            if (isDirectory) {
+                dir = item;
+                dirContents = await fs.readdir(item, {withFileTypes: true});
+                defaultContextFilename = dirContents.find((val) => /^tartan\.context\.default\.(mjs|js|json)$/.exec(val.name) && val.isFile());
+                contextFilename = dirContents.find((val) => /^tartan\.context\.(mjs|js|json)$/.exec(val.name) && val.isFile());
+
+                // add child directories
+                for (const child of dirContents) {
+                    console.log(child)
+                    if (child.isDirectory()) {
+                        console.log(true);
+                        queue.push(
+                            path.normalize(path.join(item, child.name, "./"))
+                        );
+                    }
                 }
             }
-            queueSize = queue.length;
+            else {
+                dir = path.dirname(item);
+                dirContents = await fs.readdir(path.dirname(item), {withFileTypes: true});
+                defaultContextFilename = dirContents.find((val) => /^tartan\.context\.default\.(mjs|js|json)$/.exec(val.name) && val.isFile());
+                contextFilename = dirContents.find((val) => new RegExp(`^${path.basename(item)}\\.context\\.(mjs|js|json)$`).exec(val.name) && val.isFile());
+            }
 
-
-            // load the directory's context
-            const defaultContextFilename = dirContents.find((val) => /^tartan\.context\.default\.(mjs|js|json)$/.exec(val.name) && val.isFile());
-            const contextFilename = dirContents.find((val) => /^tartan\.context\.(mjs|js|json)$/.exec(val.name) && val.isFile());
             let defaultContext: TartanContext = {};
             let currentContext: TartanContext = {};
 
-            // get default context
             const parentPath = path.normalize(path.join(dir, "../"));
-            if (defaultContextFilename && dir !== this.rootDir) {
+            if (defaultContextFilename) {
                 const loadedContext = await this.loadContext(path.join(dir, defaultContextFilename.name));
                 defaultContext = this.mergeContexts(results[parentPath].defaultContext, loadedContext);
             }
@@ -102,11 +124,34 @@ export class DirectoryProcessor {
                 currentContext = await this.loadContext(path.join(dir, contextFilename.name));
             }
 
-            results[dir] = {
+            const contexts = {
                 defaultContext,
                 currentContext,
                 mergedContext: this.mergeContexts(defaultContext, currentContext),
-            };
+            }
+
+            // Add to the queue
+            if (isDirectory && contexts.mergedContext.pageMode === "file") {
+                console.log("this is a pagemode directory", contexts);
+                if (!contexts.mergedContext.pagePattern) {
+                    throw new Error(`You don't have a pagePattern for ${dir}`);
+                }
+                const pages = await glob(contexts.mergedContext.pagePattern, {
+                    noglobstar: true,
+                    nodir: true,
+                    cwd: dir,
+                });
+
+                for (const page of pages.filter(val => path.normalize(val) !== path.normalize(contexts.mergedContext.pageSource as string))) {
+                    console.log(page);
+                    queue.push(
+                        path.normalize(path.join(item, page))
+                    );
+                }
+            }
+
+            results[item] = contexts;
+            queueSize = queue.length;
         }
 
         for (const key in results) {
@@ -132,6 +177,7 @@ export class DirectoryProcessor {
             handlebarsParameters: b.handlebarsParameters ? b.handlebarsParameters : a.handlebarsParameters,
             template: b.template ? b.template : a.template,
             pageSource: b.pageSource ? b.pageSource : a.pageSource,
+            pagePattern: b.pagePattern ? b.pagePattern : a.pagePattern,
             sourceProcessor: b.sourceProcessor ? b.sourceProcessor : a.sourceProcessor,
             assets: b.assets ? b.assets : a.assets,
         };
@@ -161,13 +207,29 @@ export class DirectoryProcessor {
     }
 
     public async process() {
-        console.log(this.contextTree)
+        console.log(this.contextTree);
+
         for (const page in this.contextTree) {
             const context = this.contextTree[page];
+            let sourcePath: string;
+            let outputDir: string;
+
+            // if it's a directory
+            if (page.endsWith(path.sep)) {
+                sourcePath = page.endsWith(path.sep) ? path.join(page, context.pageSource || "") : page;
+                outputDir = path.join(this.projectConfig?.outputDir as string, path.relative(this.projectConfig?.rootDir as string, page));
+            }
+            // if it's a file
+            else {
+                const parsed = path.parse(page);
+                sourcePath = page;
+                outputDir = path.join(this.projectConfig?.outputDir as string, path.relative(this.projectConfig?.rootDir as string, parsed.dir), parsed.name);
+            }
+
             const pageProcessor = new PageProcessor({
-                sourcePath: path.join(page, context.pageSource || ""),
+                sourcePath,
                 context: context,
-                outputDir: path.join(this.projectConfig?.outputDir || "", path.relative(this.projectConfig?.rootDir || "", page)),
+                outputDir,
             }, this.resolver);
             await pageProcessor.process();
         }
