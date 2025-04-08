@@ -1,5 +1,5 @@
 {
-    "name": "@tartan/cli",
+    "name": "@tartan/core",
     "version": "0.1.1",
     "description": "A web component library that is easily used either dynamically with minimal JS or to generate static websites",
     "type": "module",
@@ -25,11 +25,16 @@
     },
     "homepage": "https://github.com/johnjohntheleprechaun/tartan#readme",
     "dependencies": {
-        "@commander-js/extra-typings": "^13.1.0",
-        "@tartan/core": "^0.1.1",
-        "commander": "^13.1.0"
+        "@babel/generator": "^7.26.5",
+        "@babel/types": "^7.26.7",
+        "esbuild": "^0.24.2",
+        "glob": "^11.0.1",
+        "handlebars": "^4.7.8",
+        "json-schema-to-ts": "^3.1.1",
+        "node-html-parser": "^7.0.1"
     },
     "devDependencies": {
+        "@types/babel__generator": "^7.6.8",
         "ts-node": "^10.9.2",
         "typescript": "^5.7.2"
     }

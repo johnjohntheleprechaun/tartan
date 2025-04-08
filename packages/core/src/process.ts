@@ -6,8 +6,8 @@ import {Statement, importDeclaration, program, stringLiteral} from "@babel/types
 import generate from "@babel/generator";
 import {build} from "esbuild";
 import parse, {HTMLElement} from "node-html-parser";
-import {TartanConfig} from "../tartan-config.js";
-import {TartanContext} from "../tartan-context.js";
+import {TartanConfig} from "./tartan-config.js";
+import {TartanContext} from "./tartan-context.js";
 import Handlebars from "handlebars";
 import {glob} from "glob";
 

@@ -1,5 +1,5 @@
-import {TartanConfig} from "../tartan-config.js";
-import {TartanExport} from "../tartan-export.js";
+import {TartanConfig} from "./tartan-config.js";
+import {TartanExport} from "./tartan-export.js";
 import fs from "fs/promises";
 import {createRequire} from "module";
 
