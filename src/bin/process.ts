@@ -98,7 +98,7 @@ export class DirectoryProcessor {
                 }
             }
             else {
-                dir = path.dirname(item);
+                dir = path.join(path.dirname(item), "./");
                 dirContents = await fs.readdir(path.dirname(item), {withFileTypes: true});
                 defaultContextFilename = dirContents.find((val) => /^tartan\.context\.default\.(mjs|js|json)$/.exec(val.name) && val.isFile());
                 contextFilename = dirContents.find((val) => new RegExp(`^${path.basename(item)}\\.context\\.(mjs|js|json)$`).exec(val.name) && val.isFile());
@@ -110,7 +110,7 @@ export class DirectoryProcessor {
             const parentPath = path.normalize(path.join(dir, "../"));
             if (defaultContextFilename) {
                 const loadedContext = await this.loadContext(path.join(dir, defaultContextFilename.name));
-                defaultContext = this.mergeContexts(results[parentPath].defaultContext, loadedContext);
+                defaultContext = this.mergeContexts(dir === this.rootDir ? this.rootContext : results[parentPath].defaultContext, loadedContext);
             }
             else if (dir === this.rootDir) {
                 defaultContext = this.mergeContexts({}, this.rootContext);
