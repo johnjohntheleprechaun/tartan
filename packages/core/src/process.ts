@@ -15,9 +15,8 @@ export class DirectoryProcessor {
     /**
      * The path of the directory, relative to the CWD
      */
-    private readonly rootDir: string;
     private readonly resolver: ModuleResolver;
-    private projectConfig?: TartanConfig;
+    private projectConfig: TartanConfig;
     private contextTree: {[key: string]: TartanContext} = {};
     private rootContext: TartanContext = {
         pageMode: "directory",
@@ -28,10 +27,11 @@ export class DirectoryProcessor {
      * @param root The path to the directory to process, relative to the current working directory
      * @param resolver The fully initialized module resovler to use
      */
-    constructor(root: string, resolver: ModuleResolver) {
-        this.rootDir = path.normalize(root);
-        if (!this.rootDir.endsWith(path.sep)) {
-            this.rootDir += path.sep;
+    constructor(config: TartanConfig, resolver: ModuleResolver) {
+        this.projectConfig = config;
+        this.projectConfig.rootDir = path.normalize(this.projectConfig.rootDir);
+        if (!this.projectConfig.rootDir.endsWith(path.sep)) {
+            this.projectConfig.rootDir += path.sep;
         }
         this.resolver = resolver;
     }
@@ -41,10 +41,7 @@ export class DirectoryProcessor {
      * This usually involves things like loading config files, but should never write to the disk (only read)
      */
     public async init(): Promise<DirectoryProcessor> {
-        this.projectConfig = this.resolver.getConfig();
-
         await this.loadContextTree();
-
         return this;
     }
 
@@ -52,8 +49,8 @@ export class DirectoryProcessor {
      * @param root The path to the directory to process, relative to the current working directory
      * @param resolver The fully initialized module resovler to use
      */
-    public static async create(root: string, resolver: ModuleResolver) {
-        return new DirectoryProcessor(root, resolver).init();
+    public static async create(config: TartanConfig, resolver: ModuleResolver) {
+        return new DirectoryProcessor(config, resolver).init();
     }
 
     /**
@@ -62,7 +59,7 @@ export class DirectoryProcessor {
      */
     private async loadContextTree() {
         // Go through the treeeeeee
-        const queue: string[] = [this.rootDir];
+        const queue: string[] = [this.projectConfig.rootDir];
         const results: {[key: string]: {defaultContext: TartanContext, currentContext: TartanContext, mergedContext: TartanContext}} = {};
         let queueSize = 1;
         for (let i = 0; i < queueSize; i++) {
@@ -110,9 +107,9 @@ export class DirectoryProcessor {
             const parentPath = path.normalize(path.join(dir, "../"));
             if (defaultContextFilename) {
                 const loadedContext = await this.loadContext(path.join(dir, defaultContextFilename.name));
-                defaultContext = this.mergeContexts(dir === this.rootDir ? this.rootContext : results[parentPath].defaultContext, loadedContext);
+                defaultContext = this.mergeContexts(dir === this.projectConfig.rootDir ? this.rootContext : results[parentPath].defaultContext, loadedContext);
             }
-            else if (dir === this.rootDir) {
+            else if (dir === this.projectConfig.rootDir) {
                 defaultContext = this.mergeContexts({}, this.rootContext);
             }
             else {
@@ -230,7 +227,7 @@ export class DirectoryProcessor {
                 sourcePath,
                 context: context,
                 outputDir,
-            }, this.resolver);
+            }, this.projectConfig, this.resolver);
             await pageProcessor.process();
         }
     }
@@ -253,12 +250,14 @@ export interface PageProcessorConfig {
 export class PageProcessor {
     private readonly resolver: ModuleResolver;
     private readonly config: PageProcessorConfig;
+    private readonly projectConfig: TartanConfig;
     private readonly context: TartanContext;
 
-    constructor(config: PageProcessorConfig, resolver: ModuleResolver) {
-        this.config = config;
+    constructor(pageConfig: PageProcessorConfig, projectConfig: TartanConfig, resolver: ModuleResolver) {
+        this.config = pageConfig;
         this.resolver = resolver;
-        this.context = config.context;
+        this.context = this.config.context;
+        this.projectConfig = projectConfig;
     }
 
     public async process() {
@@ -280,8 +279,7 @@ export class PageProcessor {
             finished = processed;
         }
         else {
-            const config = this.resolver.getConfig();
-            const templatePath = config.templates ? config.templates[this.context.template] : undefined;
+            const templatePath = this.projectConfig.templates ? this.projectConfig.templates[this.context.template] : undefined;
             if (!templatePath) {
                 throw new Error("undefined template");
             }

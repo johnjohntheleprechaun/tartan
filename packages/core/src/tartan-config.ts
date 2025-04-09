@@ -55,7 +55,8 @@ export const tartanConfigSchema = {
         },
     },
     required: [
-        "componentLibraries",
+        "rootDir",
+        "outputDir",
     ],
     additionalProperties: false,
 } as const satisfies JSONSchema;
