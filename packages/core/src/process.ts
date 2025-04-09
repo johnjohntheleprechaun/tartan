@@ -17,49 +17,28 @@ export class DirectoryProcessor {
      */
     private readonly resolver: ModuleResolver;
     private projectConfig: TartanConfig;
-    private contextTree: {[key: string]: TartanContext} = {};
-    private rootContext: TartanContext = {
+    public contextTree: {[key: string]: TartanContext} = {};
+    private readonly rootContext: TartanContext = {
         pageMode: "directory",
         pageSource: "index.html",
     }
 
     /**
-     * @param root The path to the directory to process, relative to the current working directory
+     * @param config The project's config
      * @param resolver The fully initialized module resovler to use
      */
     constructor(config: TartanConfig, resolver: ModuleResolver) {
         this.projectConfig = config;
-        this.projectConfig.rootDir = path.normalize(this.projectConfig.rootDir);
-        if (!this.projectConfig.rootDir.endsWith(path.sep)) {
-            this.projectConfig.rootDir += path.sep;
-        }
         this.resolver = resolver;
     }
 
     /**
-     * Initialize the processor
-     * This usually involves things like loading config files, but should never write to the disk (only read)
-     */
-    public async init(): Promise<DirectoryProcessor> {
-        await this.loadContextTree();
-        return this;
-    }
-
-    /**
-     * @param root The path to the directory to process, relative to the current working directory
-     * @param resolver The fully initialized module resovler to use
-     */
-    public static async create(config: TartanConfig, resolver: ModuleResolver) {
-        return new DirectoryProcessor(config, resolver).init();
-    }
-
-    /**
      * Traverse the entire tree, loading context files, and merging with default values.
-     * (Set the final value to this.contextTree)
+     * `this.contextTree` is set to the result, and returned.
      */
-    private async loadContextTree() {
+    public async loadContextTree(): Promise<{[key: string]: TartanContext}> {
         // Go through the treeeeeee
-        const queue: string[] = [this.projectConfig.rootDir];
+        const queue: string[] = [path.normalize(this.projectConfig.rootDir)];
         const results: {[key: string]: {defaultContext: TartanContext, currentContext: TartanContext, mergedContext: TartanContext}} = {};
         let queueSize = 1;
         for (let i = 0; i < queueSize; i++) {
@@ -154,6 +133,8 @@ export class DirectoryProcessor {
         for (const key in results) {
             this.contextTree[key] = results[key].mergedContext;
         }
+
+        return this.contextTree;
     }
 
     /**
@@ -186,7 +167,7 @@ export class DirectoryProcessor {
      * @param contextPath The path to the context file.
      * @returns The context object.
      */
-    public async loadContext(contextPath: string): Promise<TartanContext> {
+    private async loadContext(contextPath: string): Promise<TartanContext> {
         if (!contextPath.startsWith("./")) {
             contextPath = path.join("./", contextPath);
         }
@@ -201,35 +182,6 @@ export class DirectoryProcessor {
         }
 
         return context;
-    }
-
-    public async process() {
-        console.log(this.contextTree);
-
-        for (const page in this.contextTree) {
-            const context = this.contextTree[page];
-            let sourcePath: string;
-            let outputDir: string;
-
-            // if it's a directory
-            if (page.endsWith(path.sep)) {
-                sourcePath = page.endsWith(path.sep) ? path.join(page, context.pageSource || "") : page;
-                outputDir = path.join(this.projectConfig?.outputDir as string, path.relative(this.projectConfig?.rootDir as string, page));
-            }
-            // if it's a file
-            else {
-                const parsed = path.parse(page);
-                sourcePath = page;
-                outputDir = path.join(this.projectConfig?.outputDir as string, path.relative(this.projectConfig?.rootDir as string, parsed.dir), parsed.name);
-            }
-
-            const pageProcessor = new PageProcessor({
-                sourcePath,
-                context: context,
-                outputDir,
-            }, this.projectConfig, this.resolver);
-            await pageProcessor.process();
-        }
     }
 }
 

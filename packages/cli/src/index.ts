@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
-import {DirectoryProcessor} from "@tartan/core";
-import {ModuleResolver} from "@tartan/core";
 import {Command} from "@commander-js/extra-typings";
+import {TartanProject} from "@tartan/core";
 import fs from "fs/promises";
 
 const program = new Command();
@@ -14,10 +13,9 @@ program.command("build")
     .action(async (opts) => {
         const configFile = await fs.readFile(opts.configFile);
         const config = JSON.parse(configFile.toString());
-        const resolver: ModuleResolver = await ModuleResolver.create(config);
-        const processor = await DirectoryProcessor.create(config, resolver);
 
-        await processor.process();
+        const project = new TartanProject(config);
+        await project.init().then(() => project.process());
     });
 
 program.parse();
