@@ -6,34 +6,22 @@ import {createRequire} from "module";
 const require = createRequire(import.meta.url);
 
 export class ModuleResolver {
-    private configFilePath: string;
-    private config?: TartanConfig;
+    private config: TartanConfig;
     public modules: TartanExport[] = [];
 
     public elementPrefixMap: {[key: string]: TartanExport} = {};
 
-    public static async create(configFile: string): Promise<ModuleResolver> {
-        return new ModuleResolver(configFile).init();
+    public static async create(projectConfig: TartanConfig): Promise<ModuleResolver> {
+        return new ModuleResolver(projectConfig).init();
     }
 
-    constructor(configFile: string) {
-        this.configFilePath = configFile;
-    }
-
-    public getConfig(): TartanConfig {
-        if (!this.config) {
-            throw new Error("fckc");
-        }
-        return this.config;
+    constructor(projectConfig: TartanConfig) {
+        this.config = projectConfig;
     }
 
     public async init(): Promise<ModuleResolver> {
-        // load config
-        const buffer = await fs.readFile(this.configFilePath);
-        this.config = JSON.parse(buffer.toString()) as TartanConfig;
-
         // load the modules needed
-        for (const moduleSpecifier of this.config.componentLibraries) {
+        for (const moduleSpecifier of this.config.componentLibraries || []) {
             const module = await this.import(moduleSpecifier) as TartanExport;
             this.modules.push(module);
 
