@@ -11,9 +11,6 @@
     "scripts": {
         "build": "./build.sh"
     },
-    "bin": {
-        "tartan": "dist/bin/index.js"
-    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/johnjohntheleprechaun/tartan.git"

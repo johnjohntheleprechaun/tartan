@@ -12,7 +12,7 @@
         "build": "./build.sh"
     },
     "bin": {
-        "tartan": "dist/bin/index.js"
+        "tartan": "dist/index.js"
     },
     "repository": {
         "type": "git",
