@@ -2,6 +2,9 @@
     "name": "@tartan/cli",
     "version": "0.1.1",
     "description": "A web component library that is easily used either dynamically with minimal JS or to generate static websites",
+    "publishConfig": {
+        "access": "public"
+    },
     "type": "module",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
