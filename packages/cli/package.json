@@ -1,7 +1,7 @@
 {
     "name": "@tartan/cli",
-    "version": "0.1.1",
-    "description": "A web component library that is easily used either dynamically with minimal JS or to generate static websites",
+    "version": "0.1.2",
+    "description": "CLI for the Tartan static site generator",
     "publishConfig": {
         "access": "public"
     },
@@ -28,7 +28,7 @@
     },
     "homepage": "https://github.com/johnjohntheleprechaun/tartan#readme",
     "dependencies": {
-        "@tartan/core": "^0.1.1",
+        "@tartan/core": "^0.2.1",
         "commander": "^13.1.0"
     },
     "devDependencies": {
