@@ -1,0 +1,36 @@
+{
+    "name": "@tartan/cli",
+    "version": "0.1.1",
+    "description": "A web component library that is easily used either dynamically with minimal JS or to generate static websites",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "./build.sh"
+    },
+    "bin": {
+        "tartan": "dist/bin/index.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/johnjohntheleprechaun/tartan.git"
+    },
+    "author": "johnjohntheleprechaun",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/johnjohntheleprechaun/tartan/issues"
+    },
+    "homepage": "https://github.com/johnjohntheleprechaun/tartan#readme",
+    "dependencies": {
+        "@commander-js/extra-typings": "^13.1.0",
+        "@tartan/core": "^0.1.1",
+        "commander": "^13.1.0"
+    },
+    "devDependencies": {
+        "ts-node": "^10.9.2",
+        "typescript": "^5.7.2"
+    }
+}

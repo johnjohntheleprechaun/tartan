@@ -1,23 +1,9 @@
 {
-    "name": "tartan",
-    "version": "1.0.0",
-    "description": "A web component library that is easily used either dynamically with minimal JS or to generate static websites",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "files": [
-        "dist"
+    "private": "true",
+    "workspaces": [
+        "packages/*"
     ],
-    "scripts": {
-        "build": "tsc"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/johnjohntheleprechaun/tartan.git"
-    },
-    "author": "johnjohntheleprechaun",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/johnjohntheleprechaun/tartan/issues"
-    },
-    "homepage": "https://github.com/johnjohntheleprechaun/tartan#readme"
+    "devDependencies": {
+        "showdown": "^2.1.0"
+    }
 }
