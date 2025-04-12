@@ -12,9 +12,6 @@ import Handlebars from "handlebars";
 import {glob} from "glob";
 
 export class DirectoryProcessor {
-    /**
-     * The path of the directory, relative to the CWD
-     */
     private readonly resolver: ModuleResolver;
     private projectConfig: TartanConfig;
     public contextTree: {[key: string]: TartanContext} = {};
