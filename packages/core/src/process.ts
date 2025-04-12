@@ -6,16 +6,16 @@ import {Statement, importDeclaration, program, stringLiteral} from "@babel/types
 import generate from "@babel/generator";
 import {build} from "esbuild";
 import parse, {HTMLElement} from "node-html-parser";
-import {TartanConfig} from "./tartan-config.js";
-import {TartanContext} from "./tartan-context.js";
+import {TartanConfig, TartanConfigFile} from "./tartan-config.js";
+import {TartanContextFile} from "./tartan-context.js";
 import Handlebars from "handlebars";
 import {glob} from "glob";
 
 export class DirectoryProcessor {
     private readonly resolver: ModuleResolver;
-    private projectConfig: TartanConfig;
-    public contextTree: {[key: string]: TartanContext} = {};
-    private readonly rootContext: TartanContext = {
+    private projectConfig: TartanConfigFile;
+    public contextTree: {[key: string]: TartanContextFile} = {};
+    private readonly rootContext: TartanContextFile = {
         pageMode: "directory",
         pageSource: "index.html",
     }
@@ -24,7 +24,7 @@ export class DirectoryProcessor {
      * @param config The project's config
      * @param resolver The fully initialized module resovler to use
      */
-    constructor(config: TartanConfig, resolver: ModuleResolver) {
+    constructor(config: TartanConfigFile, resolver: ModuleResolver) {
         this.projectConfig = config;
         this.resolver = resolver;
     }
@@ -33,10 +33,10 @@ export class DirectoryProcessor {
      * Traverse the entire tree, loading context files, and merging with default values.
      * `this.contextTree` is set to the result, and returned.
      */
-    public async loadContextTree(): Promise<{[key: string]: TartanContext}> {
+    public async loadContextTree(): Promise<{[key: string]: TartanContextFile}> {
         // Go through the treeeeeee
         const queue: string[] = [path.normalize(this.projectConfig.rootDir)];
-        const results: {[key: string]: {defaultContext: TartanContext, currentContext: TartanContext, mergedContext: TartanContext}} = {};
+        const results: {[key: string]: {defaultContext: TartanContextFile, currentContext: TartanContextFile, mergedContext: TartanContextFile}} = {};
         let queueSize = 1;
         for (let i = 0; i < queueSize; i++) {
             /**
@@ -77,8 +77,8 @@ export class DirectoryProcessor {
                 contextFilename = dirContents.find((val) => new RegExp(`^${path.basename(item)}\\.context\\.(mjs|js|json)$`).exec(val.name) && val.isFile());
             }
 
-            let defaultContext: TartanContext = {};
-            let currentContext: TartanContext = {};
+            let defaultContext: TartanContextFile = {};
+            let currentContext: TartanContextFile = {};
 
             const parentPath = path.normalize(path.join(dir, "../"));
             if (defaultContextFilename) {
@@ -142,7 +142,7 @@ export class DirectoryProcessor {
      *
      * @returns The merged context object.
      */
-    private mergeContexts(a: TartanContext, b: TartanContext): TartanContext {
+    private mergeContexts(a: TartanContextFile, b: TartanContextFile): TartanContextFile {
         if (b.inherit === false) {
             a = this.rootContext;
         }
@@ -164,11 +164,11 @@ export class DirectoryProcessor {
      * @param contextPath The path to the context file.
      * @returns The context object.
      */
-    private async loadContext(contextPath: string): Promise<TartanContext> {
+    private async loadContext(contextPath: string): Promise<TartanContextFile> {
         if (!contextPath.startsWith("./")) {
             contextPath = path.join("./", contextPath);
         }
-        let context: TartanContext = {};
+        let context: TartanContextFile = {};
         if (contextPath.endsWith(".js") || contextPath.endsWith(".mjs")) {
             const module = await this.resolver.import("." + path.sep + contextPath);
             context = module;
@@ -190,7 +190,7 @@ export interface PageProcessorConfig {
     /**
      * The fully processed context for this page.
      */
-    context: TartanContext;
+    context: TartanContextFile;
     /**
      * The fully resolved output directory (as an absolute path).
      */
@@ -199,10 +199,10 @@ export interface PageProcessorConfig {
 export class PageProcessor {
     private readonly resolver: ModuleResolver;
     private readonly config: PageProcessorConfig;
-    private readonly projectConfig: TartanConfig;
-    private readonly context: TartanContext;
+    private readonly projectConfig: TartanConfigFile;
+    private readonly context: TartanContextFile;
 
-    constructor(pageConfig: PageProcessorConfig, projectConfig: TartanConfig, resolver: ModuleResolver) {
+    constructor(pageConfig: PageProcessorConfig, projectConfig: TartanConfigFile, resolver: ModuleResolver) {
         this.config = pageConfig;
         this.resolver = resolver;
         this.context = this.config.context;

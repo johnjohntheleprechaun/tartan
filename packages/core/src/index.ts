@@ -1,15 +1,15 @@
 import {DirectoryProcessor, PageProcessor} from "./process.js";
 import {ModuleResolver} from "./resolve.js";
-import {TartanConfig} from "./tartan-config.js";
+import {TartanConfigFile} from "./tartan-config.js";
 import path from "path";
 
 export class TartanProject {
-    public readonly config: TartanConfig;
+    public readonly config: TartanConfigFile;
     private readonly directoryProcessor: DirectoryProcessor;
     private readonly resolver: ModuleResolver;
     private initialized: boolean = false;
 
-    constructor(config: TartanConfig) {
+    constructor(config: TartanConfigFile) {
         this.config = config;
         /*
          * Ensure rootDir is formatted correctly.

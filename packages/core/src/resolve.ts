@@ -1,4 +1,4 @@
-import {TartanConfig} from "./tartan-config.js";
+import {TartanConfigFile} from "./tartan-config.js";
 import {TartanExport} from "./tartan-export.js";
 import fs from "fs/promises";
 import {createRequire} from "module";
@@ -6,16 +6,16 @@ import {createRequire} from "module";
 const require = createRequire(import.meta.url);
 
 export class ModuleResolver {
-    private config: TartanConfig;
+    private config: TartanConfigFile;
     public modules: TartanExport[] = [];
 
     public elementPrefixMap: {[key: string]: TartanExport} = {};
 
-    public static async create(projectConfig: TartanConfig): Promise<ModuleResolver> {
+    public static async create(projectConfig: TartanConfigFile): Promise<ModuleResolver> {
         return new ModuleResolver(projectConfig).init();
     }
 
-    constructor(projectConfig: TartanConfig) {
+    constructor(projectConfig: TartanConfigFile) {
         this.config = projectConfig;
     }
 

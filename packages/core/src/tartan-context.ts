@@ -1,4 +1,5 @@
 import {JSONSchema, FromSchema} from "json-schema-to-ts";
+import {ReplaceTypes, RequireKeys} from "./util.js";
 
 export const tartanContextSchema = {
     type: "object",
@@ -41,4 +42,7 @@ export const tartanContextSchema = {
     additionalProperties: false,
 } as const satisfies JSONSchema;
 
-export type TartanContext = FromSchema<typeof tartanContextSchema>;
+export type TartanContextFile = FromSchema<typeof tartanContextSchema>;
+export type TartanContext = ReplaceTypes<TartanContextFile, {
+    sourceProcessor: (a: string) => Promise<string> | string;
+}>;

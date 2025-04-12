@@ -1,4 +1,5 @@
 import {JSONSchema, FromSchema} from "json-schema-to-ts";
+import {ReplaceTypes} from "./util.js";
 
 export const tartanConfigSchema = {
     type: "object",
@@ -61,4 +62,7 @@ export const tartanConfigSchema = {
     additionalProperties: false,
 } as const satisfies JSONSchema;
 
-export type TartanConfig = FromSchema<typeof tartanConfigSchema>;
+export type TartanConfigFile = FromSchema<typeof tartanConfigSchema>;
+export type TartanConfig = ReplaceTypes<TartanConfigFile, {
+    templates: {[key: string]: ReturnType<typeof Handlebars.compile>};
+}>;
