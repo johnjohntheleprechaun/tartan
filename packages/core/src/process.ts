@@ -7,15 +7,15 @@ import generate from "@babel/generator";
 import {build} from "esbuild";
 import parse, {HTMLElement} from "node-html-parser";
 import {TartanConfig, TartanConfigFile} from "./tartan-config.js";
-import {TartanContextFile} from "./tartan-context.js";
+import {TartanContext, TartanContextFile} from "./tartan-context.js";
 import Handlebars from "handlebars";
 import {glob} from "glob";
 
 export class DirectoryProcessor {
     private readonly resolver: ModuleResolver;
     private projectConfig: TartanConfigFile;
-    public contextTree: {[key: string]: TartanContextFile} = {};
-    private readonly rootContext: TartanContextFile = {
+    public contextTree: {[key: string]: TartanContext} = {};
+    private readonly rootContext: TartanContext = {
         pageMode: "directory",
         pageSource: "index.html",
     }
@@ -33,10 +33,10 @@ export class DirectoryProcessor {
      * Traverse the entire tree, loading context files, and merging with default values.
      * `this.contextTree` is set to the result, and returned.
      */
-    public async loadContextTree(): Promise<{[key: string]: TartanContextFile}> {
+    public async loadContextTree(): Promise<{[key: string]: TartanContext}> {
         // Go through the treeeeeee
         const queue: string[] = [path.normalize(this.projectConfig.rootDir)];
-        const results: {[key: string]: {defaultContext: TartanContextFile, currentContext: TartanContextFile, mergedContext: TartanContextFile}} = {};
+        const results: {[key: string]: {defaultContext: TartanContext, currentContext: TartanContext, mergedContext: TartanContext}} = {};
         let queueSize = 1;
         for (let i = 0; i < queueSize; i++) {
             /**
@@ -77,8 +77,8 @@ export class DirectoryProcessor {
                 contextFilename = dirContents.find((val) => new RegExp(`^${path.basename(item)}\\.context\\.(mjs|js|json)$`).exec(val.name) && val.isFile());
             }
 
-            let defaultContext: TartanContextFile = {};
-            let currentContext: TartanContextFile = {};
+            let defaultContext: TartanContext = {};
+            let currentContext: TartanContext = {};
 
             const parentPath = path.normalize(path.join(dir, "../"));
             if (defaultContextFilename) {
@@ -142,7 +142,7 @@ export class DirectoryProcessor {
      *
      * @returns The merged context object.
      */
-    private mergeContexts(a: TartanContextFile, b: TartanContextFile): TartanContextFile {
+    private mergeContexts(a: TartanContext, b: TartanContext): TartanContext {
         if (b.inherit === false) {
             a = this.rootContext;
         }
@@ -164,18 +164,26 @@ export class DirectoryProcessor {
      * @param contextPath The path to the context file.
      * @returns The context object.
      */
-    private async loadContext(contextPath: string): Promise<TartanContextFile> {
+    private async loadContext(contextPath: string): Promise<TartanContext> {
         if (!contextPath.startsWith("./")) {
             contextPath = path.join("./", contextPath);
         }
-        let context: TartanContextFile = {};
+        let contextFile: TartanContextFile = {};
         if (contextPath.endsWith(".js") || contextPath.endsWith(".mjs")) {
             const module = await this.resolver.import("." + path.sep + contextPath);
-            context = module;
+            contextFile = module;
         }
         else if (contextPath.endsWith(".json")) {
             const contents = (await fs.readFile(contextPath)).toString();
-            context = JSON.parse(contents);
+            contextFile = JSON.parse(contents);
+        }
+
+        const context: TartanContext = {
+            ...contextFile,
+            template: contextFile.template ? Handlebars.compile(
+                (await fs.readFile(contextFile.template)).toString()
+            ) : undefined,
+            sourceProcessor: contextFile.sourceProcessor ? await this.resolver.import(contextFile.sourceProcessor) as (content: string) => Promise<string> | string : undefined,
         }
 
         return context;
@@ -190,7 +198,7 @@ export interface PageProcessorConfig {
     /**
      * The fully processed context for this page.
      */
-    context: TartanContextFile;
+    context: TartanContext;
     /**
      * The fully resolved output directory (as an absolute path).
      */
@@ -200,7 +208,7 @@ export class PageProcessor {
     private readonly resolver: ModuleResolver;
     private readonly config: PageProcessorConfig;
     private readonly projectConfig: TartanConfigFile;
-    private readonly context: TartanContextFile;
+    private readonly context: TartanContext;
 
     constructor(pageConfig: PageProcessorConfig, projectConfig: TartanConfigFile, resolver: ModuleResolver) {
         this.config = pageConfig;
@@ -219,8 +227,7 @@ export class PageProcessor {
         }
         // load and process the content
         const pageContent = await fs.readFile(this.config.sourcePath);
-        const sourceProcessor: (content: string) => Promise<string> = this.context.sourceProcessor ? await this.resolver.import(this.context.sourceProcessor) : (a: string) => a;
-        const processed = await sourceProcessor(pageContent.toString());
+        const processed: string = this.context.sourceProcessor ? await this.context.sourceProcessor(pageContent.toString()) : pageContent.toString();
 
         // pass it into the handlebars template, if you need to
         let finished: string;
@@ -228,14 +235,7 @@ export class PageProcessor {
             finished = processed;
         }
         else {
-            const templatePath = this.projectConfig.templates ? this.projectConfig.templates[this.context.template] : undefined;
-            if (!templatePath) {
-                throw new Error("undefined template");
-            }
-
-            const templateFile = await fs.readFile(templatePath);
-            const template = Handlebars.compile(templateFile.toString());
-            finished = template({
+            finished = this.context.template({
                 pageContent: processed,
                 pageContext: this.context.handlebarsParameters,
             });

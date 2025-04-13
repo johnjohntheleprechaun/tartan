@@ -6,5 +6,5 @@ export default {
     pageSource: "index.md",
     pagePattern: "*.md",
     sourceProcessor: "./docs/root/processor.mjs",
-    template: "base",
+    template: "./docs/templates/base.html",
 }

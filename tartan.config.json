@@ -1,8 +1,4 @@
 {
     "rootDir": "docs/root/",
-    "outputDir": "docs/dist/",
-    "componentLibraries": [],
-    "templates": {
-        "base": "docs/templates/base.html"
-    }
+    "outputDir": "docs/dist/"
 }
