@@ -44,5 +44,6 @@ export const tartanContextSchema = {
 
 export type TartanContextFile = FromSchema<typeof tartanContextSchema>;
 export type TartanContext = ReplaceTypes<TartanContextFile, {
-    sourceProcessor: (a: string) => Promise<string> | string;
+    sourceProcessor?: (a: string) => Promise<string> | string;
+    template?: ReturnType<typeof Handlebars.compile>;
 }>;
