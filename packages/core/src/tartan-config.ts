@@ -10,15 +10,6 @@ export const tartanConfigSchema = {
                 type: "string",
             },
         },
-        templates: {
-            type: "object",
-            patternProperties: {
-                "*": {
-                    type: "string",
-                },
-            },
-            description: "a mapping of template names to template paths",
-        },
         rootDir: {
             type: "string",
             description: ""
@@ -62,7 +53,4 @@ export const tartanConfigSchema = {
     additionalProperties: false,
 } as const satisfies JSONSchema;
 
-export type TartanConfigFile = FromSchema<typeof tartanConfigSchema>;
-export type TartanConfig = ReplaceTypes<TartanConfigFile, {
-    templates: {[key: string]: ReturnType<typeof Handlebars.compile>};
-}>;
+export type TartanConfig = FromSchema<typeof tartanConfigSchema>;

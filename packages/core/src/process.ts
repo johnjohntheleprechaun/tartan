@@ -6,14 +6,14 @@ import {Statement, importDeclaration, program, stringLiteral} from "@babel/types
 import generate from "@babel/generator";
 import {build} from "esbuild";
 import parse, {HTMLElement} from "node-html-parser";
-import {TartanConfig, TartanConfigFile} from "./tartan-config.js";
+import {TartanConfig} from "./tartan-config.js";
 import {TartanContext, TartanContextFile} from "./tartan-context.js";
 import Handlebars from "handlebars";
 import {glob} from "glob";
 
 export class DirectoryProcessor {
     private readonly resolver: ModuleResolver;
-    private projectConfig: TartanConfigFile;
+    private projectConfig: TartanConfig;
     public contextTree: {[key: string]: TartanContext} = {};
     private readonly rootContext: TartanContext = {
         pageMode: "directory",
@@ -24,7 +24,7 @@ export class DirectoryProcessor {
      * @param config The project's config
      * @param resolver The fully initialized module resovler to use
      */
-    constructor(config: TartanConfigFile, resolver: ModuleResolver) {
+    constructor(config: TartanConfig, resolver: ModuleResolver) {
         this.projectConfig = config;
         this.resolver = resolver;
     }
@@ -207,10 +207,10 @@ export interface PageProcessorConfig {
 export class PageProcessor {
     private readonly resolver: ModuleResolver;
     private readonly config: PageProcessorConfig;
-    private readonly projectConfig: TartanConfigFile;
+    private readonly projectConfig: TartanConfig;
     private readonly context: TartanContext;
 
-    constructor(pageConfig: PageProcessorConfig, projectConfig: TartanConfigFile, resolver: ModuleResolver) {
+    constructor(pageConfig: PageProcessorConfig, projectConfig: TartanConfig, resolver: ModuleResolver) {
         this.config = pageConfig;
         this.resolver = resolver;
         this.context = this.config.context;
