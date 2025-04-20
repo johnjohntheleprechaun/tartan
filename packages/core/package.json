@@ -12,7 +12,7 @@
         "dist"
     ],
     "scripts": {
-        "build": "./build.sh"
+        "build": "rm -r dist && npx tsc"
     },
     "repository": {
         "type": "git",
