@@ -21,7 +21,7 @@ export const tartanConfigSchema = {
             type: "object",
             patternProperties: {
                 "*": {
-                    type: "array",
+                    type: "string",
                     items: [
                         {
                             type: "string",
