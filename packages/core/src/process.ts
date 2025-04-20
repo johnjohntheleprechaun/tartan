@@ -1,4 +1,4 @@
-import {ModuleResolver} from "./resolve.js";
+import {Resolver} from "./resolve.js";
 import fs from "fs/promises";
 import fsSync from "fs";
 import path from "path";
@@ -12,7 +12,7 @@ import Handlebars from "handlebars";
 import {glob} from "glob";
 
 export class DirectoryProcessor {
-    private readonly resolver: ModuleResolver;
+    private readonly resolver: Resolver;
     private projectConfig: TartanConfig;
     public contextTree: {[key: string]: TartanContext} = {};
     private readonly rootContext: TartanContext = {
@@ -24,7 +24,7 @@ export class DirectoryProcessor {
      * @param config The project's config
      * @param resolver The fully initialized module resovler to use
      */
-    constructor(config: TartanConfig, resolver: ModuleResolver) {
+    constructor(config: TartanConfig, resolver: Resolver) {
         this.projectConfig = config;
         this.resolver = resolver;
     }
@@ -205,12 +205,12 @@ export interface PageProcessorConfig {
     outputDir: string;
 }
 export class PageProcessor {
-    private readonly resolver: ModuleResolver;
+    private readonly resolver: Resolver;
     private readonly config: PageProcessorConfig;
     private readonly projectConfig: TartanConfig;
     private readonly context: TartanContext;
 
-    constructor(pageConfig: PageProcessorConfig, projectConfig: TartanConfig, resolver: ModuleResolver) {
+    constructor(pageConfig: PageProcessorConfig, projectConfig: TartanConfig, resolver: Resolver) {
         this.config = pageConfig;
         this.resolver = resolver;
         this.context = this.config.context;
@@ -258,14 +258,14 @@ export interface HTMLProcessorResult {
 export class HTMLProcessor {
     private readonly htmlContent: string;
     private readonly rootNode: HTMLElement;
-    private readonly resolver: ModuleResolver;
+    private readonly resolver: Resolver;
     private readonly pagePath: string | undefined;
 
     /**
      * @param htmlContent The content to process.
      * @param resolver The (fully initialized) resolver to use.
      */
-    constructor(htmlContent: string, resolver: ModuleResolver, pagePath?: string) {
+    constructor(htmlContent: string, resolver: Resolver, pagePath?: string) {
         this.htmlContent = htmlContent;
         this.pagePath = pagePath;
         this.resolver = resolver;

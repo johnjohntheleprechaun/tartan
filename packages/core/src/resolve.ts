@@ -5,21 +5,21 @@ import {createRequire} from "module";
 
 const require = createRequire(import.meta.url);
 
-export class ModuleResolver {
+export class Resolver {
     private config: TartanConfig;
     public modules: TartanExport[] = [];
 
     public elementPrefixMap: {[key: string]: TartanExport} = {};
 
-    public static async create(projectConfig: TartanConfig): Promise<ModuleResolver> {
-        return new ModuleResolver(projectConfig).init();
+    public static async create(projectConfig: TartanConfig): Promise<Resolver> {
+        return new Resolver(projectConfig).init();
     }
 
     constructor(projectConfig: TartanConfig) {
         this.config = projectConfig;
     }
 
-    public async init(): Promise<ModuleResolver> {
+    public async init(): Promise<Resolver> {
         // load the modules needed
         for (const moduleSpecifier of this.config.componentLibraries || []) {
             const module = await this.import(moduleSpecifier) as TartanExport;
