@@ -1,6 +1,6 @@
 {
     "name": "@tartan/core",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "description": "Core utilities for the Tartan static site generator.",
     "publishConfig": {
         "access": "public"
@@ -30,10 +30,10 @@
         "esbuild": "^0.24.2",
         "glob": "^11.0.1",
         "handlebars": "^4.7.8",
+        "json-schema-to-ts": "^3.1.1",
         "node-html-parser": "^7.0.1"
     },
     "devDependencies": {
-        "json-schema-to-ts": "^3.1.1",
         "@types/babel__generator": "^7.6.8",
         "ts-node": "^10.9.2",
         "typescript": "^5.7.2"
