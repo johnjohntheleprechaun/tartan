@@ -45,6 +45,7 @@ export class Resolver {
     public static async loadObjectFromFile<T>(filename: string): Promise<T> {
         const json = `${filename}.json`;
         const module = `.${path.sep}${filename}.mjs`;
+        const js = `.${path.sep}${filename}.js`;
 
         // check if JSON file exists
         if (await fs.access(json).then(() => true).catch(() => false)) {
@@ -52,6 +53,9 @@ export class Resolver {
         }
         else if (await fs.access(module).then(() => true).catch(() => false)) {
             return this.import(module)
+        }
+        else if (await fs.access(js).then(() => true).catch(() => false)) {
+            return this.import(js)
         }
 
         throw new Error("No file exists");
