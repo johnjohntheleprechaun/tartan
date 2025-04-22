@@ -35,7 +35,11 @@ export class DirectoryProcessor {
      */
     public async loadContextTree(): Promise<{[key: string]: TartanContext}> {
         // Go through the treeeeeee
-        const queue: string[] = [path.normalize(this.projectConfig.rootDir)];
+        interface QueueItem {
+            dir: string;
+            parent?: string;
+        };
+        const queue: QueueItem[] = [{dir: path.normalize(this.projectConfig.rootDir)}];
         const results: {[key: string]: {defaultContext: TartanContext, currentContext: TartanContext, mergedContext: TartanContext}} = {};
         let queueSize = 1;
         for (let i = 0; i < queueSize; i++) {
@@ -51,11 +55,11 @@ export class DirectoryProcessor {
             let defaultContextFilename: fsSync.Dirent | undefined;
             let contextFilename: fsSync.Dirent | undefined;
 
-            const isDirectory = (await fs.stat(item)).isDirectory();
+            const isDirectory = (await fs.stat(item.dir)).isDirectory();
             console.log(isDirectory);
             if (isDirectory) {
-                dir = item;
-                dirContents = await fs.readdir(item, {withFileTypes: true});
+                dir = item.dir;
+                dirContents = await fs.readdir(item.dir, {withFileTypes: true});
                 defaultContextFilename = dirContents.find((val) => /^tartan\.context\.default\.(mjs|js|json)$/.exec(val.name) && val.isFile());
                 contextFilename = dirContents.find((val) => /^tartan\.context\.(mjs|js|json)$/.exec(val.name) && val.isFile());
 
@@ -65,31 +69,33 @@ export class DirectoryProcessor {
                     if (child.isDirectory()) {
                         console.log(true);
                         queue.push(
-                            path.normalize(path.join(item, child.name, "./"))
+                            {
+                                dir: path.normalize(path.join(item.dir, child.name, "./")),
+                                parent: item.dir,
+                            }
                         );
                     }
                 }
             }
             else {
-                dir = path.join(path.dirname(item), "./");
-                dirContents = await fs.readdir(path.dirname(item), {withFileTypes: true});
+                dir = path.join(path.dirname(item.dir), "./");
+                dirContents = await fs.readdir(path.dirname(item.dir), {withFileTypes: true});
                 defaultContextFilename = dirContents.find((val) => /^tartan\.context\.default\.(mjs|js|json)$/.exec(val.name) && val.isFile());
-                contextFilename = dirContents.find((val) => new RegExp(`^${path.basename(item)}\\.context\\.(mjs|js|json)$`).exec(val.name) && val.isFile());
+                contextFilename = dirContents.find((val) => new RegExp(`^${path.basename(item.dir)}\\.context\\.(mjs|js|json)$`).exec(val.name) && val.isFile());
             }
 
             let defaultContext: TartanContext = {};
             let currentContext: TartanContext = {};
 
-            const parentPath = path.normalize(path.join(dir, "../"));
             if (defaultContextFilename) {
                 const loadedContext = await this.loadContext(path.join(dir, defaultContextFilename.name));
-                defaultContext = this.mergeContexts(dir === this.projectConfig.rootDir ? this.rootContext : results[parentPath].defaultContext, loadedContext);
+                defaultContext = this.mergeContexts(item.parent ? results[item.parent].defaultContext : this.rootContext, loadedContext);
             }
-            else if (dir === this.projectConfig.rootDir) {
+            else if (!item.parent) {
                 defaultContext = this.mergeContexts({}, this.rootContext);
             }
             else {
-                defaultContext = results[parentPath].defaultContext;
+                defaultContext = results[item.parent].defaultContext;
             }
 
             // get context
@@ -103,7 +109,7 @@ export class DirectoryProcessor {
                 mergedContext: this.mergeContexts(defaultContext, currentContext),
             }
 
-            // Add to the queue
+            // Add pages to the queue for file mode
             if (isDirectory && contexts.mergedContext.pageMode === "file") {
                 console.log("this is a pagemode directory", contexts);
                 if (!contexts.mergedContext.pagePattern) {
@@ -118,12 +124,15 @@ export class DirectoryProcessor {
                 for (const page of pages.filter(val => path.normalize(val) !== path.normalize(contexts.mergedContext.pageSource as string))) {
                     console.log(page);
                     queue.push(
-                        path.normalize(path.join(item, page))
+                        {
+                            dir: path.normalize(path.join(item.dir, page)),
+                            parent: item.dir,
+                        }
                     );
                 }
             }
 
-            results[item] = contexts;
+            results[item.dir] = contexts;
             queueSize = queue.length;
         }
 
