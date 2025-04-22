@@ -1,4 +1,4 @@
-import {DirectoryProcessor, PageProcessor} from "./process.js";
+import {DirectoryProcessor, PageProcessor} from "./processors/index.js";
 import {Resolver} from "./resolve.js";
 import {TartanConfig} from "./tartan-config.js";
 import path from "path";
@@ -70,5 +70,5 @@ export class TartanProject {
 export * from "./tartan-export.js";
 export * from "./tartan-config.js";
 export * from "./tartan-context.js";
-export * from "./process.js";
+export * from "./processors/index.js";
 export * from "./resolve.js";
