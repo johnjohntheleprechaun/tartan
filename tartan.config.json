@@ -1,7 +1,0 @@
-{
-    "rootDir": "docs/root/",
-    "outputDir": "docs/dist/",
-    "pathPrefixes": {
-        "~templates/": "docs/templates/"
-    }
-}

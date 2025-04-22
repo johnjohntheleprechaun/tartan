@@ -23,7 +23,7 @@ export class Resolver {
     public async init(): Promise<Resolver> {
         // load the modules needed
         for (const moduleSpecifier of this.config.componentLibraries || []) {
-            const module = await this.import(moduleSpecifier) as TartanExport;
+            const module = await Resolver.import(moduleSpecifier) as TartanExport;
             this.modules.push(module);
 
             if (this.elementPrefixMap[module.defaultPrefix]) {
@@ -35,6 +35,26 @@ export class Resolver {
 
 
         return this;
+    }
+
+    /**
+     * Load an object from *either* a JSON file or a JS module where the object is the default export.
+     *
+     * @param path The path to the file (*without* the file extension).
+     */
+    public static async loadObjectFromFile<T>(filename: string): Promise<T> {
+        const json = `${filename}.json`;
+        const module = `.${path.sep}${filename}.mjs`;
+
+        // check if JSON file exists
+        if (await fs.access(json).then(() => true).catch(() => false)) {
+            return JSON.parse((await fs.readFile(json)).toString());
+        }
+        else if (await fs.access(module).then(() => true).catch(() => false)) {
+            return this.import(module)
+        }
+
+        throw new Error("No file exists");
     }
 
     /**
@@ -79,7 +99,7 @@ export class Resolver {
         }
     }
 
-    async import(moduleSpecifier: string): Promise<any> {
+    public static async import(moduleSpecifier: string): Promise<any> {
         const modulePath = require.resolve(moduleSpecifier, {paths: [process.cwd()]});
         return import(modulePath).then(a => a.default);
     }

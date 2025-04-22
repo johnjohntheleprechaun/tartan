@@ -179,7 +179,7 @@ export class DirectoryProcessor {
         }
         let contextFile: TartanContextFile = {};
         if (contextPath.endsWith(".js") || contextPath.endsWith(".mjs")) {
-            const module = await this.resolver.import("." + path.sep + contextPath);
+            const module = await Resolver.import("." + path.sep + contextPath);
             contextFile = module;
         }
         else if (contextPath.endsWith(".json")) {
@@ -192,7 +192,7 @@ export class DirectoryProcessor {
             template: contextFile.template ? Handlebars.compile(
                 (await fs.readFile(this.resolver.resolvePath(contextFile.template, contextPath))).toString()
             ) : undefined,
-            sourceProcessor: contextFile.sourceProcessor ? await this.resolver.import(this.resolver.resolvePath(contextFile.sourceProcessor, contextPath)) as (content: string) => Promise<string> | string : undefined,
+            sourceProcessor: contextFile.sourceProcessor ? await Resolver.import(this.resolver.resolvePath(contextFile.sourceProcessor, contextPath)) as (content: string) => Promise<string> | string : undefined,
         }
 
         return context;
