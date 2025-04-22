@@ -190,9 +190,9 @@ export class DirectoryProcessor {
         const context: TartanContext = {
             ...contextFile,
             template: contextFile.template ? Handlebars.compile(
-                (await fs.readFile(contextFile.template)).toString()
+                (await fs.readFile(this.resolver.resolvePath(contextFile.template, contextPath))).toString()
             ) : undefined,
-            sourceProcessor: contextFile.sourceProcessor ? await this.resolver.import(contextFile.sourceProcessor) as (content: string) => Promise<string> | string : undefined,
+            sourceProcessor: contextFile.sourceProcessor ? await this.resolver.import(this.resolver.resolvePath(contextFile.sourceProcessor, contextPath)) as (content: string) => Promise<string> | string : undefined,
         }
 
         return context;
