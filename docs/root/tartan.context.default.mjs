@@ -1,10 +1,10 @@
 /**
- * @type import("tartan").TartanContext
+ * @type import("@tartan/core").TartanContext
  */
 export default {
     pageMode: "file",
     pageSource: "index.md",
     pagePattern: "*.md",
-    sourceProcessor: "./docs/root/processor.mjs",
-    template: "base",
+    sourceProcessor: "processor.mjs",
+    template: "~templates/base.html",
 }

@@ -1,4 +1,5 @@
 import {JSONSchema, FromSchema} from "json-schema-to-ts";
+import {ReplaceTypes} from "./util.js";
 
 export const tartanConfigSchema = {
     type: "object",
@@ -8,15 +9,6 @@ export const tartanConfigSchema = {
             items: {
                 type: "string",
             },
-        },
-        templates: {
-            type: "object",
-            patternProperties: {
-                "*": {
-                    type: "string",
-                },
-            },
-            description: "a mapping of template names to template paths",
         },
         rootDir: {
             type: "string",
@@ -29,7 +21,7 @@ export const tartanConfigSchema = {
             type: "object",
             patternProperties: {
                 "*": {
-                    type: "array",
+                    type: "string",
                     items: [
                         {
                             type: "string",

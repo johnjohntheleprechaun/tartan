@@ -1,16 +1,18 @@
-import {DirectoryProcessor, PageProcessor} from "./process.js";
-import {ModuleResolver} from "./resolve.js";
+import {Logger} from "./logger.js";
+import {DirectoryProcessor, PageProcessor} from "./processors/index.js";
+import {Resolver} from "./resolve.js";
 import {TartanConfig} from "./tartan-config.js";
 import path from "path";
 
 export class TartanProject {
     public readonly config: TartanConfig;
     private readonly directoryProcessor: DirectoryProcessor;
-    private readonly resolver: ModuleResolver;
+    private readonly resolver: Resolver;
     private initialized: boolean = false;
 
-    constructor(config: TartanConfig) {
+    constructor(config: TartanConfig, logLevel?: number) {
         this.config = config;
+        Logger.logLevel = logLevel || 0;
         /*
          * Ensure rootDir is formatted correctly.
          * Whether this should be handled by this class or not is... tbd
@@ -21,7 +23,7 @@ export class TartanProject {
             this.config.rootDir += path.sep;
         }
 
-        this.resolver = new ModuleResolver(this.config);
+        this.resolver = new Resolver(this.config);
         this.directoryProcessor = new DirectoryProcessor(this.config, this.resolver);
     }
 
@@ -70,5 +72,5 @@ export class TartanProject {
 export * from "./tartan-export.js";
 export * from "./tartan-config.js";
 export * from "./tartan-context.js";
-export * from "./process.js";
+export * from "./processors/index.js";
 export * from "./resolve.js";

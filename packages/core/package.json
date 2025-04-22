@@ -1,6 +1,6 @@
 {
     "name": "@tartan/core",
-    "version": "0.2.1",
+    "version": "0.3.0",
     "description": "Core utilities for the Tartan static site generator.",
     "publishConfig": {
         "access": "public"
@@ -12,7 +12,7 @@
         "dist"
     ],
     "scripts": {
-        "build": "./build.sh"
+        "build": "rm -r dist && npx tsc"
     },
     "repository": {
         "type": "git",
