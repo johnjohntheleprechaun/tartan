@@ -1,5 +1,5 @@
 /**
- * @type import("tartan").TartanContext
+ * @type import("@tartan/core").TartanContext
  */
 export default {
     pageMode: "file",
