@@ -33,10 +33,10 @@ export class DirectoryProcessor {
     public async loadContextTree(): Promise<{[key: string]: TartanContext}> {
         // Go through the treeeeeee
         interface QueueItem {
-            dir: string;
+            path: string;
             parent?: string;
         };
-        const queue: QueueItem[] = [{dir: path.normalize(this.projectConfig.rootDir)}];
+        const queue: QueueItem[] = [{path: path.normalize(this.projectConfig.rootDir)}];
         const results: {[key: string]: {defaultContext: TartanContext, currentContext: TartanContext, mergedContext: TartanContext}} = {};
         let queueSize = 1;
         for (let i = 0; i < queueSize; i++) {
@@ -52,11 +52,11 @@ export class DirectoryProcessor {
             let defaultContextFilename: fsSync.Dirent | undefined;
             let contextFilename: fsSync.Dirent | undefined;
 
-            const isDirectory = (await fs.stat(item.dir)).isDirectory();
+            const isDirectory = (await fs.stat(item.path)).isDirectory();
             Logger.log(isDirectory);
             if (isDirectory) {
-                dir = item.dir;
-                dirContents = await fs.readdir(item.dir, {withFileTypes: true});
+                dir = item.path;
+                dirContents = await fs.readdir(item.path, {withFileTypes: true});
                 defaultContextFilename = dirContents.find((val) => /^tartan\.context\.default\.(mjs|js|json)$/.exec(val.name) && val.isFile());
                 contextFilename = dirContents.find((val) => /^tartan\.context\.(mjs|js|json)$/.exec(val.name) && val.isFile());
 
@@ -67,18 +67,18 @@ export class DirectoryProcessor {
                         Logger.log(true);
                         queue.push(
                             {
-                                dir: path.normalize(path.join(item.dir, child.name, "./")),
-                                parent: item.dir,
+                                path: path.normalize(path.join(item.path, child.name, "./")),
+                                parent: item.path,
                             }
                         );
                     }
                 }
             }
             else {
-                dir = path.join(path.dirname(item.dir), "./");
-                dirContents = await fs.readdir(path.dirname(item.dir), {withFileTypes: true});
+                dir = path.join(path.dirname(item.path), "./");
+                dirContents = await fs.readdir(path.dirname(item.path), {withFileTypes: true});
                 defaultContextFilename = dirContents.find((val) => /^tartan\.context\.default\.(mjs|js|json)$/.exec(val.name) && val.isFile());
-                contextFilename = dirContents.find((val) => new RegExp(`^${path.basename(item.dir)}\\.context\\.(mjs|js|json)$`).exec(val.name) && val.isFile());
+                contextFilename = dirContents.find((val) => new RegExp(`^${path.basename(item.path)}\\.context\\.(mjs|js|json)$`).exec(val.name) && val.isFile());
             }
 
             let defaultContext: TartanContext = {};
@@ -122,14 +122,14 @@ export class DirectoryProcessor {
                     Logger.log(page);
                     queue.push(
                         {
-                            dir: path.normalize(path.join(item.dir, page)),
-                            parent: item.dir,
+                            path: path.normalize(path.join(item.path, page)),
+                            parent: item.path,
                         }
                     );
                 }
             }
 
-            results[item.dir] = contexts;
+            results[item.path] = contexts;
             queueSize = queue.length;
         }
 
