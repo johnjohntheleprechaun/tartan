@@ -6,6 +6,7 @@ import {TartanConfig} from "../tartan-config.js";
 import {TartanContext, TartanContextFile} from "../tartan-context.js";
 import Handlebars from "handlebars";
 import {glob} from "glob";
+import {Logger} from "../logger.js";
 
 export class DirectoryProcessor {
     private readonly resolver: Resolver;
@@ -43,8 +44,8 @@ export class DirectoryProcessor {
              * The current queue item being processed.
              */
             const item = queue[i]
-            console.log(item);
-            console.log(queue.slice(i));
+            Logger.log(item);
+            Logger.log(queue.slice(i));
 
             let dir: string;
             let dirContents: fsSync.Dirent[];
@@ -52,7 +53,7 @@ export class DirectoryProcessor {
             let contextFilename: fsSync.Dirent | undefined;
 
             const isDirectory = (await fs.stat(item.dir)).isDirectory();
-            console.log(isDirectory);
+            Logger.log(isDirectory);
             if (isDirectory) {
                 dir = item.dir;
                 dirContents = await fs.readdir(item.dir, {withFileTypes: true});
@@ -61,9 +62,9 @@ export class DirectoryProcessor {
 
                 // add child directories
                 for (const child of dirContents) {
-                    console.log(child)
+                    Logger.log(child)
                     if (child.isDirectory()) {
-                        console.log(true);
+                        Logger.log(true);
                         queue.push(
                             {
                                 dir: path.normalize(path.join(item.dir, child.name, "./")),
@@ -107,7 +108,7 @@ export class DirectoryProcessor {
 
             // Add pages to the queue for file mode
             if (isDirectory && contexts.mergedContext.pageMode === "file") {
-                console.log("this is a pagemode directory", contexts);
+                Logger.log(`this is a pagemode directory ${contexts}`);
                 if (!contexts.mergedContext.pagePattern) {
                     throw new Error(`You don't have a pagePattern for ${dir}`);
                 }
@@ -118,7 +119,7 @@ export class DirectoryProcessor {
                 });
 
                 for (const page of pages.filter(val => path.normalize(val) !== path.normalize(contexts.mergedContext.pageSource as string))) {
-                    console.log(page);
+                    Logger.log(page);
                     queue.push(
                         {
                             dir: path.normalize(path.join(item.dir, page)),

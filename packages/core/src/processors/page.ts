@@ -4,6 +4,7 @@ import path from "path";
 import {TartanConfig} from "../tartan-config.js";
 import {TartanContext} from "../tartan-context.js";
 import {HTMLProcessor} from "./html.js";
+import {Logger} from "../logger.js";
 
 export interface PageProcessorConfig {
     /**
@@ -33,7 +34,7 @@ export class PageProcessor {
     }
 
     public async process() {
-        console.log(this.config);
+        Logger.log(this.config);
         try {
             await fs.access(this.config.outputDir);
         }

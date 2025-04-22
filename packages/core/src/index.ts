@@ -1,3 +1,4 @@
+import {Logger} from "./logger.js";
 import {DirectoryProcessor, PageProcessor} from "./processors/index.js";
 import {Resolver} from "./resolve.js";
 import {TartanConfig} from "./tartan-config.js";
@@ -9,8 +10,9 @@ export class TartanProject {
     private readonly resolver: Resolver;
     private initialized: boolean = false;
 
-    constructor(config: TartanConfig) {
+    constructor(config: TartanConfig, logLevel?: number) {
         this.config = config;
+        Logger.logLevel = logLevel || 0;
         /*
          * Ensure rootDir is formatted correctly.
          * Whether this should be handled by this class or not is... tbd
