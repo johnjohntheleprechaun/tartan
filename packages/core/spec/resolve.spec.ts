@@ -37,7 +37,11 @@ describe("The Resolver class", () => {
         it("should handle `relativeTo` being a directory", () => {
             const result = resolver.resolvePath("./image.png", "src/page/");
             expect(result).toBe("/mock/src/page/image.png");
-        })
+        });
+        it("should ignore relativeTo when it matches a prefix", () => {
+            const result = resolver.resolvePath("~assets/asset.png", "aslkjdfnlasjf");
+            expect(result).toBe("/mock/src/assets/asset.png");
+        });
         it("should treat path prefixes as literal strings, not regular expressions", () => {
             const result = resolver.resolvePath("regex/no.txt", "src/page");
             expect(result).not.toBe("/mock/src/regex/no.txt");
