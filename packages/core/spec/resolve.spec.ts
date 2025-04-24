@@ -17,7 +17,7 @@ describe("The Resolver class", () => {
                 pathPrefixes: {
                     "/": "src/",
                     "~assets": "src/assets",
-                    "re.ex": "src/regex",
+                    "re.ex": "src/other",
                 },
             });
         });
@@ -44,7 +44,7 @@ describe("The Resolver class", () => {
         });
         it("should treat path prefixes as literal strings, not regular expressions", () => {
             const result = resolver.resolvePath("regex/no.txt", "src/page");
-            expect(result).not.toBe("/mock/src/regex/no.txt");
+            expect(result).not.toBe("/mock/src/other/no.txt");
         });
         it("should assume prefixes need to have a trailing slash", () => {
             const result = resolver.resolvePath("~assetsandstuff/image.png");
