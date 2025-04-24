@@ -5,10 +5,7 @@
     ],
     "devDependencies": {
         "@tartan/core": "^0.3.0",
-        "showdown": "^2.1.0",
-        "@types/jest": "^29.5.14",
-        "jest": "^29.7.0",
-        "ts-jest": "^29.3.2"
+        "showdown": "^2.1.0"
     },
     "scripts": {
         "build": "./scripts/build.sh",
