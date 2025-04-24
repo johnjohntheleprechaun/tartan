@@ -1,9 +1,6 @@
 import {Resolver} from "../src/resolve";
+import path from "path";
 import mock from "mock-fs";
-
-beforeAll(() => {
-    mock();
-});
 
 describe("The Resolver class", () => {
     afterEach(() => {
@@ -20,15 +17,39 @@ describe("The Resolver class", () => {
                 pathPrefixes: {
                     "/": "src/",
                     "~assets": "src/assets",
+                    "re.ex": "src/regex",
                 },
             });
         });
+        beforeEach(() => {
+            spyOn(process, "cwd").and.returnValue("/mock");
+        });
 
-        it("should resolve relative to cwd by default");
-        it("should properly use the `relativeTo` param to resolve relative paths");
-        it("should treat path prefixes as literal strings, not regular expressions");
-        it("should *not* modify a path where the prefix isn't at the beginning");
-        it("should properly resolve paths that start with /");
-        it("should resolve to a full path, not a relative path");
+        it("should resolve relative to cwd by default", () => {
+            const pathToResolve = "./test";
+            const result = resolver.resolvePath(pathToResolve);
+            expect(result).toBe(path.join("/mock", pathToResolve));
+        });
+        it("should handle `relativeTo` being a file", () => {
+            const result = resolver.resolvePath("./image.png", "src/page/index.html");
+            expect(result).toBe("/mock/src/page/image.png");
+        });
+        it("should handle `relativeTo` being a directory", () => {
+            const result = resolver.resolvePath("./image.png", "src/page/");
+            expect(result).toBe("/mock/src/page/image.png");
+        })
+        it("should treat path prefixes as literal strings, not regular expressions", () => {
+            const result = resolver.resolvePath("regex/no.txt", "src/page");
+            expect(result).not.toBe("/mock/src/regex/no.txt");
+        });
+        it("should properly resolve paths that start with /", () => {
+            const result = resolver.resolvePath("/assets/image.png");
+            expect(result).toBe("/mock/src/assets/image.png");
+        });
+        it("should resolve to a full path, not a relative path", () => {
+            const spy = spyOn(path, "resolve");
+            resolver.resolvePath("asdf");
+            expect(spy).toHaveBeenCalled();
+        });
     });
 });
