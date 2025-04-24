@@ -3,8 +3,68 @@ import path from "path";
 import mock from "mock-fs";
 
 describe("The Resolver class", () => {
-    afterEach(() => {
-        mock.restore();
+    describe("file object loader", () => {
+        afterEach(() => {
+            mock.restore();
+        });
+
+        it("should error if there's no valid file", async () => {
+            mock();
+            let failed = false;
+            await Resolver.loadObjectFromFile("test").catch(() => {failed = true});
+            expect(failed).toBeTrue();
+        });
+        it("should correctly load JSON", async () => {
+            const testObject = {
+                chicken: "jockey",
+            };
+            mock({
+                "test.json": JSON.stringify(testObject),
+            });
+
+            const result = await Resolver.loadObjectFromFile("test");
+            expect(result).toEqual(testObject);
+        });
+        it("should try to load a module if it exists", async () => {
+            mock({
+                "test.mjs": "",
+            });
+
+            const importSpy = spyOn(Resolver, "import").and.returnValue(Promise.resolve({}));
+
+            await Resolver.loadObjectFromFile("test");
+            expect(importSpy).toHaveBeenCalled();
+        });
+        it("should prioritize JSON over JS modules", async () => {
+            const testObject = {
+                chicken: "jockey",
+            };
+            mock({
+                "test.json": JSON.stringify(testObject),
+                "test.mjs": "",
+            });
+
+            const importSpy = spyOn(Resolver, "import").and.returnValue(Promise.resolve({}));
+            const result = await Resolver.loadObjectFromFile("test");
+            expect(importSpy).not.toHaveBeenCalled();
+            expect(result).toEqual(testObject);
+        });
+        it("should support both .js and .mjs extensions", async () => {
+            mock({
+                "test.js": "",
+            });
+            const importSpy = spyOn(Resolver, "import").and.returnValue(Promise.resolve({}));
+            await Resolver.loadObjectFromFile("test");
+            expect(importSpy).toHaveBeenCalled();
+
+            importSpy.calls.reset();
+
+            mock({
+                "test.mjs": "",
+            });
+            await Resolver.loadObjectFromFile("test");
+            expect(importSpy).toHaveBeenCalled();
+        });
     });
 
     describe("path prefix handler", () => {
