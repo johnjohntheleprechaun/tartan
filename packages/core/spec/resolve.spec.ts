@@ -46,6 +46,10 @@ describe("The Resolver class", () => {
             const result = resolver.resolvePath("regex/no.txt", "src/page");
             expect(result).not.toBe("/mock/src/regex/no.txt");
         });
+        it("should assume prefixes need to have a trailing slash", () => {
+            const result = resolver.resolvePath("~assetsandstuff/image.png");
+            expect(result).toBe("/mock/src/~assetsandstuff/image.png");
+        });
         it("should properly resolve paths that start with /", () => {
             const result = resolver.resolvePath("/assets/image.png");
             expect(result).toBe("/mock/src/assets/image.png");
