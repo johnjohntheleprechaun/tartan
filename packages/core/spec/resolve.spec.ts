@@ -47,7 +47,7 @@ describe("The Resolver class", () => {
             expect(result).not.toBe("/mock/src/other/no.txt");
         });
         it("should assume prefixes need to have a trailing slash", () => {
-            const result = resolver.resolvePath("~assetsandstuff/image.png");
+            const result = resolver.resolvePath("src/~assetsandstuff/image.png");
             expect(result).toBe("/mock/src/~assetsandstuff/image.png");
         });
         it("should properly resolve paths that start with /", () => {

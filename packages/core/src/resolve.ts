@@ -70,8 +70,10 @@ export class Resolver {
     public resolvePath(target: string, relativeTo?: string) {
         if (this.config.pathPrefixes) {
             for (const prefix in this.config.pathPrefixes) {
-                if (target.startsWith(prefix)) {
-                    const resolvedPath = target.replace(prefix, this.config.pathPrefixes[prefix]);
+                let fixedPrefix = prefix.endsWith("/") ? prefix : prefix + "/";
+                let fixedTarget = this.config.pathPrefixes[prefix].endsWith("/") ? this.config.pathPrefixes[prefix] : this.config.pathPrefixes[prefix] + "/";
+                if (target.startsWith(fixedPrefix)) {
+                    const resolvedPath = target.replace(fixedPrefix, fixedTarget);
                     return path.resolve(resolvedPath);
                 }
             }
