@@ -12,7 +12,7 @@ export class TartanProject {
 
     constructor(config: TartanConfig, logLevel?: number) {
         this.config = config;
-        Logger.logLevel = logLevel || 0;
+        Logger.logLevel = logLevel || Logger.defaultLogLevel;
         /*
          * Ensure rootDir is formatted correctly.
          * Whether this should be handled by this class or not is... tbd
