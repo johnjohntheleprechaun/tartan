@@ -1,13 +1,16 @@
 import {Resolver} from "../src/resolve";
+import mock from "mock-fs";
 
 beforeAll(() => {
+    mock();
 });
 
-describe("Test the Resolver class", () => {
+describe("The Resolver class", () => {
     afterEach(() => {
+        mock.restore();
     });
 
-    describe("resolve path prefixes into full paths", () => {
+    describe("path prefix handler", () => {
         let resolver: Resolver;
         beforeAll(async () => {
             resolver = await Resolver.create({
@@ -21,11 +24,11 @@ describe("Test the Resolver class", () => {
             });
         });
 
-        xit("should resolve relative to cwd by default");
-        xit("should properly use the `relativeTo` param to resolve relative paths");
-        xit("should treat path prefixes as literal strings, not regular expressions");
-        xit("should *not* modify a path where the prefix isn't at the beginning");
-        xit("should properly resolve paths that start with /");
-        xit("should resolve to a full path, not a relative path");
+        it("should resolve relative to cwd by default");
+        it("should properly use the `relativeTo` param to resolve relative paths");
+        it("should treat path prefixes as literal strings, not regular expressions");
+        it("should *not* modify a path where the prefix isn't at the beginning");
+        it("should properly resolve paths that start with /");
+        it("should resolve to a full path, not a relative path");
     });
 });
