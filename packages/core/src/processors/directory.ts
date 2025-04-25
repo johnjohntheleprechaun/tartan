@@ -176,7 +176,7 @@ export class DirectoryProcessor {
         }
         let contextFile: TartanContextFile = {};
         if (contextPath.endsWith(".js") || contextPath.endsWith(".mjs")) {
-            const module = await Resolver.import("." + path.sep + contextPath);
+            const module = await Resolver.import<TartanContextFile>("." + path.sep + contextPath);
             contextFile = module;
         }
         else if (contextPath.endsWith(".json")) {
