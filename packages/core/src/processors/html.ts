@@ -29,9 +29,7 @@ export class HTMLProcessor {
      * Entirely process the HTML file, and return a complete HTML file with a script tag at the top of `body` which registers all the necessary web components.
      */
     public async process(): Promise<HTMLProcessorResult> {
-        const customTags = this.findCustomTags();
-
-        const moduleSpecifiers = customTags.map(tag => this.resolver.resolveTagName(tag));
+        const moduleSpecifiers = this.findCustomTags();
 
         const bundledCode = await this.bundleWebComponents(moduleSpecifiers);
 
@@ -79,17 +77,19 @@ export class HTMLProcessor {
     }
 
     /**
-     * Recursive tree search that finds all elements that match any of the prefixes defined by component libraries.
+     * Recursive tree search that finds all elements that are registered by a component library, and returns the modules that need to be imported
      * @param node If undefined, the root node is used.
+     *
+     * @returns a list of module specifiers to be imported
      */
     private findCustomTags(node?: HTMLElement): string[] {
         if (!node) {
             node = this.rootNode;
         }
         let customTags: string[] = [];
-        const matchResult = /^([^-]+).*$/.exec(node.rawTagName);
-        if (matchResult && this.resolver.elementPrefixMap[matchResult[1]]) {
-            customTags.push(node.rawTagName);
+        const result = this.resolver.resolveTagName(node.rawTagName);
+        if (result !== undefined) {
+            customTags.push(result);
         }
 
         for (const child of node.children) {

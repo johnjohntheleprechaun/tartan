@@ -10,7 +10,10 @@ export class Resolver {
     private config: TartanConfig;
     public modules: TartanExport[] = [];
 
-    public elementPrefixMap: {[key: string]: TartanExport} = {};
+    /**
+     * The aggregate of all component libraries
+     */
+    public componentMap: {[key: string]: string} = {};
 
     public static async create(projectConfig: TartanConfig): Promise<Resolver> {
         return new Resolver(projectConfig).init();
@@ -26,11 +29,14 @@ export class Resolver {
             const module = await Resolver.import<TartanExport>(moduleSpecifier);
             this.modules.push(module);
 
-            if (this.elementPrefixMap[module.defaultPrefix]) {
-                throw new Error("element prefix conflict");
+            for (const key in module.componentMap) {
+                if (this.componentMap[key]) {
+                    throw new Error("Duplicate component name");
+                }
+                else {
+                    this.componentMap[key] = module.componentMap[key];
+                }
             }
-
-            this.elementPrefixMap[module.defaultPrefix] = module;
         }
 
 
@@ -82,47 +88,20 @@ export class Resolver {
         return path.resolve(path.join(relativeTo?.endsWith(path.sep) ? relativeTo : path.dirname(relativeTo || "") || "", target));
     }
 
-    public resolveTagName(tagName: string): string {
-        const result = /([^-]+)-(.+)/.exec(tagName);
-        if (!result) {
-            throw new InvalidTagNameError(tagName);
+    /**
+     * Attempt to resolve a tag name to a module import that registers the web component (if one exists)
+     *
+     * @returns The module specifier that this element needs, or undefined if none was found
+     */
+    public resolveTagName(tagName: string): string | undefined {
+        if (Object.keys(this.componentMap).includes(tagName)) {
+            return this.componentMap[tagName];
         }
-
-        const module = this.elementPrefixMap[result[1]];
-        let componentSpecifier: string | undefined = undefined;
-        if (typeof module.componentMap === "object") {
-            componentSpecifier = module.componentMap[result[2]];
-        }
-        else if (typeof module.componentMap === "function") {
-            componentSpecifier = module.componentMap(result[2]);
-        }
-
-        if (componentSpecifier) {
-            return componentSpecifier;
-        }
-        else {
-            throw new TagNameNotFoundError(tagName);
-        }
+        return undefined;
     }
 
     public static async import<T>(moduleSpecifier: string): Promise<T> {
         const modulePath = require.resolve(moduleSpecifier, {paths: [process.cwd()]});
         return import(modulePath).then(a => a.default);
-    }
-}
-
-export class InvalidTagNameError extends Error {
-    name: string = "InvalidTagNameError";
-
-    constructor(tagName: string) {
-        super(`The tag name <${tagName}> isn't formatted correctly.`);
-    }
-}
-
-export class TagNameNotFoundError extends Error {
-    name: string = "TagNameNotFoundError";
-
-    constructor(tagName: string) {
-        super(`No mapping was found for <${tagName}>.`);
     }
 }
