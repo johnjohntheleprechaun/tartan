@@ -5,7 +5,7 @@ describe("Test log level logic", () => {
     beforeAll(() => {
         logSpy = spyOn(console, "log");
     });
-    beforeEach(() => {
+    afterEach(() => {
         logSpy.calls.reset();
         Logger.logLevel = Logger.defaultLogLevel;
     });
