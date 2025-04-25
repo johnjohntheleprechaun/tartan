@@ -1,8 +1,45 @@
 import {Resolver} from "../src/resolve";
 import path from "path";
 import mock from "mock-fs";
+import {TartanExport} from "../src/tartan-export";
+import {TartanConfig} from "@tartan/core";
 
 describe("The Resolver class", () => {
+    describe("tag name resolver", () => {
+        let resolver: Resolver;
+        let fakeLibs: {[key: string]: TartanExport};
+        beforeAll(async () => {
+            fakeLibs = {
+                "pc": {
+                    componentMap: {
+                        "pc-button": "fakeModule",
+                    },
+                },
+                "bbb": {
+                    componentMap: {
+                        "other-button": "otherFakeModule",
+                    },
+                },
+            };
+            const config: TartanConfig = {
+                rootDir: "src",
+                outputDir: "dist",
+                componentLibraries: Object.keys(fakeLibs),
+            };
+            spyOn(Resolver, "import").and.callFake(async <T>(module: string): Promise<T> => {
+                return fakeLibs[module] as T;
+            });
+
+            resolver = await Resolver.create(config);
+        });
+
+        it("should have loaded all the libs", async () => {
+            expect(resolver.componentMap).toEqual({
+                "pc-button": "fakeModule",
+                "other-button": "otherFakeModule",
+            })
+        });
+    });
     describe("file object loader", () => {
         afterEach(() => {
             mock.restore();
