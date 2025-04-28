@@ -163,7 +163,7 @@ describe("The Resolver class", () => {
         });
     });
 
-    describe("path prefix handler", () => {
+    describe("path prefix handler/resolver", () => {
         let resolver: Resolver;
         beforeAll(async () => {
             resolver = await Resolver.create({
