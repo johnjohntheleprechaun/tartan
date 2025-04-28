@@ -4,7 +4,7 @@ import {ReplaceTypes} from "./util.js";
 export const tartanConfigSchema = {
     type: "object",
     properties: {
-        componentLibraries: {
+        designLibraries: {
             type: "array",
             items: {
                 type: "string",

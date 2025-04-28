@@ -11,9 +11,13 @@ export class Resolver {
     public modules: TartanExport[] = [];
 
     /**
-     * The aggregate of all component libraries
+     * The aggregate component map.
      */
     public componentMap: {[key: string]: string} = {};
+    /**
+     * The aggregate template map.
+     */
+    public templateMap: {[key: string]: string} = {};
 
     public static async create(projectConfig: TartanConfig): Promise<Resolver> {
         return new Resolver(projectConfig).init();
@@ -25,7 +29,7 @@ export class Resolver {
 
     public async init(): Promise<Resolver> {
         // load the modules needed
-        for (const moduleSpecifier of this.config.componentLibraries || []) {
+        for (const moduleSpecifier of this.config.designLibraries || []) {
             const modulePath = Resolver.resolveImport(moduleSpecifier);
             const module = await Resolver.import<TartanExport>(modulePath);
             this.modules.push(module);
@@ -36,6 +40,15 @@ export class Resolver {
                 }
                 else {
                     this.componentMap[key] = Resolver.resolveImport(module.componentMap[key], path.dirname(modulePath));
+                }
+            }
+
+            for (const key in module.templateMap) {
+                if (this.templateMap[key]) {
+                    throw new Error("Duplicate template name");
+                }
+                else {
+                    this.templateMap[key] = Resolver.resolveImport(module.templateMap[key], path.dirname(modulePath));
                 }
             }
         }
@@ -99,6 +112,13 @@ export class Resolver {
             return this.componentMap[tagName];
         }
         return undefined;
+    }
+
+    public resolveTemplateName(template: string): string | undefined {
+        if (Object.keys(this.templateMap).includes(template)) {
+            return this.templateMap[template];
+        }
+        return undefined
     }
 
     /**

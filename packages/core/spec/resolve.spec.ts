@@ -24,7 +24,7 @@ describe("The Resolver class", () => {
             const config: TartanConfig = {
                 rootDir: "src",
                 outputDir: "dist",
-                componentLibraries: Object.keys(fakeLibs),
+                designLibraries: Object.keys(fakeLibs),
             };
             spyOn(Resolver, "import").and.callFake(async <T>(module: string): Promise<T> => {
                 return fakeLibs[module] as T;

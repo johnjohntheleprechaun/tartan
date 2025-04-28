@@ -7,4 +7,7 @@ export default {
     pathPrefixes: {
         "~templates/": "docs/templates/",
     },
+    designLibraries: [
+        "./fake-lib/index.mjs",
+    ]
 };
