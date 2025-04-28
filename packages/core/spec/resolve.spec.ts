@@ -5,6 +5,54 @@ import {TartanExport} from "../src/tartan-export";
 import {TartanConfig} from "@tartan/core";
 
 describe("The Resolver class", () => {
+    describe("template resolver", () => {
+        let resolver: Resolver;
+        let fakeLibs: {[key: string]: TartanExport};
+        beforeAll(async () => {
+            fakeLibs = {
+                "fakeOne": {
+                    templateMap: {
+                        "blog-template": "some/path/temp.html",
+                    },
+                },
+                "fakeTwo": {
+                    templateMap: {
+                        "doc-template": "some/other/path/temp.html",
+                    },
+                },
+            };
+
+            const config: TartanConfig = {
+                rootDir: "src",
+                outputDir: "dist",
+                designLibraries: Object.keys(fakeLibs),
+            };
+            spyOn(Resolver, "import").and.callFake(async <T>(module: string): Promise<T> => {
+                return fakeLibs[module] as T;
+            });
+            spyOn(Resolver, "resolveImport").and.callFake((spec: string): string => {
+                return spec;
+            });
+
+            resolver = await Resolver.create(config);
+        });
+
+        it("should load the aggregate of all provided template maps", () => {
+            expect(resolver.templateMap).toEqual({
+                "blog-template": "some/path/temp.html",
+                "doc-template": "some/other/path/temp.html",
+            });
+        });
+        it("should return from the map", () => {
+            const templ = resolver.resolveTemplateName("blog-template");
+            expect(templ).toBe("some/path/temp.html");
+        })
+        it("should return undefined for a template that isn't provided", () => {
+            const templ = resolver.resolveTemplateName("this-isn't-real");
+            expect(templ).toBeUndefined();
+        })
+    });
+
     describe("tag name resolver", () => {
         let resolver: Resolver;
         let fakeLibs: {[key: string]: TartanExport};
