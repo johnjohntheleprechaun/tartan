@@ -40,7 +40,15 @@ describe("The Resolver class", () => {
             expect(resolver.componentMap).toEqual({
                 "pc-button": "fakeModule",
                 "other-button": "otherFakeModule",
-            })
+            });
+        });
+        it("should return the correct module specifier", () => {
+            const spec = resolver.resolveTagName("pc-button");
+            expect(spec).toBe("fakeModule");
+        });
+        it("should return undefined if there is no component registered", () => {
+            const spec = resolver.resolveTagName("not-a-real-tag");
+            expect(spec).toBeUndefined();
         });
     });
     describe("file object loader", () => {
