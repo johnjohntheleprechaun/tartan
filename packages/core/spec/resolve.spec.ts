@@ -29,6 +29,9 @@ describe("The Resolver class", () => {
             spyOn(Resolver, "import").and.callFake(async <T>(module: string): Promise<T> => {
                 return fakeLibs[module] as T;
             });
+            spyOn(Resolver, "resolveImport").and.callFake((spec: string): string => {
+                return spec;
+            });
 
             resolver = await Resolver.create(config);
         });
