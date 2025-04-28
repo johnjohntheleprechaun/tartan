@@ -141,7 +141,7 @@ export class DirectoryProcessor {
     }
 
     /**
-     * Merge a context object with a default context object.
+     * Merge a context object with a default context object. Effectively just properties from `b` override properties from `a`.
      *
      * @param a The default context object.
      * @param b The context object to merge with it.
@@ -153,15 +153,7 @@ export class DirectoryProcessor {
             a = this.rootContext;
         }
 
-        return {
-            pageMode: b.pageMode ? b.pageMode : a.pageMode,
-            handlebarsParameters: b.handlebarsParameters ? b.handlebarsParameters : a.handlebarsParameters,
-            template: b.template ? b.template : a.template,
-            pageSource: b.pageSource ? b.pageSource : a.pageSource,
-            pagePattern: b.pagePattern ? b.pagePattern : a.pagePattern,
-            sourceProcessor: b.sourceProcessor ? b.sourceProcessor : a.sourceProcessor,
-            assets: b.assets ? b.assets : a.assets,
-        };
+        return {...a, ...b};
     }
 
     /**
