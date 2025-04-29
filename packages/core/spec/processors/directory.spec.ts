@@ -36,4 +36,23 @@ describe("The directory processor", () => {
             });
         }
     });
+    it("should use root tartan.context.default.json if provided", async () => {
+        const defaultContext: TartanContext = {
+            pageMode: "directory",
+            pageSource: "page.md",
+        };
+        mock({
+            "/mock/src": {
+                "tartan.context.default.json": JSON.stringify(defaultContext),
+                "page": {
+                    "sub-page": {},
+                },
+            },
+        });
+
+        const results = await directoryProcessor.loadContextTree();
+        for (const result of Object.keys(results).map(key => results[key])) {
+            expect(result).toEqual(defaultContext);
+        }
+    })
 });

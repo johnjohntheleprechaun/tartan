@@ -184,6 +184,13 @@ export class DirectoryProcessor {
             sourceProcessor: contextFile.sourceProcessor ? await Resolver.import(this.resolver.resolvePath(contextFile.sourceProcessor, contextPath)) as (content: string) => Promise<string> | string : undefined,
         }
 
+        if (context.template === undefined) {
+            delete context.template;
+        }
+        if (context.sourceProcessor === undefined) {
+            delete context.sourceProcessor;
+        }
+
         return context;
     }
 }
