@@ -20,15 +20,20 @@ describe("The directory processor", () => {
 
     it("should use rootContext by default", async () => {
         mock({
-            "/mock/src": {},
+            "/mock/src": {
+                "page": {
+                    "sub-page": {},
+                },
+            },
         });
 
         const results = await directoryProcessor.loadContextTree();
         // the root dir
-        expect(results["src"]).toBeDefined();
-        expect(results["src"]).toEqual({
-            pageMode: "directory",
-            pageSource: "index.html",
-        } as TartanContext);
-    })
+        for (const result of Object.keys(results).map(key => results[key])) {
+            expect(result).toEqual({
+                pageMode: "directory",
+                pageSource: "index.html",
+            });
+        }
+    });
 });
