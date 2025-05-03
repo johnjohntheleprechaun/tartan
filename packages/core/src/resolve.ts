@@ -1,5 +1,5 @@
 import {TartanConfig} from "./tartan-config.js";
-import {TartanExport} from "./tartan-export.js";
+import {TartanModule} from "./tartan-module.js";
 import path from "path";
 import fs from "fs/promises";
 import {createRequire} from "module";
@@ -8,7 +8,7 @@ const require = createRequire(import.meta.url);
 
 export class Resolver {
     private config: TartanConfig;
-    public modules: TartanExport[] = [];
+    public modules: TartanModule[] = [];
 
     /**
      * The aggregate component map.
@@ -31,7 +31,7 @@ export class Resolver {
         // load the modules needed
         for (const moduleSpecifier of this.config.designLibraries || []) {
             const modulePath = Resolver.resolveImport(moduleSpecifier);
-            const module = await Resolver.import<TartanExport>(modulePath);
+            const module = await Resolver.import<TartanModule>(modulePath);
             this.modules.push(module);
 
             for (const key in module.componentMap) {

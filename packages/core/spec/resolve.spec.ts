@@ -1,13 +1,13 @@
 import {Resolver} from "../src/resolve";
 import path from "path";
 import mock from "mock-fs";
-import {TartanExport} from "../src/tartan-export";
+import {TartanModule} from "../src/tartan-module";
 import {TartanConfig} from "@tartan/core";
 
 describe("The Resolver class", () => {
     describe("template resolver", () => {
         let resolver: Resolver;
-        let fakeLibs: {[key: string]: TartanExport};
+        let fakeLibs: {[key: string]: TartanModule};
         beforeAll(async () => {
             fakeLibs = {
                 "fakeOne": {
@@ -55,7 +55,7 @@ describe("The Resolver class", () => {
 
     describe("tag name resolver", () => {
         let resolver: Resolver;
-        let fakeLibs: {[key: string]: TartanExport};
+        let fakeLibs: {[key: string]: TartanModule};
         beforeAll(async () => {
             fakeLibs = {
                 "pc": {

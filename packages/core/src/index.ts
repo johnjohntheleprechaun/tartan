@@ -69,7 +69,7 @@ export class TartanProject {
 }
 
 
-export * from "./tartan-export.js";
+export * from "./tartan-module.js";
 export * from "./tartan-config.js";
 export * from "./tartan-context.js";
 export * from "./processors/index.js";

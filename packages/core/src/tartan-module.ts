@@ -1,4 +1,4 @@
-export interface TartanExport {
+export interface TartanModule {
     /**
      * An object mapping component names to module imports.
      */
