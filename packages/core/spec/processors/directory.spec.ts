@@ -30,11 +30,9 @@ describe("The directory processor", () => {
         const results = await directoryProcessor.loadContextTree();
         // the root dir
         for (const result of Object.keys(results).map(key => results[key])) {
-            expect(result).toEqual({
-                context: {
-                    pageMode: "directory",
-                    pageSource: "index.html",
-                }
+            expect(result.context).toEqual({
+                pageMode: "directory",
+                pageSource: "index.html",
             });
         }
     });
