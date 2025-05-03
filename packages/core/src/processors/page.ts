@@ -5,6 +5,7 @@ import {TartanConfig} from "../tartan-config.js";
 import {TartanContext} from "../tartan-context.js";
 import {HTMLProcessor} from "./html.js";
 import {Logger} from "../logger.js";
+import {SourceProcessorOutput} from "../source-processor.js";
 
 export interface PageProcessorConfig {
     /**
@@ -34,7 +35,7 @@ export class PageProcessor {
     }
 
     public async process() {
-        Logger.log(this.config);
+        Logger.log(this.config, 2);
         try {
             await fs.access(this.config.outputDir);
         }
@@ -43,23 +44,35 @@ export class PageProcessor {
         }
         // load and process the content
         const pageContent = await fs.readFile(this.config.sourcePath);
-        const processed: string = this.context.sourceProcessor ? await this.context.sourceProcessor(pageContent.toString()) : pageContent.toString();
+        Logger.log(pageContent.toString(), 2);
+        const processorOutput: SourceProcessorOutput = this.context.sourceProcessor ?
+            await this.context.sourceProcessor({
+                context: this.context,
+                sourceContents: pageContent.toString(),
+                subpageMeta: [],
+            })
+            : {processedContents: pageContent.toString()};
+
+        Logger.log(processorOutput, 2);
 
         // pass it into the handlebars template, if you need to
         let finished: string;
         if (!this.context.template) {
-            finished = processed;
+            finished = processorOutput.processedContents;
         }
         else {
             finished = this.context.template({
-                pageContent: processed,
+                pageContent: processorOutput.processedContents,
                 pageContext: this.context.handlebarsParameters,
             });
         }
+        Logger.log(finished, 2);
 
         // now run it through the HTMLProcessor
         const processor = new HTMLProcessor(finished, this.resolver, this.config.sourcePath);
         const processedHTML = await processor.process();
+
+        Logger.log(processedHTML, 2)
 
         // now write to the output directory
         const outputFilename = path.join(this.config.outputDir, "index.html");

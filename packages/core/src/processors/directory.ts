@@ -7,11 +7,12 @@ import {TartanContext, TartanContextFile} from "../tartan-context.js";
 import Handlebars from "handlebars";
 import {glob} from "glob";
 import {Logger} from "../logger.js";
+import {SourceProcessor} from "../source-processor.js";
 
 export class DirectoryProcessor {
     private readonly resolver: Resolver;
     private projectConfig: TartanConfig;
-    public contextTree: {[key: string]: TartanContext} = {};
+    public contextTree: {[key: string]: {context: TartanContext, parent?: string}} = {};
     private readonly rootContext: TartanContext = {
         pageMode: "directory",
         pageSource: "index.html",
@@ -30,14 +31,14 @@ export class DirectoryProcessor {
      * Traverse the entire tree, loading context files, and merging with default values.
      * `this.contextTree` is set to the result, and returned.
      */
-    public async loadContextTree(): Promise<{[key: string]: TartanContext}> {
+    public async loadContextTree(): Promise<typeof this.contextTree> {
         // Go through the treeeeeee
-        interface QueueItem {
+        type QueueItem = {
             path: string;
             parent?: string;
         };
         const queue: QueueItem[] = [{path: path.normalize(this.projectConfig.rootDir)}];
-        const results: {[key: string]: {defaultContext: TartanContext, currentContext: TartanContext, mergedContext: TartanContext}} = {};
+        const results: {[key: string]: {defaultContext: TartanContext, currentContext: TartanContext, mergedContext: TartanContext, parent?: string}} = {};
         let queueSize = 1;
         for (let i = 0; i < queueSize; i++) {
             /**
@@ -129,12 +130,18 @@ export class DirectoryProcessor {
                 }
             }
 
-            results[item.path] = contexts;
+            results[item.path] = {
+                ...contexts,
+                parent: item.parent,
+            };
+
             queueSize = queue.length;
         }
 
         for (const key in results) {
-            this.contextTree[key] = results[key].mergedContext;
+            this.contextTree[key] = {
+                context: results[key].mergedContext,
+            };
         }
 
         return this.contextTree;
@@ -181,7 +188,7 @@ export class DirectoryProcessor {
             template: contextFile.template ? Handlebars.compile(
                 (await fs.readFile(this.resolver.resolveTemplateName(contextFile.template) || this.resolver.resolvePath(contextFile.template, contextPath))).toString()
             ) : undefined,
-            sourceProcessor: contextFile.sourceProcessor ? await Resolver.import(this.resolver.resolvePath(contextFile.sourceProcessor, contextPath)) as (content: string) => Promise<string> | string : undefined,
+            sourceProcessor: contextFile.sourceProcessor ? await Resolver.import(this.resolver.resolvePath(contextFile.sourceProcessor, contextPath)) as SourceProcessor : undefined,
         }
 
         if (context.template === undefined) {

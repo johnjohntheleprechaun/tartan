@@ -4,7 +4,8 @@
         "packages/*"
     ],
     "devDependencies": {
-        "@tartan/core": "^0.3.0",
+        "@tartan/core": "^0.4.0",
+        "@types/showdown": "^2.0.6",
         "showdown": "^2.1.0"
     },
     "scripts": {

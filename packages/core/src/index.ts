@@ -39,13 +39,13 @@ export class TartanProject {
     public async process() {
         const pages: Promise<any>[] = [];
         for (const page in this.directoryProcessor.contextTree) {
-            const context = this.directoryProcessor.contextTree[page];
+            const treeItem = this.directoryProcessor.contextTree[page];
             let sourcePath: string;
             let outputDir: string;
 
             // if it's a directory
             if (page.endsWith(path.sep)) {
-                sourcePath = page.endsWith(path.sep) ? path.join(page, context.pageSource || "") : page;
+                sourcePath = page.endsWith(path.sep) ? path.join(page, treeItem.context.pageSource || "") : page;
                 outputDir = path.join(this.config.outputDir as string, path.relative(this.config.rootDir as string, page));
             }
             // if it's a file
@@ -57,7 +57,7 @@ export class TartanProject {
 
             const pageProcessor = new PageProcessor({
                 sourcePath,
-                context: context,
+                context: treeItem.context,
                 outputDir,
             }, this.config, this.resolver);
             pages.push(pageProcessor.process());
@@ -72,5 +72,6 @@ export class TartanProject {
 export * from "./tartan-module.js";
 export * from "./tartan-config.js";
 export * from "./tartan-context.js";
+export * from "./source-processor.js";
 export * from "./processors/index.js";
 export * from "./resolve.js";
