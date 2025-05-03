@@ -141,6 +141,7 @@ export class DirectoryProcessor {
         for (const key in results) {
             this.contextTree[key] = {
                 context: results[key].mergedContext,
+                parent: results[key].parent,
             };
         }
 

@@ -30,6 +30,10 @@ export type SubPageMeta = PageMeta & {
      * This will never be 0, because meta from pages on the same level is not accessible.
      */
     distance: number;
+    /**
+     * The depth of the page (effectively the distance from root).
+     */
+    depth: number;
 }
 /**
  * The data passed to a source processor.
