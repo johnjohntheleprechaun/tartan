@@ -6,6 +6,7 @@ import {TartanContext} from "../tartan-context.js";
 import {HTMLProcessor} from "./html.js";
 import {Logger} from "../logger.js";
 import {PageMeta, SourceProcessorOutput, SubPageMeta} from "../source-processor.js";
+import {HandlebarsContext} from "../handlebars.js";
 
 export interface PageProcessorConfig {
     /**
@@ -58,6 +59,13 @@ export class PageProcessor {
 
         Logger.log(processorOutput, 2);
 
+        const pageMeta: PageMeta = {
+            sourcePath: this.config.sourcePath,
+            outputDir: this.config.outputDir,
+            context: this.context,
+            extra: processorOutput.extraMeta,
+        };
+
         // pass it into the handlebars template, if you need to
         let finished: string;
         if (!this.context.template) {
@@ -66,8 +74,10 @@ export class PageProcessor {
         else {
             finished = this.context.template({
                 pageContent: processorOutput.processedContents,
-                pageContext: this.context.handlebarsParameters,
-            });
+                extraContext: this.context.handlebarsParameters,
+                pageMeta,
+                subPageMeta: this.config.subpageMeta,
+            } as HandlebarsContext);
         }
         Logger.log(finished, 2);
 
@@ -81,11 +91,6 @@ export class PageProcessor {
         const outputFilename = path.join(this.config.outputDir, "index.html");
         await fs.writeFile(outputFilename, processedHTML.content);
 
-        return {
-            sourcePath: this.config.sourcePath,
-            outputPath: this.config.outputDir,
-            context: this.context,
-            extra: processorOutput.extraMeta,
-        };
+        return pageMeta;
     }
 }

@@ -11,7 +11,7 @@ export type PageMeta = {
     /**
      * The path this page was outputted to (relative to outputDir). This will be a directory, since all pages end up as an `index.html` within their own directory.
      */
-    outputPath: string;
+    outputDir: string;
     /**
      * The full context object for this page.
      */
