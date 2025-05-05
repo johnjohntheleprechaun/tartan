@@ -138,3 +138,4 @@ export * from "./source-processor.js";
 export * from "./processors/index.js";
 export * from "./resolve.js";
 export * from "./handlebars.js";
+export * from "./logger.js";
