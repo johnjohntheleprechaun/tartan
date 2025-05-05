@@ -86,11 +86,26 @@ export class PageProcessor {
         const processedHTML = await processor.process();
 
         Logger.log(processedHTML, 2)
+        Logger.log(`input from ${this.config.sourcePath}`)
 
         // now write to the output directory
         const outputFilename = path.join(this.config.outputDir, "index.html");
         await fs.writeFile(outputFilename, processedHTML.content);
 
+        await this.writeDependencies(processedHTML.dependencies);
+
         return pageMeta;
+    }
+
+    async writeDependencies(dependencies: string[]) {
+        for (const dependency of dependencies) {
+            const dependencyPath = this.resolver.resolvePath(dependency, this.config.sourcePath);
+            Logger.log(`this is a dependency ${dependencyPath}`);
+
+            await fs.copyFile(dependencyPath, path.join(
+                this.projectConfig.outputDir,
+                path.relative(this.projectConfig.rootDir, dependencyPath),
+            ));
+        }
     }
 }

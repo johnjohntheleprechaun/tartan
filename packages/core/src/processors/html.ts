@@ -3,6 +3,7 @@ import {Statement, importDeclaration, program, stringLiteral} from "@babel/types
 import generate from "@babel/generator";
 import {build} from "esbuild";
 import parse, {HTMLElement} from "node-html-parser";
+import {Logger} from "../logger.js";
 
 export interface HTMLProcessorResult {
     content: string;
@@ -114,6 +115,10 @@ export class HTMLProcessor {
             node.getAttribute("src") || "",
             node.getAttribute("srcset") || "",
         ].filter((val) => val !== ""));
+
+        if (node.tagName === "A") {
+            dependencies = [];
+        }
 
         for (const child of node.children) {
             dependencies = dependencies.concat(this.findDependencies(child));
