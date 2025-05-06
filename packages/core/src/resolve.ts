@@ -3,6 +3,7 @@ import {TartanModule} from "./tartan-module.js";
 import path from "path";
 import fs from "fs/promises";
 import {createRequire} from "module";
+import {Logger} from "./logger.js";
 
 const require = createRequire(import.meta.url);
 
@@ -88,6 +89,7 @@ export class Resolver {
      * @param relativeTo The path that target is relative to (if that matters). Defaults to CWD.
      */
     public resolvePath(target: string, relativeTo?: string) {
+        Logger.log(`resolving path ${target} relative to ${relativeTo}`);
         if (this.config.pathPrefixes) {
             for (const prefix in this.config.pathPrefixes) {
                 let fixedPrefix = prefix.endsWith("/") ? prefix : prefix + "/";
@@ -99,7 +101,7 @@ export class Resolver {
             }
         }
 
-        return path.resolve(path.join(relativeTo?.endsWith(path.sep) ? relativeTo : path.dirname(relativeTo || "") || "", target));
+        return path.resolve(relativeTo?.endsWith(path.sep) ? relativeTo : path.dirname(relativeTo || "") || "", target);
     }
 
     /**
