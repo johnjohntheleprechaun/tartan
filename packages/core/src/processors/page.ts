@@ -99,12 +99,17 @@ export class PageProcessor {
 
     async writeDependencies(dependencies: string[]) {
         for (const dependency of dependencies) {
+            Logger.log(`trying to process dependency ${dependency}`);
             const dependencyPath = this.resolver.resolvePath(dependency, this.config.sourcePath);
-            Logger.log(`this is a dependency ${dependencyPath}`);
+            const relativeToRoot = path.relative(this.projectConfig.rootDir, dependencyPath);
+
+            if (relativeToRoot.startsWith("..")) {
+                throw `dependency ${dependency} from page ${this.config.sourcePath} is not under the root directory`;
+            }
 
             await fs.copyFile(dependencyPath, path.join(
                 this.projectConfig.outputDir,
-                path.relative(this.projectConfig.rootDir, dependencyPath),
+                relativeToRoot,
             ));
         }
     }
