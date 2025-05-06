@@ -1,6 +1,6 @@
 {
     "name": "@tartan/core",
-    "version": "0.3.1",
+    "version": "0.4.0",
     "description": "Core utilities for the Tartan static site generator.",
     "publishConfig": {
         "access": "public"
@@ -35,7 +35,11 @@
     },
     "devDependencies": {
         "@types/babel__generator": "^7.6.8",
-        "ts-node": "^10.9.2",
+        "@types/jasmine": "^5.1.7",
+        "@types/mock-fs": "^4.13.4",
+        "jasmine": "^5.6.0",
+        "mock-fs": "^5.5.0",
+        "tsx": "^4.19.3",
         "typescript": "^5.7.2"
     }
 }

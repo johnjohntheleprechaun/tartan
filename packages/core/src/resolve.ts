@@ -1,16 +1,24 @@
 import {TartanConfig} from "./tartan-config.js";
-import {TartanExport} from "./tartan-export.js";
+import {TartanModule} from "./tartan-module.js";
 import path from "path";
 import fs from "fs/promises";
 import {createRequire} from "module";
+import {Logger} from "./logger.js";
 
 const require = createRequire(import.meta.url);
 
 export class Resolver {
     private config: TartanConfig;
-    public modules: TartanExport[] = [];
+    public modules: TartanModule[] = [];
 
-    public elementPrefixMap: {[key: string]: TartanExport} = {};
+    /**
+     * The aggregate component map.
+     */
+    public componentMap: {[key: string]: string} = {};
+    /**
+     * The aggregate template map.
+     */
+    public templateMap: {[key: string]: string} = {};
 
     public static async create(projectConfig: TartanConfig): Promise<Resolver> {
         return new Resolver(projectConfig).init();
@@ -22,15 +30,28 @@ export class Resolver {
 
     public async init(): Promise<Resolver> {
         // load the modules needed
-        for (const moduleSpecifier of this.config.componentLibraries || []) {
-            const module = await Resolver.import(moduleSpecifier) as TartanExport;
+        for (const moduleSpecifier of this.config.designLibraries || []) {
+            const modulePath = Resolver.resolveImport(moduleSpecifier);
+            const module = await Resolver.import<TartanModule>(modulePath);
             this.modules.push(module);
 
-            if (this.elementPrefixMap[module.defaultPrefix]) {
-                throw new Error("element prefix conflict");
+            for (const key in module.componentMap) {
+                if (this.componentMap[key]) {
+                    throw new Error("Duplicate component name");
+                }
+                else {
+                    this.componentMap[key] = Resolver.resolveImport(module.componentMap[key], path.dirname(modulePath));
+                }
             }
 
-            this.elementPrefixMap[module.defaultPrefix] = module;
+            for (const key in module.templateMap) {
+                if (this.templateMap[key]) {
+                    throw new Error("Duplicate template name");
+                }
+                else {
+                    this.templateMap[key] = Resolver.resolveImport(module.templateMap[key], path.dirname(modulePath));
+                }
+            }
         }
 
 
@@ -68,59 +89,62 @@ export class Resolver {
      * @param relativeTo The path that target is relative to (if that matters). Defaults to CWD.
      */
     public resolvePath(target: string, relativeTo?: string) {
+        Logger.log(`resolving path ${target} relative to ${relativeTo}`);
         if (this.config.pathPrefixes) {
             for (const prefix in this.config.pathPrefixes) {
-                if (target.startsWith(prefix)) {
-                    const resolvedPath = target.replace(prefix, this.config.pathPrefixes[prefix]);
+                let fixedPrefix = prefix.endsWith("/") ? prefix : prefix + "/";
+                let fixedTarget = this.config.pathPrefixes[prefix].endsWith("/") ? this.config.pathPrefixes[prefix] : this.config.pathPrefixes[prefix] + "/";
+                if (target.startsWith(fixedPrefix)) {
+                    const resolvedPath = target.replace(fixedPrefix, fixedTarget);
                     return path.resolve(resolvedPath);
                 }
             }
         }
 
-        return path.resolve(path.join(relativeTo?.endsWith(path.sep) ? relativeTo : path.dirname(relativeTo || "") || "", target));
+        return path.resolve(relativeTo?.endsWith(path.sep) ? relativeTo : path.dirname(relativeTo || "") || "", target);
     }
 
-    public resolveTagName(tagName: string): string {
-        const result = /([^-]+)-(.+)/.exec(tagName);
-        if (!result) {
-            throw new InvalidTagNameError(tagName);
+    /**
+     * Attempt to resolve a tag name to a module import that registers the web component (if one exists)
+     *
+     * @returns The module specifier that this element needs, or undefined if none was found
+     */
+    public resolveTagName(tagName: string): string | undefined {
+        if (Object.keys(this.componentMap).includes(tagName)) {
+            return this.componentMap[tagName];
         }
-
-        const module = this.elementPrefixMap[result[1]];
-        let componentSpecifier: string | undefined = undefined;
-        if (typeof module.componentMap === "object") {
-            componentSpecifier = module.componentMap[result[2]];
-        }
-        else if (typeof module.componentMap === "function") {
-            componentSpecifier = module.componentMap(result[2]);
-        }
-
-        if (componentSpecifier) {
-            return componentSpecifier;
-        }
-        else {
-            throw new TagNameNotFoundError(tagName);
-        }
+        return undefined;
     }
 
-    public static async import(moduleSpecifier: string): Promise<any> {
-        const modulePath = require.resolve(moduleSpecifier, {paths: [process.cwd()]});
+    public resolveTemplateName(template: string): string | undefined {
+        if (Object.keys(this.templateMap).includes(template)) {
+            return this.templateMap[template];
+        }
+        return undefined
+    }
+
+    /**
+     * Get the default export of an ESM module.
+     *
+     * @argument moduleSpecifier The specifier of the ESM module.
+     * @argument relativeTo The ***directory*** the specifier is relative to. Must not be a file.
+     *
+     * @returns The default export of the module.
+     */
+    public static async import<T>(moduleSpecifier: string, relativeTo?: string): Promise<T> {
+        const modulePath = this.resolveImport(moduleSpecifier, relativeTo);
         return import(modulePath).then(a => a.default);
     }
-}
 
-export class InvalidTagNameError extends Error {
-    name: string = "InvalidTagNameError";
-
-    constructor(tagName: string) {
-        super(`The tag name <${tagName}> isn't formatted correctly.`);
-    }
-}
-
-export class TagNameNotFoundError extends Error {
-    name: string = "TagNameNotFoundError";
-
-    constructor(tagName: string) {
-        super(`No mapping was found for <${tagName}>.`);
+    /**
+     * Resolve a module specifier relative to a directory.
+     *
+     * @argument moduleSpecifier The specifier to resolve.
+     * @argument relativeTo The directory the specifier is relative to.
+     *
+     * @returns The fully resolved module specifier as an absolute path.
+     */
+    public static resolveImport(moduleSpecifier: string, relativeTo?: string): string {
+        return require.resolve(moduleSpecifier, {paths: [relativeTo || process.cwd()]});
     }
 }
