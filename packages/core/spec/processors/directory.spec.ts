@@ -10,9 +10,6 @@ describe("The directory processor", () => {
         pageMode: "directory",
         pageSource: "index.html",
     };
-    beforeAll(() => {
-        spyOn(process, "cwd").and.callFake(() => "/mock");
-    })
     beforeEach(async () => {
         const config: TartanConfig = {
             rootDir: "src",
@@ -21,10 +18,13 @@ describe("The directory processor", () => {
         const resolver = await Resolver.create(config);
         directoryProcessor = new DirectoryProcessor(config, resolver);
     });
+    afterEach(() => {
+        mock.restore();
+    })
 
     it("should use rootContext by default", async () => {
         mock({
-            "/mock/src": {
+            "src": {
                 "page": {
                     "sub-page": {},
                 },
@@ -43,7 +43,7 @@ describe("The directory processor", () => {
             pageSource: "page.md",
         };
         mock({
-            "/mock/src": {
+            "src": {
                 "tartan.context.default.json": JSON.stringify(defaultContext),
                 "page": {
                     "sub-page": {},
@@ -64,7 +64,7 @@ describe("The directory processor", () => {
         };
 
         mock({
-            "/mock/src": {
+            "src": {
                 "subpage": {
                     "tartan.context.json": JSON.stringify(overrideContext),
                 },
@@ -87,7 +87,7 @@ describe("The directory processor", () => {
         };
 
         mock({
-            "/mock/src": {
+            "src": {
                 "tartan.context.default.json": JSON.stringify(defaultContextFile),
                 "subpage": {
                     "tartan.context.json": JSON.stringify({inherit: false} as TartanContextFile),
@@ -119,7 +119,7 @@ describe("The directory processor", () => {
         };
 
         mock({
-            "/mock/src": {
+            "src": {
                 "tartan.context.default.json": JSON.stringify(rootDefaultContext),
                 "page": {
                     "tartan.context.default.json": JSON.stringify(subDefaultContext),
