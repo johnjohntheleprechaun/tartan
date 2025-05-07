@@ -2,10 +2,14 @@ import {DirectoryProcessor} from "../../src/processors/directory";
 import mock from "mock-fs";
 import {Resolver} from "../../src/resolve";
 import {TartanConfig} from "../../src/tartan-config";
-import {TartanContext} from "../../src/tartan-context";
+import {TartanContext, TartanContextFile} from "../../src/tartan-context";
 
 describe("The directory processor", () => {
     let directoryProcessor: DirectoryProcessor;
+    const rootContext: TartanContext = {
+        pageMode: "directory",
+        pageSource: "index.html",
+    };
     beforeAll(() => {
         spyOn(process, "cwd").and.callFake(() => "/mock");
     })
@@ -30,10 +34,7 @@ describe("The directory processor", () => {
         const results = await directoryProcessor.loadContextTree();
         // the root dir
         for (const result of Object.keys(results).map(key => results[key])) {
-            expect(result.context).toEqual({
-                pageMode: "directory",
-                pageSource: "index.html",
-            });
+            expect(result.context).toEqual(rootContext);
         }
     });
     it("should use root tartan.context.default.json if provided", async () => {
@@ -54,5 +55,94 @@ describe("The directory processor", () => {
         for (const result of Object.keys(results).map(key => results[key])) {
             expect(result.context).toEqual(defaultContext);
         }
-    })
+    });
+    it("should override tartan.context.default.json with tartan.context.json", async () => {
+        const overrideContext: TartanContextFile = {
+            pageMode: "file",
+            pageSource: "not-index.html",
+            pagePattern: "*.md",
+        };
+
+        mock({
+            "/mock/src": {
+                "subpage": {
+                    "tartan.context.json": JSON.stringify(overrideContext),
+                },
+            },
+        });
+
+        const results = await directoryProcessor.loadContextTree();
+        expect(results["src"].context).toEqual({
+            pageMode: "directory",
+            pageSource: "index.html",
+        });
+
+        expect(results["src/subpage/"].context).toEqual(overrideContext);
+    });
+    it("should not inherit properties from parents if `inherit` is false", async () => {
+        const defaultContextFile: TartanContextFile = {
+            pageMode: "file",
+            pageSource: "index.md",
+            pagePattern: "*.md",
+        };
+
+        mock({
+            "/mock/src": {
+                "tartan.context.default.json": JSON.stringify(defaultContextFile),
+                "subpage": {
+                    "tartan.context.json": JSON.stringify({inherit: false} as TartanContextFile),
+                },
+            },
+        });
+
+        const results = await directoryProcessor.loadContextTree();
+
+        expect(results).toEqual({
+            "src": {
+                context: defaultContextFile,
+                parent: undefined,
+            },
+            "src/subpage/": {
+                context: {...rootContext},
+                parent: "src",
+            },
+        });
+    });
+    it("should stop the cascade of inheritance if `inherit` is false in a default context file", async () => {
+        const rootDefaultContext: TartanContextFile = {
+            pageMode: "file",
+            pageSource: "index.md",
+            pagePattern: "*.md",
+        };
+        const subDefaultContext: TartanContextFile = {
+            inherit: false,
+        };
+
+        mock({
+            "/mock/src": {
+                "tartan.context.default.json": JSON.stringify(rootDefaultContext),
+                "page": {
+                    "tartan.context.default.json": JSON.stringify(subDefaultContext),
+                    "subpage": {},
+                },
+            },
+        });
+
+        const results = await directoryProcessor.loadContextTree();
+
+        expect(results).toEqual({
+            "src": {
+                context: rootDefaultContext,
+                parent: undefined,
+            },
+            "src/page/": {
+                context: rootContext,
+                parent: "src",
+            },
+            "src/page/subpage/": {
+                context: rootContext,
+                parent: "src/page/",
+            },
+        });
+    });
 });
