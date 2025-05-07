@@ -18,7 +18,11 @@ export interface PageProcessorConfig {
      */
     context: TartanContext;
     /**
-     * The fully resolved output directory (as an absolute path).
+     * The depth of this page within the root directory
+     */
+    depth?: number;
+    /**
+     * The fully resolved output directory (as an absolute path), *unless it's modified by the sourceProcessor*
      */
     outputDir: string;
     /**
@@ -40,12 +44,6 @@ export class PageProcessor {
 
     public async process(): Promise<PageMeta> {
         Logger.log(this.config, 2);
-        try {
-            await fs.access(this.config.outputDir);
-        }
-        catch {
-            await fs.mkdir(this.config.outputDir, {recursive: true});
-        }
         // load and process the content
         const pageContent = await fs.readFile(this.config.sourcePath);
         Logger.log(pageContent.toString(), 2);
@@ -53,6 +51,7 @@ export class PageProcessor {
             await this.context.sourceProcessor({
                 context: this.context,
                 sourceContents: pageContent.toString(),
+                depth: this.config.depth || 0,
                 subpageMeta: this.config.subpageMeta,
             })
             : {processedContents: pageContent.toString()};
@@ -89,7 +88,16 @@ export class PageProcessor {
         Logger.log(`input from ${this.config.sourcePath}`)
 
         // now write to the output directory
-        const outputFilename = path.join(this.config.outputDir, "index.html");
+        let outputFilename = path.join(this.config.outputDir, "index.html");
+        if (processorOutput.outputDir) {
+            outputFilename = path.join(
+                path.dirname(this.config.outputDir),
+                processorOutput.outputDir,
+                "index.html",
+            );
+            pageMeta.outputDir = path.dirname(outputFilename);
+        }
+        await fs.mkdir(pageMeta.outputDir, {recursive: true});
         await fs.writeFile(outputFilename, processedHTML.content);
 
         await this.writeDependencies(processedHTML.dependencies);
