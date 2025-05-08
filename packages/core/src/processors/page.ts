@@ -95,6 +95,10 @@ export class PageProcessor {
                 processorOutput.outputDir,
                 "index.html",
             );
+            const relativeToOutput = path.relative(path.dirname(this.config.outputDir), outputFilename);
+            if (relativeToOutput.startsWith("..") || relativeToOutput === "") {
+                throw `output dir (modified by source processor) for page with source ${this.config.sourcePath} is invalid`;
+            }
             pageMeta.outputDir = path.dirname(outputFilename);
         }
         await fs.mkdir(pageMeta.outputDir, {recursive: true});
