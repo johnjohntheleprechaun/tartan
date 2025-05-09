@@ -97,13 +97,13 @@ export class PageProcessor {
             );
             const relativeToOutput = path.relative(path.dirname(this.config.outputDir), pageMeta.outputDir);
             if (relativeToOutput.startsWith("..") || relativeToOutput === "") {
-                throw `output dir (modified by source processor) for page with source ${this.config.sourcePath} is invalid`;
+                throw new InvalidOutputDirectoryError(`output dir (modified by source processor) for page with source ${this.config.sourcePath} is invalid`);
             }
             outputFilename = path.join(pageMeta.outputDir, "index.html");
         }
         if (PageProcessor.directoriesOutputed.includes(pageMeta.outputDir)) {
             Logger.log(PageProcessor.directoriesOutputed);
-            throw "duplicate output directory provided by a source processor";
+            throw new InvalidOutputDirectoryError("duplicate output directory provided by a source processor");
         }
         PageProcessor.directoriesOutputed.push(pageMeta.outputDir);
         await fs.mkdir(pageMeta.outputDir, {recursive: true});
@@ -129,5 +129,11 @@ export class PageProcessor {
                 relativeToRoot,
             ));
         }
+    }
+}
+
+export class InvalidOutputDirectoryError extends Error {
+    constructor(message: string) {
+        super(message);
     }
 }
