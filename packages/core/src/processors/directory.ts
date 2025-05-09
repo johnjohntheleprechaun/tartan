@@ -159,6 +159,7 @@ export class DirectoryProcessor {
     private mergeContexts(a: TartanContext, b: TartanContext): TartanContext {
         if (b.inherit === false) {
             a = this.rootContext;
+            delete b.inherit;
         }
 
         return {...a, ...b};

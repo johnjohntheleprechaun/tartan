@@ -18,7 +18,11 @@ export interface PageProcessorConfig {
      */
     context: TartanContext;
     /**
-     * The fully resolved output directory (as an absolute path).
+     * The depth of this page within the root directory
+     */
+    depth?: number;
+    /**
+     * The fully resolved output directory (as an absolute path), *unless it's modified by the sourceProcessor*
      */
     outputDir: string;
     /**
@@ -30,6 +34,7 @@ export class PageProcessor {
     private readonly config: PageProcessorConfig;
     private readonly projectConfig: TartanConfig;
     private readonly context: TartanContext;
+    public static directoriesOutputed: string[] = [];
 
     constructor(pageConfig: PageProcessorConfig, projectConfig: TartanConfig, resolver: Resolver) {
         this.config = pageConfig;
@@ -40,12 +45,6 @@ export class PageProcessor {
 
     public async process(): Promise<PageMeta> {
         Logger.log(this.config, 2);
-        try {
-            await fs.access(this.config.outputDir);
-        }
-        catch {
-            await fs.mkdir(this.config.outputDir, {recursive: true});
-        }
         // load and process the content
         const pageContent = await fs.readFile(this.config.sourcePath);
         Logger.log(pageContent.toString(), 2);
@@ -53,6 +52,7 @@ export class PageProcessor {
             await this.context.sourceProcessor({
                 context: this.context,
                 sourceContents: pageContent.toString(),
+                depth: this.config.depth || 0,
                 subpageMeta: this.config.subpageMeta,
             })
             : {processedContents: pageContent.toString()};
@@ -89,7 +89,24 @@ export class PageProcessor {
         Logger.log(`input from ${this.config.sourcePath}`)
 
         // now write to the output directory
-        const outputFilename = path.join(this.config.outputDir, "index.html");
+        let outputFilename = path.join(this.config.outputDir, "index.html");
+        if (processorOutput.outputDir) {
+            pageMeta.outputDir = path.join(
+                path.dirname(this.config.outputDir),
+                processorOutput.outputDir,
+            );
+            const relativeToOutput = path.relative(path.dirname(this.config.outputDir), pageMeta.outputDir);
+            if (relativeToOutput.startsWith("..") || relativeToOutput === "") {
+                throw new InvalidOutputDirectoryError(`output dir (modified by source processor) for page with source ${this.config.sourcePath} is invalid`);
+            }
+            outputFilename = path.join(pageMeta.outputDir, "index.html");
+        }
+        if (PageProcessor.directoriesOutputed.includes(pageMeta.outputDir)) {
+            Logger.log(PageProcessor.directoriesOutputed);
+            throw new InvalidOutputDirectoryError("duplicate output directory provided by a source processor");
+        }
+        PageProcessor.directoriesOutputed.push(pageMeta.outputDir);
+        await fs.mkdir(pageMeta.outputDir, {recursive: true});
         await fs.writeFile(outputFilename, processedHTML.content);
 
         await this.writeDependencies(processedHTML.dependencies);
@@ -112,5 +129,11 @@ export class PageProcessor {
                 relativeToRoot,
             ));
         }
+    }
+}
+
+export class InvalidOutputDirectoryError extends Error {
+    constructor(message: string) {
+        super(message);
     }
 }

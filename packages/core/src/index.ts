@@ -83,7 +83,7 @@ export class TartanProject {
         /*
          * The page processing function
          */
-        const processPage = async (page: string, context: TartanContext, subpageMeta: SubPageMeta[]): Promise<PageMeta> => {
+        const processPage = async (page: string, context: TartanContext, depth: number, subpageMeta: SubPageMeta[]): Promise<PageMeta> => {
             Logger.log(`${page} : ${context}`);
             let sourcePath: string;
             let outputDir: string;
@@ -105,6 +105,7 @@ export class TartanProject {
                 context: context,
                 outputDir,
                 subpageMeta: subpageMeta,
+                depth,
             }, this.config, this.resolver);
 
             const result = await pageProcessor.process();
@@ -120,7 +121,7 @@ export class TartanProject {
                 results = results.concat(await processFromBottom(child, depth + 1));
             }
             return results.concat({
-                ...(await processPage(node.key, node.value, results.map(a => ({...a, distance: a.depth - depth})))),
+                ...(await processPage(node.key, node.value, depth, results.map(a => ({...a, distance: a.depth - depth})))),
                 depth: depth,
             } as SubPageMetaWithDepth);
         }
