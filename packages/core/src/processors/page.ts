@@ -34,6 +34,7 @@ export class PageProcessor {
     private readonly config: PageProcessorConfig;
     private readonly projectConfig: TartanConfig;
     private readonly context: TartanContext;
+    public static directoriesOutputed: string[] = [];
 
     constructor(pageConfig: PageProcessorConfig, projectConfig: TartanConfig, resolver: Resolver) {
         this.config = pageConfig;
@@ -90,17 +91,21 @@ export class PageProcessor {
         // now write to the output directory
         let outputFilename = path.join(this.config.outputDir, "index.html");
         if (processorOutput.outputDir) {
-            outputFilename = path.join(
+            pageMeta.outputDir = path.join(
                 path.dirname(this.config.outputDir),
                 processorOutput.outputDir,
-                "index.html",
             );
-            const relativeToOutput = path.relative(path.dirname(this.config.outputDir), outputFilename);
+            const relativeToOutput = path.relative(path.dirname(this.config.outputDir), pageMeta.outputDir);
             if (relativeToOutput.startsWith("..") || relativeToOutput === "") {
                 throw `output dir (modified by source processor) for page with source ${this.config.sourcePath} is invalid`;
             }
-            pageMeta.outputDir = path.dirname(outputFilename);
+            outputFilename = path.join(pageMeta.outputDir, "index.html");
         }
+        if (PageProcessor.directoriesOutputed.includes(pageMeta.outputDir)) {
+            Logger.log(PageProcessor.directoriesOutputed);
+            throw "duplicate output directory provided by a source processor";
+        }
+        PageProcessor.directoriesOutputed.push(pageMeta.outputDir);
         await fs.mkdir(pageMeta.outputDir, {recursive: true});
         await fs.writeFile(outputFilename, processedHTML.content);
 
