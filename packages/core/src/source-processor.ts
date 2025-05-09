@@ -52,9 +52,18 @@ export type SourceProcessorInput = {
      * When pageMode is `file`, all pages matched by `pagePattern` are considered to be on the same level, and the page matched by `pageSource` is one level above them.
      */
     subpageMeta: SubPageMeta[];
+    /**
+     * The depth of this page within the root dir.
+     */
+    depth: number;
 }
 export type SourceProcessorOutput = {
     processedContents: string;
+    /**
+     * Source processors are allowed to change the directory the page is outputted to.
+     * This directory is relative to the parent, so effectively it's just *renaming* the page.
+     */
+    outputDir?: string;
     extraMeta?: any;
 }
 export type SourceProcessor = (input: SourceProcessorInput) => SourceProcessorOutput | Promise<SourceProcessorOutput>;
