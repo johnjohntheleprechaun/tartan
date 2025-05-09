@@ -37,7 +37,6 @@ describe("The PageProcessor class", () => {
             const processedHTML = await new HTMLProcessor(sourceContent, resolver).process();
             mock({
                 "src/index.html": sourceContent,
-                "../../node_modules/": mock.load("../../node_modules/"),
             });
 
             const result = await pageProcessor.process();
