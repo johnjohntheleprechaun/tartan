@@ -4,20 +4,14 @@ import fsSync from "fs";
 import path from "path";
 import {TartanConfig} from "../tartan-config.js";
 import {TartanContext, TartanContextFile} from "../tartan-context.js";
-import Handlebars from "handlebars";
 import {glob} from "glob";
 import {Logger} from "../logger.js";
-import {SourceProcessor} from "../source-processor.js";
 
 export class DirectoryProcessor {
     private readonly resolver: Resolver;
     private projectConfig: TartanConfig;
     public contextTree: {[key: string]: {context: TartanContext, parent?: string}} = {};
-    private readonly rootContext: TartanContext = {
-        pageMode: "directory",
-        pageSource: "index.html",
-    }
-
+    private rootContext: TartanContext = {pageMode: "directory", pageSource: "index.html"};
     /**
      * @param config The project's config
      * @param resolver The fully initialized module resovler to use
@@ -32,6 +26,10 @@ export class DirectoryProcessor {
      * `this.contextTree` is set to the result, and returned.
      */
     public async loadContextTree(): Promise<typeof this.contextTree> {
+        // This should be... better.
+        if (this.projectConfig.rootContext) {
+            this.rootContext = await this.resolver.initializeContext(this.projectConfig.rootContext);
+        }
         // Go through the treeeeeee
         type QueueItem = {
             path: string;
@@ -185,21 +183,6 @@ export class DirectoryProcessor {
             contextFile = JSON.parse(contents);
         }
 
-        const context: TartanContext = {
-            ...contextFile,
-            template: contextFile.template ? Handlebars.compile(
-                (await fs.readFile(this.resolver.resolveTemplateName(contextFile.template) || this.resolver.resolvePath(contextFile.template, contextPath))).toString()
-            ) : undefined,
-            sourceProcessor: contextFile.sourceProcessor ? await Resolver.import(this.resolver.resolvePath(contextFile.sourceProcessor, contextPath)) as SourceProcessor : undefined,
-        }
-
-        if (context.template === undefined) {
-            delete context.template;
-        }
-        if (context.sourceProcessor === undefined) {
-            delete context.sourceProcessor;
-        }
-
-        return context;
+        return this.resolver.initializeContext(contextFile, contextPath);
     }
 }

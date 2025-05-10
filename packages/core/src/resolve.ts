@@ -4,6 +4,9 @@ import path from "path";
 import fs from "fs/promises";
 import {createRequire} from "module";
 import {Logger} from "./logger.js";
+import {TartanContext, TartanContextFile} from "./tartan-context.js";
+import {SourceProcessor} from "./source-processor.js";
+import Handlebars from "handlebars";
 
 const require = createRequire(import.meta.url);
 
@@ -135,6 +138,29 @@ export class Resolver {
         const modulePath = this.resolveImport(moduleSpecifier, relativeTo);
         return import(modulePath).then(a => a.default);
     }
+
+    /**
+     * Load the source processor and template file, assuming the contextFile is at path
+     */
+    public async initializeContext(contextFile: TartanContextFile, filePath: string = path.join(process.cwd(), "notarealfilebutitdoesntmatter")): Promise<TartanContext> {
+        const context: TartanContext = {
+            ...contextFile,
+            template: contextFile.template ? Handlebars.compile(
+                (await fs.readFile(this.resolveTemplateName(contextFile.template) || this.resolvePath(contextFile.template, filePath))).toString()
+            ) : undefined,
+            sourceProcessor: contextFile.sourceProcessor ? await Resolver.import(this.resolvePath(contextFile.sourceProcessor, filePath)) as SourceProcessor : undefined,
+        }
+
+        if (context.template === undefined) {
+            delete context.template;
+        }
+        if (context.sourceProcessor === undefined) {
+            delete context.sourceProcessor;
+        }
+
+        return context;
+    }
+
 
     /**
      * Resolve a module specifier relative to a directory.

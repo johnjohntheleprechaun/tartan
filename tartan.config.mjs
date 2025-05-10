@@ -4,7 +4,11 @@
 export default {
     rootDir: "docs/root/",
     outputDir: "docs/dist",
-    pathPrefixes: {
-        "~templates/": "docs/templates/",
+    rootContext: {
+        pageMode: "file",
+        pageSource: "index.md",
+        pagePattern: "*.md",
+        sourceProcessor: "docs/processor.mjs",
+        template: "docs/base-template.html",
     },
 };
