@@ -1,5 +1,5 @@
 import {JSONSchema, FromSchema} from "json-schema-to-ts";
-import {tartanContextSchema} from "./tartan-context.js";
+import {TartanContextFile, tartanContextSchema} from "./tartan-context.js";
 import {ReplaceTypes} from "./util.js";
 
 export const tartanConfigSchema = {
@@ -28,6 +28,24 @@ export const tartanConfigSchema = {
         },
         rootContext: {
             ...tartanContextSchema,
+            allOf: [
+                {
+                    if: {
+                        properties: {pageMode: {const: "file"}},
+                    },
+                    then: {
+                        required: ["pageSource"],
+                    },
+                },
+                {
+                    if: {
+                        properties: {pageMode: {const: "directory"}},
+                    },
+                    then: {
+                        required: ["pagePattern"],
+                    },
+                },
+            ],
         },
     },
     required: [
@@ -37,4 +55,7 @@ export const tartanConfigSchema = {
     additionalProperties: false,
 } as const satisfies JSONSchema;
 
-export type TartanConfig = FromSchema<typeof tartanConfigSchema>;
+export type TartanConfig = ReplaceTypes<FromSchema<typeof tartanConfigSchema>, {
+    rootContext?: ReplaceTypes<TartanContextFile, {pageMode: "file", pagePattern: string}>
+    | ReplaceTypes<TartanContextFile, {pageMode: "directory", pageSource: string}>
+}>;

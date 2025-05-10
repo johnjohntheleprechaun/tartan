@@ -3,7 +3,7 @@ import fs from "fs/promises";
 import fsSync from "fs";
 import path from "path";
 import {TartanConfig} from "../tartan-config.js";
-import {TartanContext, TartanContextFile} from "../tartan-context.js";
+import {PartialTartanContext, TartanContext, TartanContextFile} from "../tartan-context.js";
 import {glob} from "glob";
 import {Logger} from "../logger.js";
 
@@ -28,7 +28,7 @@ export class DirectoryProcessor {
     public async loadContextTree(): Promise<typeof this.contextTree> {
         // This should be... better.
         if (this.projectConfig.rootContext) {
-            this.rootContext = await this.resolver.initializeContext(this.projectConfig.rootContext);
+            this.rootContext = await this.resolver.initializeContext(this.projectConfig.rootContext) as TartanContext;
         }
         // Go through the treeeeeee
         type QueueItem = {
@@ -36,7 +36,7 @@ export class DirectoryProcessor {
             parent?: string;
         };
         const queue: QueueItem[] = [{path: path.normalize(this.projectConfig.rootDir)}];
-        const results: {[key: string]: {defaultContext: TartanContext, currentContext: TartanContext, mergedContext: TartanContext, parent?: string}} = {};
+        const results: {[key: string]: {defaultContext: PartialTartanContext, currentContext: PartialTartanContext, mergedContext: PartialTartanContext, parent?: string}} = {};
         let queueSize = 1;
         for (let i = 0; i < queueSize; i++) {
             /**
@@ -80,8 +80,8 @@ export class DirectoryProcessor {
                 contextFilename = dirContents.find((val) => new RegExp(`^${path.basename(item.path)}\\.context\\.(mjs|js|json)$`).exec(val.name) && val.isFile());
             }
 
-            let defaultContext: TartanContext = {};
-            let currentContext: TartanContext = {};
+            let defaultContext: PartialTartanContext = {};
+            let currentContext: PartialTartanContext = {};
 
             if (defaultContextFilename) {
                 const loadedContext = await this.loadContext(path.join(dir, defaultContextFilename.name));
@@ -138,7 +138,7 @@ export class DirectoryProcessor {
 
         for (const key in results) {
             this.contextTree[key] = {
-                context: results[key].mergedContext,
+                context: results[key].mergedContext as TartanContext,
                 parent: results[key].parent,
             };
         }
@@ -154,7 +154,7 @@ export class DirectoryProcessor {
      *
      * @returns The merged context object.
      */
-    private mergeContexts(a: TartanContext, b: TartanContext): TartanContext {
+    private mergeContexts(a: PartialTartanContext, b: PartialTartanContext): PartialTartanContext {
         if (b.inherit === false) {
             a = this.rootContext;
             delete b.inherit;
@@ -169,7 +169,7 @@ export class DirectoryProcessor {
      * @param contextPath The path to the context file.
      * @returns The context object.
      */
-    private async loadContext(contextPath: string): Promise<TartanContext> {
+    private async loadContext(contextPath: string): Promise<PartialTartanContext> {
         if (!contextPath.startsWith("./")) {
             contextPath = path.join("./", contextPath);
         }

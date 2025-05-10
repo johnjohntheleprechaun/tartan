@@ -2,7 +2,7 @@ import {Resolver} from "../resolve.js";
 import fs from "fs/promises";
 import path from "path";
 import {TartanConfig} from "../tartan-config.js";
-import {TartanContext} from "../tartan-context.js";
+import {PartialTartanContext} from "../tartan-context.js";
 import {HTMLProcessor} from "./html.js";
 import {Logger} from "../logger.js";
 import {PageMeta, SourceProcessorOutput, SubPageMeta} from "../source-processor.js";
@@ -16,7 +16,7 @@ export interface PageProcessorConfig {
     /**
      * The fully processed context for this page.
      */
-    context: TartanContext;
+    context: PartialTartanContext;
     /**
      * The depth of this page within the root directory
      */
@@ -33,7 +33,7 @@ export class PageProcessor {
     private readonly resolver: Resolver;
     private readonly config: PageProcessorConfig;
     private readonly projectConfig: TartanConfig;
-    private readonly context: TartanContext;
+    private readonly context: PartialTartanContext;
     public static directoriesOutputed: string[] = [];
 
     constructor(pageConfig: PageProcessorConfig, projectConfig: TartanConfig, resolver: Resolver) {

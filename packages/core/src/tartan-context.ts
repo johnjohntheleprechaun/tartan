@@ -44,7 +44,9 @@ export const tartanContextSchema = {
 } as const satisfies JSONSchema;
 
 export type TartanContextFile = FromSchema<typeof tartanContextSchema>;
-export type TartanContext = ReplaceTypes<TartanContextFile, {
+export type PartialTartanContext = ReplaceTypes<TartanContextFile, {
     sourceProcessor?: SourceProcessor;
     template?: ReturnType<typeof Handlebars.compile>;
 }>;
+export type TartanContext = ReplaceTypes<PartialTartanContext, {pageMode: "file", pageSource?: string, pagePattern: string}>
+    | ReplaceTypes<PartialTartanContext, {pageMode: "directory", pageSource: string}>;

@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs/promises";
 import {createRequire} from "module";
 import {Logger} from "./logger.js";
-import {TartanContext, TartanContextFile} from "./tartan-context.js";
+import {PartialTartanContext, TartanContextFile} from "./tartan-context.js";
 import {SourceProcessor} from "./source-processor.js";
 import Handlebars from "handlebars";
 
@@ -142,8 +142,8 @@ export class Resolver {
     /**
      * Load the source processor and template file, assuming the contextFile is at path
      */
-    public async initializeContext(contextFile: TartanContextFile, filePath: string = path.join(process.cwd(), "notarealfilebutitdoesntmatter")): Promise<TartanContext> {
-        const context: TartanContext = {
+    public async initializeContext(contextFile: TartanContextFile, filePath: string = path.join(process.cwd(), "notarealfilebutitdoesntmatter")): Promise<PartialTartanContext> {
+        const context: PartialTartanContext = {
             ...contextFile,
             template: contextFile.template ? Handlebars.compile(
                 (await fs.readFile(this.resolveTemplateName(contextFile.template) || this.resolvePath(contextFile.template, filePath))).toString()

@@ -3,12 +3,12 @@ import {DirectoryProcessor, PageProcessor} from "./processors/index.js";
 import {Resolver} from "./resolve.js";
 import {TartanConfig} from "./tartan-config.js";
 import path from "path";
-import {TartanContext} from "./tartan-context.js";
+import {PartialTartanContext} from "./tartan-context.js";
 import {PageMeta, SubPageMeta} from "./source-processor.js";
 
 type TreeNode = {
     key: string;
-    value: TartanContext;
+    value: PartialTartanContext;
     children: TreeNode[];
 };
 type SubPageMetaWithDepth = Omit<SubPageMeta, "distance"> & {depth: number};
@@ -83,7 +83,7 @@ export class TartanProject {
         /*
          * The page processing function
          */
-        const processPage = async (page: string, context: TartanContext, depth: number, subpageMeta: SubPageMeta[]): Promise<PageMeta> => {
+        const processPage = async (page: string, context: PartialTartanContext, depth: number, subpageMeta: SubPageMeta[]): Promise<PageMeta> => {
             Logger.log(`${page} : ${context}`);
             let sourcePath: string;
             let outputDir: string;
