@@ -101,6 +101,54 @@ describe("The PageProcessor class", () => {
             await processorOne.process();
             await expectAsync(processorTwo.process()).toBeRejectedWithError(InvalidOutputDirectoryError);
         });
+        it("should pass return the modified output directory, not the original output directory", async () => {
+            const outputDir: string = crypto.randomUUID();
+            const sourceProcessor: SourceProcessor = (input) => ({
+                processedContents: input.sourceContents,
+                outputDir,
+            });
+            const processor = new PageProcessor({
+                context: {
+                    sourceProcessor,
+                },
+                subpageMeta: [],
+                sourcePath: "src/index.html",
+                outputDir: crypto.randomUUID(),
+            }, projectConfig, resolver);
+
+            mock({
+                "src/index.html": "",
+            });
+
+            const result = await processor.process();
+            expect(result.outputDir).toBe(outputDir);
+        });
+        it("should pass through extra meta from the source processor", async () => {
+            const extraMeta: any = {
+                someData: "asdlkfjansldkfjsdf",
+                someOtherData: "adslfjnlaskdjcnlkajsndlkjnasdf",
+            };
+            const sourceProcessor: SourceProcessor = (input) => ({
+                processedContents: input.sourceContents,
+                extraMeta,
+            });
+            const processor = new PageProcessor({
+                context: {
+                    sourceProcessor,
+                },
+                subpageMeta: [],
+                sourcePath: "src/index.html",
+                outputDir: crypto.randomUUID(),
+            }, projectConfig, resolver);
+
+            mock({
+                "src/index.html": "",
+            });
+
+            const result = await processor.process();
+            expect(result.extra).toEqual(extraMeta);
+
+        });
     });
     describe("(when using a template)", () => {
         it("", async () => {
