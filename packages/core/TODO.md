@@ -1,1 +1,1 @@
-[] Figure what the heck I needed to do lol
+[] update `resolver.loadObjectFromFile` to return undefined, and then use it to load context files.
