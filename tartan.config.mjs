@@ -8,7 +8,7 @@ export default {
         pageMode: "file",
         pageSource: "index.md",
         pagePattern: "*.md",
-        sourceProcessor: "docs/processor.mjs",
+        sourceProcessor: "./docs/processor.ts",
         template: "docs/base-template.html",
     },
 };

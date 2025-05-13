@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S npx tsx
 
 import {Command} from "@commander-js/extra-typings";
 import {Resolver, TartanConfig, TartanProject} from "@tartan/core";
