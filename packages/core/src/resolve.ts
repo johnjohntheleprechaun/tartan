@@ -135,14 +135,16 @@ export class Resolver {
      * @returns The default export of the module.
      */
     public static async import<T>(moduleSpecifier: string, relativeTo?: string): Promise<T> {
+        Logger.log(`importing module ${moduleSpecifier} relative to ${relativeTo}`);
         const modulePath = this.resolveImport(moduleSpecifier, relativeTo);
+        Logger.log(`resolved path is ${modulePath}`);
         return import(modulePath).then(a => a.default);
-    }
+    };
 
     /**
      * Load the source processor and template file, assuming the contextFile is at path
      */
-    public async initializeContext(contextFile: TartanContextFile, filePath: string = path.join(process.cwd(), "notarealfilebutitdoesntmatter")): Promise<PartialTartanContext> {
+    public async initializeContext(contextFile: TartanContextFile, filePath: string = path.join(process.cwd(), "defaultvaluethisfileisignored")): Promise<PartialTartanContext> {
         const context: PartialTartanContext = {
             ...contextFile,
             template: contextFile.template ? Handlebars.compile(
