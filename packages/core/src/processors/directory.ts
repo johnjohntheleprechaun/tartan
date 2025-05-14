@@ -46,20 +46,17 @@ export class DirectoryProcessor {
             Logger.log(item);
             Logger.log(queue.slice(i));
 
+            let contextFilename: string;
             let dir: string;
-            let dirContents: fsSync.Dirent[];
-            let defaultContextFilename: fsSync.Dirent | undefined;
-            let contextFilename: fsSync.Dirent | undefined;
 
             const isDirectory = (await fs.stat(item.path)).isDirectory();
             Logger.log(isDirectory);
             if (isDirectory) {
                 dir = item.path;
-                dirContents = await fs.readdir(item.path, {withFileTypes: true});
-                defaultContextFilename = dirContents.find((val) => /^tartan\.context\.default\.(mjs|js|json)$/.exec(val.name) && val.isFile());
-                contextFilename = dirContents.find((val) => /^tartan\.context\.(mjs|js|json)$/.exec(val.name) && val.isFile());
+                contextFilename = "tartan.context";
 
                 // add child directories
+                const dirContents = await fs.readdir(item.path, {withFileTypes: true});
                 for (const child of dirContents) {
                     Logger.log(child)
                     if (child.isDirectory()) {
@@ -74,17 +71,18 @@ export class DirectoryProcessor {
                 }
             }
             else {
-                dir = path.join(path.dirname(item.path), "./");
-                dirContents = await fs.readdir(path.dirname(item.path), {withFileTypes: true});
-                defaultContextFilename = dirContents.find((val) => /^tartan\.context\.default\.(mjs|js|json)$/.exec(val.name) && val.isFile());
-                contextFilename = dirContents.find((val) => new RegExp(`^${path.basename(item.path)}\\.context\\.(mjs|js|json)$`).exec(val.name) && val.isFile());
+                dir = path.dirname(item.path);
+                contextFilename = `${path.basename(item.path)}.context`;
             }
 
-            let defaultContext: PartialTartanContext = {};
+            let defaultContextFile: TartanContextFile | undefined = await Resolver.loadObjectFromFile<TartanContextFile>(path.join(dir, "tartan.context.default"));
+            let currentContextFile: TartanContextFile | undefined = await Resolver.loadObjectFromFile<TartanContextFile>(path.join(dir, contextFilename));
+
+            let defaultContext: PartialTartanContext;
             let currentContext: PartialTartanContext = {};
 
-            if (defaultContextFilename) {
-                const loadedContext = await this.loadContext(path.join(dir, defaultContextFilename.name));
+            if (defaultContextFile) {
+                const loadedContext: PartialTartanContext = await this.resolver.initializeContext(defaultContextFile);
                 defaultContext = this.mergeContexts(item.parent ? results[item.parent].defaultContext : this.rootContext, loadedContext);
             }
             else if (!item.parent) {
@@ -95,15 +93,16 @@ export class DirectoryProcessor {
             }
 
             // get context
-            if (contextFilename) {
-                currentContext = await this.loadContext(path.join(dir, contextFilename.name));
+            if (currentContextFile) {
+                const loadedContext: PartialTartanContext = await this.resolver.initializeContext(currentContextFile);
+                currentContext = loadedContext;
             }
 
             const contexts = {
                 defaultContext,
                 currentContext,
                 mergedContext: this.mergeContexts(defaultContext, currentContext),
-            }
+            };
 
             // Add pages to the queue for file mode
             if (isDirectory && contexts.mergedContext.pageMode === "file") {
