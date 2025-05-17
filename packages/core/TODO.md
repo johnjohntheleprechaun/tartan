@@ -1,1 +1,2 @@
-[] update `resolver.loadObjectFromFile` to return undefined, and then use it to load context files.
+- Decide whether to remove the spec testing the order of priority of files when using `loadObjectFromFile`
+- Somehow check if it's being run with `tsx`, and only support typescript if it is
