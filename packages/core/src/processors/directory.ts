@@ -161,27 +161,4 @@ export class DirectoryProcessor {
 
         return {...a, ...b};
     }
-
-    /**
-     * Load a context file, whether it's a js module or a JSON file.
-     *
-     * @param contextPath The path to the context file.
-     * @returns The context object.
-     */
-    private async loadContext(contextPath: string): Promise<PartialTartanContext> {
-        if (!contextPath.startsWith("./")) {
-            contextPath = path.join("./", contextPath);
-        }
-        let contextFile: TartanContextFile = {};
-        if (contextPath.endsWith(".js") || contextPath.endsWith(".mjs")) {
-            const module = await Resolver.import<TartanContextFile>("." + path.sep + contextPath);
-            contextFile = module;
-        }
-        else if (contextPath.endsWith(".json")) {
-            const contents = (await fs.readFile(contextPath)).toString();
-            contextFile = JSON.parse(contents);
-        }
-
-        return this.resolver.initializeContext(contextFile, contextPath);
-    }
 }
