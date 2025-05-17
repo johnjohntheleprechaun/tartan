@@ -48,5 +48,5 @@ export type PartialTartanContext = ReplaceTypes<TartanContextFile, {
     sourceProcessor?: SourceProcessor;
     template?: ReturnType<typeof Handlebars.compile>;
 }>;
-export type TartanContext = ReplaceTypes<PartialTartanContext, {pageMode: "file", pageSource?: string, pagePattern: string}>
+export type FullTartanContext = ReplaceTypes<PartialTartanContext, {pageMode: "file", pageSource?: string, pagePattern: string}>
     | ReplaceTypes<PartialTartanContext, {pageMode: "directory", pageSource: string}>;

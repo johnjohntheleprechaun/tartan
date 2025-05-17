@@ -3,15 +3,15 @@ import fs from "fs/promises";
 import fsSync from "fs";
 import path from "path";
 import {TartanConfig} from "../tartan-config.js";
-import {PartialTartanContext, TartanContext, TartanContextFile} from "../tartan-context.js";
+import {PartialTartanContext, FullTartanContext, TartanContextFile} from "../tartan-context.js";
 import {glob} from "glob";
 import {Logger} from "../logger.js";
 
 export class DirectoryProcessor {
     private readonly resolver: Resolver;
     private projectConfig: TartanConfig;
-    public contextTree: {[key: string]: {context: TartanContext, parent?: string}} = {};
-    private rootContext: TartanContext = {pageMode: "directory", pageSource: "index.html"};
+    public contextTree: {[key: string]: {context: FullTartanContext, parent?: string}} = {};
+    private rootContext: FullTartanContext = {pageMode: "directory", pageSource: "index.html"};
     /**
      * @param config The project's config
      * @param resolver The fully initialized module resovler to use
@@ -28,7 +28,7 @@ export class DirectoryProcessor {
     public async loadContextTree(): Promise<typeof this.contextTree> {
         // This should be... better.
         if (this.projectConfig.rootContext) {
-            this.rootContext = await this.resolver.initializeContext(this.projectConfig.rootContext) as TartanContext;
+            this.rootContext = await this.resolver.initializeContext(this.projectConfig.rootContext) as FullTartanContext;
         }
         // Go through the treeeeeee
         type QueueItem = {
@@ -137,7 +137,7 @@ export class DirectoryProcessor {
 
         for (const key in results) {
             this.contextTree[key] = {
-                context: results[key].mergedContext as TartanContext,
+                context: results[key].mergedContext as FullTartanContext,
                 parent: results[key].parent,
             };
         }
