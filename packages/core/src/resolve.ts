@@ -67,16 +67,28 @@ export class Resolver {
      * @param filename The path to the file (*without* any file extension).
      */
     public static async loadObjectFromFile<T>(filename: string): Promise<T | undefined> {
-        const extOrder = [
-            ".js",
-            ".mjs",
-            ".ts",
-            ".json",
-        ];
+        Logger.log(`Trying to load an object from ${filename}`, 2)
+        let extOrder: string[];
+        // @ts-expect-error
+        if ((process._preload_modules as string[]).some(el => el.includes("tsx"))) {
+            Logger.log("seems to be running inside tsx, you should be able to import .ts files", 2);
+            extOrder = [
+                ".js",
+                ".mjs",
+                ".ts",
+                ".json",
+            ];
+        }
+        else {
+            extOrder = [
+                ".js",
+                ".mjs",
+                ".json",
+            ];
+        }
 
         const extMap: Record<string, number> = extOrder.reduce((prev, curr, i) => ({...prev, [curr]: i}), {});
 
-        Logger.log(`trying to load object from ${filename}`, 2);
         const dirContents = await fs.readdir(path.dirname(filename), {withFileTypes: true});
 
         const possibleFiles = dirContents.filter(a => path.parse(a.name).name === path.basename(filename) && extMap[path.extname(a.name)] !== undefined);
