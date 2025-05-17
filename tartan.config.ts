@@ -1,6 +1,5 @@
-/**
- * @type import("@tartan/core").TartanConfig
- */
+import {TartanConfig} from "@tartan/core";
+
 export default {
     rootDir: "docs/root/",
     outputDir: "docs/dist",
@@ -8,7 +7,7 @@ export default {
         pageMode: "file",
         pageSource: "index.md",
         pagePattern: "*.md",
-        sourceProcessor: "docs/processor.mjs",
+        sourceProcessor: "./docs/processor.ts",
         template: "docs/base-template.html",
     },
-};
+} as TartanConfig;

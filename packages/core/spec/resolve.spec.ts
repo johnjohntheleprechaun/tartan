@@ -104,11 +104,10 @@ describe("The Resolver class", () => {
             mock.restore();
         });
 
-        it("should error if there's no valid file", async () => {
+        it("should return undefined if there's no valid file", async () => {
             mock();
-            let failed = false;
-            await Resolver.loadObjectFromFile("test").catch(() => {failed = true});
-            expect(failed).toBeTrue();
+            const result = await Resolver.loadObjectFromFile("test");
+            expect(result).toBeUndefined();
         });
         it("should correctly load JSON", async () => {
             const testObject = {
@@ -131,27 +130,23 @@ describe("The Resolver class", () => {
             await Resolver.loadObjectFromFile("test");
             expect(importSpy).toHaveBeenCalled();
         });
-        it("should prioritize JSON over JS modules", async () => {
-            const testObject = {
-                chicken: "jockey",
-            };
+        it("should prioritize modules over JSON", async () => {
             mock({
-                "test.json": JSON.stringify(testObject),
+                "test.json": "",
                 "test.mjs": "",
             });
 
             const importSpy = spyOn(Resolver, "import").and.returnValue(Promise.resolve({}));
-            const result = await Resolver.loadObjectFromFile("test");
-            expect(importSpy).not.toHaveBeenCalled();
-            expect(result).toEqual(testObject);
+            await Resolver.loadObjectFromFile("test");
+            expect(importSpy).toHaveBeenCalledWith("./test.mjs");
         });
-        it("should support both .js and .mjs extensions", async () => {
+        it("should support .js, .mjs, and .ts extensions", async () => {
+            const importSpy = spyOn(Resolver, "import").and.returnValue(Promise.resolve({}));
             mock({
                 "test.js": "",
             });
-            const importSpy = spyOn(Resolver, "import").and.returnValue(Promise.resolve({}));
             await Resolver.loadObjectFromFile("test");
-            expect(importSpy).toHaveBeenCalled();
+            expect(importSpy).toHaveBeenCalledWith("./test.js");
 
             importSpy.calls.reset();
 
@@ -159,7 +154,15 @@ describe("The Resolver class", () => {
                 "test.mjs": "",
             });
             await Resolver.loadObjectFromFile("test");
-            expect(importSpy).toHaveBeenCalled();
+            expect(importSpy).toHaveBeenCalledWith("./test.mjs");
+
+            importSpy.calls.reset();
+
+            mock({
+                "test.ts": "",
+            });
+            await Resolver.loadObjectFromFile("test");
+            expect(importSpy).toHaveBeenCalledWith("./test.ts");
         });
     });
 

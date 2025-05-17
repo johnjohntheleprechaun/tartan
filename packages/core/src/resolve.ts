@@ -62,27 +62,53 @@ export class Resolver {
     }
 
     /**
-     * Load an object from *either* a JSON file or a JS module where the object is the default export.
+     * Load an object from *either* a JSON file or a JS/TS module where the object is the default export.
      *
-     * @param path The path to the file (*without* the file extension).
+     * @param filename The path to the file (*without* any file extension).
      */
-    public static async loadObjectFromFile<T>(filename: string): Promise<T> {
-        const json = `${filename}.json`;
-        const module = `.${path.sep}${filename}.mjs`;
-        const js = `.${path.sep}${filename}.js`;
+    public static async loadObjectFromFile<T>(filename: string): Promise<T | undefined> {
+        Logger.log(`Trying to load an object from ${filename}`, 2)
+        let extOrder: string[];
+        // @ts-expect-error
+        if ((process._preload_modules as string[]).some(el => el.includes("tsx"))) {
+            Logger.log("seems to be running inside tsx, you should be able to import .ts files", 2);
+            extOrder = [
+                ".js",
+                ".mjs",
+                ".ts",
+                ".json",
+            ];
+        }
+        else {
+            extOrder = [
+                ".js",
+                ".mjs",
+                ".json",
+            ];
+        }
 
-        // check if JSON file exists
-        if (await fs.access(json).then(() => true).catch(() => false)) {
-            return JSON.parse((await fs.readFile(json)).toString());
+        const extMap: Record<string, number> = extOrder.reduce((prev, curr, i) => ({...prev, [curr]: i}), {});
+
+        const dirContents = await fs.readdir(path.dirname(filename), {withFileTypes: true});
+
+        const possibleFiles = dirContents.filter(a => path.parse(a.name).name === path.basename(filename) && extMap[path.extname(a.name)] !== undefined);
+        if (possibleFiles.length > 1) {
+            Logger.log(`${filename} is ambiguous (multiple possible extensions)`, 2);
         }
-        else if (await fs.access(module).then(() => true).catch(() => false)) {
-            return this.import(module)
-        }
-        else if (await fs.access(js).then(() => true).catch(() => false)) {
-            return this.import(js)
+        else if (possibleFiles.length === 0) {
+            Logger.log("no files found", 2);
+            return undefined;
         }
 
-        throw new Error("No file exists");
+        const dirent = possibleFiles.reduce((prev, curr) => extMap[path.extname(prev.name)] >= extMap[path.extname(curr.name)] ? curr : prev);
+        const filepath = `.${path.sep}` + path.join(dirent.parentPath, dirent.name);
+
+        if (path.extname(filepath) === ".json") {
+            return JSON.parse((await fs.readFile(filepath)).toString());
+        }
+        else {
+            return this.import(filepath);
+        }
     }
 
     /**
