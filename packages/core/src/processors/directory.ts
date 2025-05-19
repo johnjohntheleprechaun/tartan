@@ -1,17 +1,17 @@
-import {Resolver} from "../resolve.js";
+import { Resolver } from "../resolve.js";
 import fs from "fs/promises";
 import fsSync from "fs";
 import path from "path";
-import {TartanConfig} from "../tartan-config.js";
-import {PartialTartanContext, FullTartanContext, TartanContextFile} from "../tartan-context.js";
-import {glob} from "glob";
-import {Logger} from "../logger.js";
+import { TartanConfig } from "../tartan-config.js";
+import { PartialTartanContext, FullTartanContext, TartanContextFile } from "../tartan-context.js";
+import { glob } from "glob";
+import { Logger } from "../logger.js";
 
 export class DirectoryProcessor {
     private readonly resolver: Resolver;
     private projectConfig: TartanConfig;
-    public contextTree: {[key: string]: {context: FullTartanContext, parent?: string}} = {};
-    private rootContext: FullTartanContext = {pageMode: "directory", pageSource: "index.html"};
+    public contextTree: { [key: string]: { context: FullTartanContext, parent?: string } } = {};
+    private rootContext: FullTartanContext = { pageMode: "directory", pageSource: "index.html" };
     /**
      * @param config The project's config
      * @param resolver The fully initialized module resovler to use
@@ -35,8 +35,8 @@ export class DirectoryProcessor {
             path: string;
             parent?: string;
         };
-        const queue: QueueItem[] = [{path: path.normalize(this.projectConfig.rootDir)}];
-        const results: {[key: string]: {defaultContext: PartialTartanContext, currentContext: PartialTartanContext, mergedContext: PartialTartanContext, parent?: string}} = {};
+        const queue: QueueItem[] = [{ path: path.normalize(this.projectConfig.rootDir) }];
+        const results: { [key: string]: { defaultContext: PartialTartanContext, currentContext: PartialTartanContext, mergedContext: PartialTartanContext, parent?: string } } = {};
         let queueSize = 1;
         for (let i = 0; i < queueSize; i++) {
             /**
@@ -56,7 +56,7 @@ export class DirectoryProcessor {
                 contextFilename = "tartan.context";
 
                 // add child directories
-                const dirContents = await fs.readdir(item.path, {withFileTypes: true});
+                const dirContents = await fs.readdir(item.path, { withFileTypes: true });
                 for (const child of dirContents) {
                     Logger.log(child)
                     if (child.isDirectory()) {
@@ -159,6 +159,6 @@ export class DirectoryProcessor {
             delete b.inherit;
         }
 
-        return {...a, ...b};
+        return { ...a, ...b };
     }
 }
