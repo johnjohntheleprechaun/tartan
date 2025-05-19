@@ -1,4 +1,7 @@
-import {PageMeta, SubPageMeta} from "./source-processor.js";
+/**
+ * @format
+ */
+import { PageMeta, SubPageMeta } from "./source-processor.js";
 
 export interface HandlebarsContext {
     /**

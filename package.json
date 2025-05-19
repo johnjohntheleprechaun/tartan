@@ -6,6 +6,7 @@
     "devDependencies": {
         "@tartan/core": "^0.5.0",
         "@types/showdown": "^2.0.6",
+        "prettier": "^3.5.3",
         "showdown": "^2.1.0"
     },
     "scripts": {
