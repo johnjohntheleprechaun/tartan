@@ -1,3 +1,6 @@
+/**
+ * @format
+ */
 export class Logger {
     public static defaultLogLevel = 0;
     public static logLevel = this.defaultLogLevel;
