@@ -1,5 +1,6 @@
 - Decide whether to remove the spec testing the order of priority of files when using `loadObjectFromFile`
-- Start using [custom-elements-manifest](https://github.com/webcomponents/custom-elements-manifest)
+- Write tests for using [custom-elements-manifest](https://github.com/webcomponents/custom-elements-manifest)
 - Create a way to add processors for different file types
 - Merge HTML and Page processors, so that it's easier to handle renaming of dependencies
 - Create a way to ignore certain paths (maybe a regex or something)
+- Resolve the `package-lock.json` in a more dynamic way (searching upward until you find it)
