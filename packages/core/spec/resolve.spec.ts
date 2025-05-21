@@ -1,21 +1,24 @@
-import {Resolver} from "../src/resolve";
+/**
+ * @format
+ */
+import { Resolver } from "../src/resolve";
 import path from "path";
 import mock from "mock-fs";
-import {TartanModule} from "../src/tartan-module";
-import {TartanConfig} from "@tartan/core";
+import { TartanModule } from "../src/tartan-module";
+import { TartanConfig } from "@tartan/core";
 
 describe("The Resolver class", () => {
     describe("template resolver", () => {
         let resolver: Resolver;
-        let fakeLibs: {[key: string]: TartanModule};
+        let fakeLibs: { [key: string]: TartanModule };
         beforeAll(async () => {
             fakeLibs = {
-                "fakeOne": {
+                fakeOne: {
                     templateMap: {
                         "blog-template": "some/path/temp.html",
                     },
                 },
-                "fakeTwo": {
+                fakeTwo: {
                     templateMap: {
                         "doc-template": "some/other/path/temp.html",
                     },
@@ -27,12 +30,16 @@ describe("The Resolver class", () => {
                 outputDir: "dist",
                 designLibraries: Object.keys(fakeLibs),
             };
-            spyOn(Resolver, "import").and.callFake(async <T>(module: string): Promise<T> => {
-                return fakeLibs[module] as T;
-            });
-            spyOn(Resolver, "resolveImport").and.callFake((spec: string): string => {
-                return spec;
-            });
+            spyOn(Resolver, "import").and.callFake(
+                async <T>(module: string): Promise<T> => {
+                    return fakeLibs[module] as T;
+                },
+            );
+            spyOn(Resolver, "resolveImport").and.callFake(
+                (spec: string): string => {
+                    return spec;
+                },
+            );
 
             resolver = await Resolver.create(config);
         });
@@ -46,24 +53,24 @@ describe("The Resolver class", () => {
         it("should return from the map", () => {
             const templ = resolver.resolveTemplateName("blog-template");
             expect(templ).toBe("some/path/temp.html");
-        })
+        });
         it("should return undefined for a template that isn't provided", () => {
             const templ = resolver.resolveTemplateName("this-isn't-real");
             expect(templ).toBeUndefined();
-        })
+        });
     });
 
     describe("tag name resolver", () => {
         let resolver: Resolver;
-        let fakeLibs: {[key: string]: TartanModule};
+        let fakeLibs: { [key: string]: TartanModule };
         beforeAll(async () => {
             fakeLibs = {
-                "pc": {
+                pc: {
                     componentMap: {
                         "pc-button": "fakeModule",
                     },
                 },
-                "bbb": {
+                bbb: {
                     componentMap: {
                         "other-button": "otherFakeModule",
                     },
@@ -74,12 +81,16 @@ describe("The Resolver class", () => {
                 outputDir: "dist",
                 designLibraries: Object.keys(fakeLibs),
             };
-            spyOn(Resolver, "import").and.callFake(async <T>(module: string): Promise<T> => {
-                return fakeLibs[module] as T;
-            });
-            spyOn(Resolver, "resolveImport").and.callFake((spec: string): string => {
-                return spec;
-            });
+            spyOn(Resolver, "import").and.callFake(
+                async <T>(module: string): Promise<T> => {
+                    return fakeLibs[module] as T;
+                },
+            );
+            spyOn(Resolver, "resolveImport").and.callFake(
+                (spec: string): string => {
+                    return spec;
+                },
+            );
 
             resolver = await Resolver.create(config);
         });
@@ -125,7 +136,9 @@ describe("The Resolver class", () => {
                 "test.mjs": "",
             });
 
-            const importSpy = spyOn(Resolver, "import").and.returnValue(Promise.resolve({}));
+            const importSpy = spyOn(Resolver, "import").and.returnValue(
+                Promise.resolve({}),
+            );
 
             await Resolver.loadObjectFromFile("test");
             expect(importSpy).toHaveBeenCalled();
@@ -136,12 +149,16 @@ describe("The Resolver class", () => {
                 "test.mjs": "",
             });
 
-            const importSpy = spyOn(Resolver, "import").and.returnValue(Promise.resolve({}));
+            const importSpy = spyOn(Resolver, "import").and.returnValue(
+                Promise.resolve({}),
+            );
             await Resolver.loadObjectFromFile("test");
             expect(importSpy).toHaveBeenCalledWith("./test.mjs");
         });
         it("should support .js, .mjs, and .ts extensions", async () => {
-            const importSpy = spyOn(Resolver, "import").and.returnValue(Promise.resolve({}));
+            const importSpy = spyOn(Resolver, "import").and.returnValue(
+                Promise.resolve({}),
+            );
             mock({
                 "test.js": "",
             });
@@ -190,7 +207,10 @@ describe("The Resolver class", () => {
             expect(result).toBe(path.join("/mock", pathToResolve));
         });
         it("should handle `relativeTo` being a file", () => {
-            const result = resolver.resolvePath("./image.png", "src/page/index.html");
+            const result = resolver.resolvePath(
+                "./image.png",
+                "src/page/index.html",
+            );
             expect(result).toBe("/mock/src/page/image.png");
         });
         it("should handle `relativeTo` being a directory", () => {
@@ -198,7 +218,10 @@ describe("The Resolver class", () => {
             expect(result).toBe("/mock/src/page/image.png");
         });
         it("should ignore relativeTo when it matches a prefix", () => {
-            const result = resolver.resolvePath("~assets/asset.png", "aslkjdfnlasjf");
+            const result = resolver.resolvePath(
+                "~assets/asset.png",
+                "aslkjdfnlasjf",
+            );
             expect(result).toBe("/mock/src/assets/asset.png");
         });
         it("should treat path prefixes as literal strings, not regular expressions", () => {
@@ -206,7 +229,9 @@ describe("The Resolver class", () => {
             expect(result).not.toBe("/mock/src/other/no.txt");
         });
         it("should assume prefixes need to have a trailing slash", () => {
-            const result = resolver.resolvePath("src/~assetsandstuff/image.png");
+            const result = resolver.resolvePath(
+                "src/~assetsandstuff/image.png",
+            );
             expect(result).toBe("/mock/src/~assetsandstuff/image.png");
         });
         it("should properly resolve paths that start with /", () => {
