@@ -6,6 +6,29 @@ import path from "path";
 import mock from "mock-fs";
 import { TartanModule } from "../src/tartan-module";
 import { TartanConfig } from "@tartan/core";
+import { Package } from "custom-elements-manifest";
+
+function createFakePackage(elements: string[]) {
+    return {
+        "package.json": JSON.stringify({
+            customElements: "manifest.json",
+        }),
+        "manifest.json": JSON.stringify({
+            schemaVersion: "",
+            modules: elements.map((name) => ({
+                kind: "javascript-module",
+                path: `elements/${name}.js`,
+                declarations: [
+                    {
+                        kind: "class",
+                        customElement: true,
+                        tagName: name,
+                    },
+                ],
+            })),
+        } as Package),
+    };
+}
 
 describe("The Resolver class", () => {
     describe("template resolver", () => {
@@ -62,48 +85,39 @@ describe("The Resolver class", () => {
 
     describe("tag name resolver", () => {
         let resolver: Resolver;
-        let fakeLibs: { [key: string]: TartanModule };
         beforeAll(async () => {
-            fakeLibs = {
-                pc: {
-                    componentMap: {
-                        "pc-button": "fakeModule",
-                    },
-                },
-                bbb: {
-                    componentMap: {
-                        "other-button": "otherFakeModule",
-                    },
-                },
-            };
             const config: TartanConfig = {
                 rootDir: "src",
                 outputDir: "dist",
-                designLibraries: Object.keys(fakeLibs),
             };
-            spyOn(Resolver, "import").and.callFake(
-                async <T>(module: string): Promise<T> => {
-                    return fakeLibs[module] as T;
+
+            mock({
+                node_modules: {
+                    ".package-lock.json": JSON.stringify({
+                        packages: {
+                            "node_modules/a-package": {},
+                            "node_modules/b-package": {},
+                        },
+                    }),
+                    "a-package": createFakePackage(["pc-button"]),
+                    "b-package": createFakePackage(["other-button"]),
                 },
-            );
-            spyOn(Resolver, "resolveImport").and.callFake(
-                (spec: string): string => {
-                    return spec;
-                },
-            );
+            });
 
             resolver = await Resolver.create(config);
         });
 
         it("should have loaded all the libs", async () => {
-            expect(resolver.componentMap).toEqual({
-                "pc-button": "fakeModule",
-                "other-button": "otherFakeModule",
-            });
+            expect(Object.keys(resolver.componentMap)).toEqual([
+                "pc-button",
+                "other-button",
+            ]);
         });
         it("should return the correct module specifier", () => {
             const spec = resolver.resolveTagName("pc-button");
-            expect(spec).toBe("fakeModule");
+            expect(spec).toMatch(
+                /\.\/node_modules\/.+\/elements\/pc-button\.js/,
+            );
         });
         it("should return undefined if there is no component registered", () => {
             const spec = resolver.resolveTagName("not-a-real-tag");
