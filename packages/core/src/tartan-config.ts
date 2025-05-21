@@ -10,7 +10,6 @@ type FullTartanContext = ReplaceTypes<TartanContextFile, {pageMode: "file", page
 export type TartanConfig = {
     rootDir: string;
     outputDir: string;
-    designLibraries?: string[];
     pathPrefixes?: {[key: string]: string};
     rootContext?: FullTartanContext
 };
