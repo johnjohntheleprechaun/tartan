@@ -3,3 +3,6 @@
 - Create a way to add processors for different file types
 - Merge HTML and Page processors, so that it's easier to handle renaming of dependencies
 - Create a way to ignore certain paths (maybe a regex or something)
+- Resolve the `package-lock.json` in a more dynamic way (searching upward until you find it)
+- Allow assets that are outside of the root directory, by moving it to somewhere in the root directory
+- Have some kind of prefix or something to let paths be relative to wherever the template you're using is located (but only for paths inside the template)
