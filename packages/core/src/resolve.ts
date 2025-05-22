@@ -104,11 +104,14 @@ export class Resolver {
                 }
             }
 
+            /*
+             * Process tartan templates if it exists
+             */
             if (packageDefinition.tartanTemplateManifest) {
                 // Load the manifest file
                 const manifestPath: string = path.join(
                     packagePath,
-                    packageDefinition.customElements,
+                    packageDefinition.tartanTemplateManifest,
                 );
                 const manifestFile: Buffer = await fs.readFile(manifestPath);
                 const manifest: TemplateManifest = JSON.parse(
