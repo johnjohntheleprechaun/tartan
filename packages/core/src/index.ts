@@ -132,7 +132,6 @@ export class TartanProject {
 }
 
 
-export * from "./tartan-module.js";
 export * from "./tartan-config.js";
 export * from "./tartan-context.js";
 export * from "./source-processor.js";
@@ -140,3 +139,4 @@ export * from "./processors/index.js";
 export * from "./resolve.js";
 export * from "./handlebars.js";
 export * from "./logger.js";
+export * from "./template-manifest.js";

@@ -1,4 +1,8 @@
+/*
+ * @format
+ */
 import { Package } from "custom-elements-manifest";
+import { TemplateManifest } from "./template-manifest.js";
 
 /**
  * This is an internal type used to structure all the things a tartan module can provide.
@@ -10,7 +14,7 @@ export interface TartanModule {
      */
     componentManifest?: Package;
     /**
-     * An object mapping component names to template files.
+     * The template manifest found in the module
      */
-    templateMap?: {[key: string]: string};
+    templateManifest?: TemplateManifest;
 }
