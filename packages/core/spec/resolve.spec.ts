@@ -4,18 +4,23 @@
 import { Resolver } from "../src/resolve";
 import path from "path";
 import mock from "mock-fs";
-import { TartanModule } from "../src/tartan-module";
-import { TartanConfig } from "@tartan/core";
+import { TartanConfig } from "../src/tartan-config";
 import { Package } from "custom-elements-manifest";
+import { TemplateManifest } from "../src/template-manifest";
 
-function createFakePackage(elements: string[]) {
+type FakePackageInput = {
+    elements: string[];
+    templates: string[];
+};
+function createFakePackage(input: FakePackageInput) {
     return {
         "package.json": JSON.stringify({
             customElements: "manifest.json",
+            tartanTemplateManifest: "templates.json",
         }),
         "manifest.json": JSON.stringify({
             schemaVersion: "",
-            modules: elements.map((name) => ({
+            modules: input.elements.map((name) => ({
                 kind: "javascript-module",
                 path: `elements/${name}.js`,
                 declarations: [
@@ -27,55 +32,68 @@ function createFakePackage(elements: string[]) {
                 ],
             })),
         } as Package),
+        "templates.json": JSON.stringify({
+            schemaVersion: "1.0.0",
+            templates: input.templates.map((item) => ({
+                name: item,
+                path: `${item}.hbs`,
+            })),
+        } as TemplateManifest),
+        /*
+         * Write the fake template files (literally just empty strings but it matters)
+         */
+        ...((templates: string[]) => {
+            const object: Record<string, string> = {};
+            for (const template of templates) {
+                object[`${template}.hbs`] = "";
+            }
+            return object;
+        })(input.templates),
     };
 }
 
 describe("The Resolver class", () => {
     describe("template resolver", () => {
         let resolver: Resolver;
-        let fakeLibs: { [key: string]: TartanModule };
         beforeAll(async () => {
-            fakeLibs = {
-                fakeOne: {
-                    templateMap: {
-                        "blog-template": "some/path/temp.html",
-                    },
+            mock({
+                node_modules: {
+                    ".package-lock.json": JSON.stringify({
+                        packages: {
+                            "node_modules/a-package": {},
+                            "node_modules/b-package": {},
+                        },
+                    }),
+                    "a-package": createFakePackage({
+                        elements: [],
+                        templates: ["a-template"],
+                    }),
+                    "b-package": createFakePackage({
+                        elements: [],
+                        templates: ["b-template"],
+                    }),
                 },
-                fakeTwo: {
-                    templateMap: {
-                        "doc-template": "some/other/path/temp.html",
-                    },
-                },
-            };
-
+            });
             const config: TartanConfig = {
                 rootDir: "src",
                 outputDir: "dist",
-                designLibraries: Object.keys(fakeLibs),
             };
-            spyOn(Resolver, "import").and.callFake(
-                async <T>(module: string): Promise<T> => {
-                    return fakeLibs[module] as T;
-                },
-            );
-            spyOn(Resolver, "resolveImport").and.callFake(
-                (spec: string): string => {
-                    return spec;
-                },
-            );
 
             resolver = await Resolver.create(config);
         });
+        afterAll(() => {
+            mock.restore();
+        });
 
         it("should load the aggregate of all provided template maps", () => {
-            expect(resolver.templateMap).toEqual({
-                "blog-template": "some/path/temp.html",
-                "doc-template": "some/other/path/temp.html",
-            });
+            expect(Object.keys(resolver.templateMap)).toEqual([
+                "a-template",
+                "b-template",
+            ]);
         });
         it("should return from the map", () => {
-            const templ = resolver.resolveTemplateName("blog-template");
-            expect(templ).toBe("some/path/temp.html");
+            const templ = resolver.resolveTemplateName("b-template");
+            expect(templ).toBeDefined();
         });
         it("should return undefined for a template that isn't provided", () => {
             const templ = resolver.resolveTemplateName("this-isn't-real");
@@ -99,8 +117,14 @@ describe("The Resolver class", () => {
                             "node_modules/b-package": {},
                         },
                     }),
-                    "a-package": createFakePackage(["pc-button"]),
-                    "b-package": createFakePackage(["other-button"]),
+                    "a-package": createFakePackage({
+                        elements: ["pc-button"],
+                        templates: [],
+                    }),
+                    "b-package": createFakePackage({
+                        elements: ["other-button"],
+                        templates: [],
+                    }),
                 },
             });
 
