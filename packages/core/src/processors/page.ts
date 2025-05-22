@@ -1,12 +1,19 @@
-import {Resolver} from "../resolve.js";
+/*
+ * @format
+ */
+import { Resolver } from "../resolve.js";
 import fs from "fs/promises";
 import path from "path";
-import {TartanConfig} from "../tartan-config.js";
-import {PartialTartanContext} from "../tartan-context.js";
-import {HTMLProcessor} from "./html.js";
-import {Logger} from "../logger.js";
-import {PageMeta, SourceProcessorOutput, SubPageMeta} from "../source-processor.js";
-import {HandlebarsContext} from "../handlebars.js";
+import { TartanConfig } from "../tartan-config.js";
+import { PartialTartanContext } from "../tartan-context.js";
+import { HTMLProcessor } from "./html.js";
+import { Logger } from "../logger.js";
+import {
+    PageMeta,
+    SourceProcessorOutput,
+    SubPageMeta,
+} from "../source-processor.js";
+import { HandlebarsContext } from "../handlebars.js";
 
 export interface PageProcessorConfig {
     /**
@@ -36,7 +43,11 @@ export class PageProcessor {
     private readonly context: PartialTartanContext;
     public static directoriesOutputed: string[] = [];
 
-    constructor(pageConfig: PageProcessorConfig, projectConfig: TartanConfig, resolver: Resolver) {
+    constructor(
+        pageConfig: PageProcessorConfig,
+        projectConfig: TartanConfig,
+        resolver: Resolver,
+    ) {
         this.config = pageConfig;
         this.resolver = resolver;
         this.context = this.config.context;
@@ -48,14 +59,15 @@ export class PageProcessor {
         // load and process the content
         const pageContent = await fs.readFile(this.config.sourcePath);
         Logger.log(pageContent.toString(), 2);
-        const processorOutput: SourceProcessorOutput = this.context.sourceProcessor ?
-            await this.context.sourceProcessor({
-                context: this.context,
-                sourceContents: pageContent.toString(),
-                depth: this.config.depth || 0,
-                subpageMeta: this.config.subpageMeta,
-            })
-            : {processedContents: pageContent.toString()};
+        const processorOutput: SourceProcessorOutput = this.context
+            .sourceProcessor
+            ? await this.context.sourceProcessor({
+                  context: this.context,
+                  sourceContents: pageContent.toString(),
+                  depth: this.config.depth || 0,
+                  subpageMeta: this.config.subpageMeta,
+              })
+            : { processedContents: pageContent.toString() };
 
         Logger.log(processorOutput, 2);
 
@@ -70,8 +82,7 @@ export class PageProcessor {
         let finished: string;
         if (!this.context.template) {
             finished = processorOutput.processedContents;
-        }
-        else {
+        } else {
             finished = this.context.template({
                 pageContent: processorOutput.processedContents,
                 extraContext: this.context.handlebarsParameters,
@@ -82,11 +93,15 @@ export class PageProcessor {
         Logger.log(finished, 2);
 
         // now run it through the HTMLProcessor
-        const processor = new HTMLProcessor(finished, this.resolver, this.config.sourcePath);
+        const processor = new HTMLProcessor(
+            finished,
+            this.resolver,
+            this.config.sourcePath,
+        );
         const processedHTML = await processor.process();
 
-        Logger.log(processedHTML, 2)
-        Logger.log(`input from ${this.config.sourcePath}`)
+        Logger.log(processedHTML, 2);
+        Logger.log(`input from ${this.config.sourcePath}`);
 
         // now write to the output directory
         let outputFilename = path.join(this.config.outputDir, "index.html");
@@ -95,18 +110,25 @@ export class PageProcessor {
                 path.dirname(this.config.outputDir),
                 processorOutput.outputDir,
             );
-            const relativeToOutput = path.relative(path.dirname(this.config.outputDir), pageMeta.outputDir);
+            const relativeToOutput = path.relative(
+                path.dirname(this.config.outputDir),
+                pageMeta.outputDir,
+            );
             if (relativeToOutput.startsWith("..") || relativeToOutput === "") {
-                throw new InvalidOutputDirectoryError(`output dir (modified by source processor) for page with source ${this.config.sourcePath} is invalid`);
+                throw new InvalidOutputDirectoryError(
+                    `output dir (modified by source processor) for page with source ${this.config.sourcePath} is invalid`,
+                );
             }
             outputFilename = path.join(pageMeta.outputDir, "index.html");
         }
         if (PageProcessor.directoriesOutputed.includes(pageMeta.outputDir)) {
             Logger.log(PageProcessor.directoriesOutputed);
-            throw new InvalidOutputDirectoryError("duplicate output directory provided by a source processor");
+            throw new InvalidOutputDirectoryError(
+                "duplicate output directory provided by a source processor",
+            );
         }
         PageProcessor.directoriesOutputed.push(pageMeta.outputDir);
-        await fs.mkdir(pageMeta.outputDir, {recursive: true});
+        await fs.mkdir(pageMeta.outputDir, { recursive: true });
         await fs.writeFile(outputFilename, processedHTML.content);
 
         await this.writeDependencies(processedHTML.dependencies);
@@ -117,17 +139,23 @@ export class PageProcessor {
     async writeDependencies(dependencies: string[]) {
         for (const dependency of dependencies) {
             Logger.log(`trying to process dependency ${dependency}`);
-            const dependencyPath = this.resolver.resolvePath(dependency, this.config.sourcePath);
-            const relativeToRoot = path.relative(this.projectConfig.rootDir, dependencyPath);
+            const dependencyPath = this.resolver.resolvePath(
+                dependency,
+                this.config.sourcePath,
+            );
+            const relativeToRoot = path.relative(
+                this.projectConfig.rootDir,
+                dependencyPath,
+            );
 
             if (relativeToRoot.startsWith("..")) {
                 throw `dependency ${dependency} from page ${this.config.sourcePath} is not under the root directory`;
             }
 
-            await fs.copyFile(dependencyPath, path.join(
-                this.projectConfig.outputDir,
-                relativeToRoot,
-            ));
+            await fs.copyFile(
+                dependencyPath,
+                path.join(this.projectConfig.outputDir, relativeToRoot),
+            );
         }
     }
 }
