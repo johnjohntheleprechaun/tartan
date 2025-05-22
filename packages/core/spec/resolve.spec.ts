@@ -57,13 +57,13 @@ describe("The Resolver class", () => {
         let resolver: Resolver;
         beforeAll(async () => {
             mock({
+                "package-lock.json": JSON.stringify({
+                    packages: {
+                        "node_modules/a-package": {},
+                        "node_modules/b-package": {},
+                    },
+                }),
                 node_modules: {
-                    ".package-lock.json": JSON.stringify({
-                        packages: {
-                            "node_modules/a-package": {},
-                            "node_modules/b-package": {},
-                        },
-                    }),
                     "a-package": createFakePackage({
                         elements: [],
                         templates: ["a-template"],
@@ -110,13 +110,13 @@ describe("The Resolver class", () => {
             };
 
             mock({
+                "package-lock.json": JSON.stringify({
+                    packages: {
+                        "node_modules/a-package": {},
+                        "node_modules/b-package": {},
+                    },
+                }),
                 node_modules: {
-                    ".package-lock.json": JSON.stringify({
-                        packages: {
-                            "node_modules/a-package": {},
-                            "node_modules/b-package": {},
-                        },
-                    }),
                     "a-package": createFakePackage({
                         elements: ["pc-button"],
                         templates: [],
@@ -129,6 +129,9 @@ describe("The Resolver class", () => {
             });
 
             resolver = await Resolver.create(config);
+        });
+        afterAll(() => {
+            mock.restore();
         });
 
         it("should have loaded all the libs", async () => {

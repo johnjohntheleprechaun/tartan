@@ -43,14 +43,14 @@ export class Resolver {
     }
 
     public async init(): Promise<Resolver> {
-        const packageLockPath = "node_modules/.package-lock.json";
+        const packageLockPath = "package-lock.json";
         const packageLock = await fs
             .readFile(packageLockPath)
             .then((res) => JSON.parse(res.toString()))
             .catch(() => ({ packages: [] }));
         const packages = packageLock.packages as { [key: string]: any };
         /*
-         * Search through every installed package (this will include dependencies since we're using .package-lock.json)
+         * Search through every installed package (this will include dependencies since we're using package-lock.json)
          */
         for (const packagePath in packages) {
             let module: TartanModule = {};
@@ -62,6 +62,14 @@ export class Resolver {
                 packagePath,
                 "package.json",
             );
+            if (
+                !(await fs
+                    .access(packageDefinitionPath)
+                    .then(() => true)
+                    .catch(() => false))
+            ) {
+                continue;
+            }
             const packageDefinitionFile: Buffer = await fs.readFile(
                 packageDefinitionPath,
             );
