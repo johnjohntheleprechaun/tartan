@@ -6,7 +6,7 @@ import fs from "fs/promises";
 import path from "path";
 import { TartanConfig } from "../tartan-config.js";
 import { PartialTartanContext } from "../tartan-context.js";
-import { HTMLProcessor } from "./html.js";
+import { DependencyMap, HTMLProcessor } from "./html.js";
 import { Logger } from "../logger.js";
 import {
     PageMeta,
@@ -42,6 +42,11 @@ export class PageProcessor {
     private readonly projectConfig: TartanConfig;
     private readonly context: PartialTartanContext;
     public static directoriesOutputed: string[] = [];
+    private htmlInfo: {
+        htmlContent?: string;
+        rootNode?: HTMLElement;
+        resolver?: Resolver;
+    } = {};
 
     constructor(
         pageConfig: PageProcessorConfig,
@@ -92,9 +97,12 @@ export class PageProcessor {
         }
         Logger.log(finished, 2);
 
-        // now run it through the HTMLProcessor
+        /*
+         * Process the HTML
+         */
         const processor = new HTMLProcessor(
             finished,
+            this.projectConfig,
             this.resolver,
             this.config.sourcePath,
         );
@@ -103,7 +111,9 @@ export class PageProcessor {
         Logger.log(processedHTML, 2);
         Logger.log(`input from ${this.config.sourcePath}`);
 
-        // now write to the output directory
+        /*
+         * Write to the output directory
+         */
         let outputFilename = path.join(this.config.outputDir, "index.html");
         if (processorOutput.outputDir) {
             pageMeta.outputDir = path.join(
@@ -136,26 +146,12 @@ export class PageProcessor {
         return pageMeta;
     }
 
-    async writeDependencies(dependencies: string[]) {
+    async writeDependencies(dependencies: DependencyMap[]) {
         for (const dependency of dependencies) {
-            Logger.log(`trying to process dependency ${dependency}`);
-            const dependencyPath = this.resolver.resolvePath(
-                dependency,
-                this.config.sourcePath,
-            );
-            const relativeToRoot = path.relative(
-                this.projectConfig.rootDir,
-                dependencyPath,
-            );
-
-            if (relativeToRoot.startsWith("..")) {
-                throw `dependency ${dependency} from page ${this.config.sourcePath} is not under the root directory`;
-            }
-
-            await fs.copyFile(
-                dependencyPath,
-                path.join(this.projectConfig.outputDir, relativeToRoot),
-            );
+            await fs.mkdir(path.dirname(dependency.output), {
+                recursive: true,
+            });
+            await fs.copyFile(dependency.source, dependency.output);
         }
     }
 }

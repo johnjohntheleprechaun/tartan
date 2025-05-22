@@ -10,6 +10,9 @@ type FullTartanContext = ReplaceTypes<TartanContextFile, {pageMode: "file", page
 export type TartanConfig = {
     rootDir: string;
     outputDir: string;
-    pathPrefixes?: {[key: string]: string};
+    /**
+     * A map of path prefixes to paths that are relative to the CWD.
+     */
+    pathPrefixes?: Record<string, string>;
     rootContext?: FullTartanContext
 };

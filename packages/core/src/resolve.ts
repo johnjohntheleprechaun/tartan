@@ -9,7 +9,7 @@ import { createRequire } from "module";
 import { Logger } from "./logger.js";
 import { PartialTartanContext, TartanContextFile } from "./tartan-context.js";
 import { SourceProcessor } from "./source-processor.js";
-import Handlebars, { compile } from "handlebars";
+import Handlebars from "handlebars";
 import {
     CustomElementDeclaration,
     Declaration,
@@ -126,7 +126,8 @@ export class Resolver {
                         templatePath,
                         "utf8",
                     );
-                    this.templateMap[template.name] = compile(templateFile);
+                    this.templateMap[template.name] =
+                        Handlebars.compile(templateFile);
                 }
                 // Load all the partials
                 for (const partial of manifest.partials || []) {
@@ -219,8 +220,8 @@ export class Resolver {
     /**
      * Resolve a path, taking into account path prefixes. If a path starts with a prefix, relativeTo is ignored.
      *
-     * @argument target The target path (which may or may not start with a path prefix).
-     * @param relativeTo The path that target is relative to (if that matters). Defaults to CWD.
+     * @param target The target path (which may or may not start with a path prefix).
+     * @param relativeTo The path that target is relative to (if that matters). Defaults to CWD. If the path provided doesn't end with `path.sep`, it's assumed that the path is a file, and the path is resolved relative to the directory (aka the result of `path.dirname()`).
      */
     public resolvePath(target: string, relativeTo?: string) {
         Logger.log(`resolving path ${target} relative to ${relativeTo}`);
@@ -262,7 +263,7 @@ export class Resolver {
 
     public resolveTemplateName(
         template: string,
-    ): ReturnType<typeof compile> | undefined {
+    ): ReturnType<typeof Handlebars.compile> | undefined {
         if (Object.keys(this.templateMap).includes(template)) {
             return this.templateMap[template];
         }
