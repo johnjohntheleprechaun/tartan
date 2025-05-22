@@ -4,3 +4,4 @@
 - Merge HTML and Page processors, so that it's easier to handle renaming of dependencies
 - Create a way to ignore certain paths (maybe a regex or something)
 - Resolve the `package-lock.json` in a more dynamic way (searching upward until you find it)
+- Register handlebars partials

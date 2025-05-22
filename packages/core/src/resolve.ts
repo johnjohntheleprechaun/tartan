@@ -9,12 +9,13 @@ import { createRequire } from "module";
 import { Logger } from "./logger.js";
 import { PartialTartanContext, TartanContextFile } from "./tartan-context.js";
 import { SourceProcessor } from "./source-processor.js";
-import Handlebars from "handlebars";
+import Handlebars, { compile } from "handlebars";
 import {
     CustomElementDeclaration,
     Declaration,
     Package,
 } from "custom-elements-manifest";
+import { TemplateManifest } from "./template-manifest.js";
 
 const require = createRequire(import.meta.url);
 
@@ -29,7 +30,9 @@ export class Resolver {
     /**
      * The aggregate template map.
      */
-    public templateMap: { [key: string]: string } = {};
+    public templateMap: {
+        [key: string]: ReturnType<typeof Handlebars.compile>;
+    } = {};
 
     public static async create(projectConfig: TartanConfig): Promise<Resolver> {
         return new Resolver(projectConfig).init();
@@ -98,6 +101,35 @@ export class Resolver {
                                 );
                         }
                     }
+                }
+            }
+
+            if (packageDefinition.tartanTemplateManifest) {
+                // Load the manifest file
+                const manifestPath: string = path.join(
+                    packagePath,
+                    packageDefinition.customElements,
+                );
+                const manifestFile: Buffer = await fs.readFile(manifestPath);
+                const manifest: TemplateManifest = JSON.parse(
+                    manifestFile.toString(),
+                );
+                module.templateManifest = manifest;
+
+                // Load all the templates
+                for (const template of manifest.templates || []) {
+                    const templatePath: string = path.join(
+                        path.dirname(manifestPath),
+                        template.path,
+                    );
+                    const templateFile: string = await fs.readFile(
+                        templatePath,
+                        "utf8",
+                    );
+                    this.templateMap[template.name] = compile(templateFile);
+                }
+                // Load all the partials
+                for (const partial of manifest.partials || []) {
                 }
             }
 
@@ -228,7 +260,9 @@ export class Resolver {
         return undefined;
     }
 
-    public resolveTemplateName(template: string): string | undefined {
+    public resolveTemplateName(
+        template: string,
+    ): ReturnType<typeof compile> | undefined {
         if (Object.keys(this.templateMap).includes(template)) {
             return this.templateMap[template];
         }
@@ -268,14 +302,11 @@ export class Resolver {
         const context: PartialTartanContext = {
             ...contextFile,
             template: contextFile.template
-                ? Handlebars.compile(
+                ? this.resolveTemplateName(contextFile.template) ||
+                  Handlebars.compile(
                       (
                           await fs.readFile(
-                              this.resolveTemplateName(contextFile.template) ||
-                                  this.resolvePath(
-                                      contextFile.template,
-                                      filePath,
-                                  ),
+                              this.resolvePath(contextFile.template, filePath),
                           )
                       ).toString(),
                   )

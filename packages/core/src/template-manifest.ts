@@ -4,7 +4,7 @@
 import { FromSchema, JSONSchema } from "json-schema-to-ts";
 
 /*
- * Template manifests are found via the `handlebarsTemplates` property in package.json
+ * Template manifests are found via the `tartanTemplateManifest` property in package.json
  */
 
 const templateRegistration = {
