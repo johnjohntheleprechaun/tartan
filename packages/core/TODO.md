@@ -1,6 +1,7 @@
 - Decide whether to remove the spec testing the order of priority of files when using `loadObjectFromFile`
-- Write tests for using [custom-elements-manifest](https://github.com/webcomponents/custom-elements-manifest)
 - Create a way to add processors for different file types
 - Create a way to ignore certain paths (maybe a regex or something)
 - Resolve the `package-lock.json` in a more dynamic way (searching upward until you find it)
 - Register handlebars partials
+- the custom elements manifest is supposed to define elements in the exports section, but some things (like shoelace) have malformed manifests. This needs to be handled gracefully. Also, maybe I should make a pull request to shoelace.
+- Put custom element classes in the global scope and mark those imports as external when processing javascript
