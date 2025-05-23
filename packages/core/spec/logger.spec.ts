@@ -1,4 +1,7 @@
-import {Logger} from "../src/logger";
+/*
+ * @format
+ */
+import { Logger } from "../src/logger";
 
 describe("Test log level logic", () => {
     let logSpy: jasmine.Spy;

@@ -1,7 +1,6 @@
 /**
  * @format
  */
-import fs from "fs/promises";
 import { Resolver } from "../src/resolve";
 import path from "path";
 import mock from "mock-fs";

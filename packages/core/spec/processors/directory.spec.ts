@@ -1,12 +1,15 @@
-import {DirectoryProcessor} from "../../src/processors/directory";
+/*
+ * @format
+ */
+import { DirectoryProcessor } from "../../src/processors/directory";
 import mock from "mock-fs";
-import {Resolver} from "../../src/resolve";
-import {TartanConfig} from "../../src/tartan-config";
-import {TartanContext, TartanContextFile} from "../../src/tartan-context";
+import { Resolver } from "../../src/resolve";
+import { TartanConfig } from "../../src/tartan-config";
+import { FullTartanContext, TartanContextFile } from "../../src/tartan-context";
 
 describe("The directory processor", () => {
     let directoryProcessor: DirectoryProcessor;
-    const rootContext: TartanContext = {
+    const rootContext: FullTartanContext = {
         pageMode: "directory",
         pageSource: "index.html",
     };
@@ -20,12 +23,12 @@ describe("The directory processor", () => {
     });
     afterEach(() => {
         mock.restore();
-    })
+    });
 
     it("should use rootContext by default", async () => {
         mock({
-            "src": {
-                "page": {
+            src: {
+                page: {
                     "sub-page": {},
                 },
             },
@@ -33,39 +36,39 @@ describe("The directory processor", () => {
 
         const results = await directoryProcessor.loadContextTree();
         // the root dir
-        for (const result of Object.keys(results).map(key => results[key])) {
+        for (const result of Object.keys(results).map((key) => results[key])) {
             expect(result.context).toEqual(rootContext);
         }
     });
     it("should use root tartan.context.default.json if provided", async () => {
-        const defaultContext: TartanContext = {
+        const defaultContext: FullTartanContext = {
             pageMode: "directory",
             pageSource: "page.md",
         };
         mock({
-            "src": {
+            src: {
                 "tartan.context.default.json": JSON.stringify(defaultContext),
-                "page": {
+                page: {
                     "sub-page": {},
                 },
             },
         });
 
         const results = await directoryProcessor.loadContextTree();
-        for (const result of Object.keys(results).map(key => results[key])) {
+        for (const result of Object.keys(results).map((key) => results[key])) {
             expect(result.context).toEqual(defaultContext);
         }
     });
     it("should override tartan.context.default.json with tartan.context.json", async () => {
-        const overrideContext: TartanContextFile = {
+        const overrideContext: FullTartanContext = {
             pageMode: "file",
             pageSource: "not-index.html",
             pagePattern: "*.md",
         };
 
         mock({
-            "src": {
-                "subpage": {
+            src: {
+                subpage: {
                     "tartan.context.json": JSON.stringify(overrideContext),
                 },
             },
@@ -87,10 +90,13 @@ describe("The directory processor", () => {
         };
 
         mock({
-            "src": {
-                "tartan.context.default.json": JSON.stringify(defaultContextFile),
-                "subpage": {
-                    "tartan.context.json": JSON.stringify({inherit: false} as TartanContextFile),
+            src: {
+                "tartan.context.default.json":
+                    JSON.stringify(defaultContextFile),
+                subpage: {
+                    "tartan.context.json": JSON.stringify({
+                        inherit: false,
+                    } as TartanContextFile),
                 },
             },
         });
@@ -98,12 +104,12 @@ describe("The directory processor", () => {
         const results = await directoryProcessor.loadContextTree();
 
         expect(results).toEqual({
-            "src": {
-                context: defaultContextFile,
+            src: {
+                context: defaultContextFile as FullTartanContext,
                 parent: undefined,
             },
             "src/subpage/": {
-                context: {...rootContext},
+                context: { ...rootContext },
                 parent: "src",
             },
         });
@@ -119,11 +125,13 @@ describe("The directory processor", () => {
         };
 
         mock({
-            "src": {
-                "tartan.context.default.json": JSON.stringify(rootDefaultContext),
-                "page": {
-                    "tartan.context.default.json": JSON.stringify(subDefaultContext),
-                    "subpage": {},
+            src: {
+                "tartan.context.default.json":
+                    JSON.stringify(rootDefaultContext),
+                page: {
+                    "tartan.context.default.json":
+                        JSON.stringify(subDefaultContext),
+                    subpage: {},
                 },
             },
         });
@@ -131,8 +139,8 @@ describe("The directory processor", () => {
         const results = await directoryProcessor.loadContextTree();
 
         expect(results).toEqual({
-            "src": {
-                context: rootDefaultContext,
+            src: {
+                context: rootDefaultContext as FullTartanContext,
                 parent: undefined,
             },
             "src/page/": {

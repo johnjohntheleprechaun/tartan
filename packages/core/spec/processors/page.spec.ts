@@ -1,12 +1,17 @@
-import {TartanConfig} from "../../src/tartan-config";
-import {InvalidOutputDirectoryError, PageProcessor} from "../../src/processors/page";
-import {Resolver} from "../../src/resolve";
+/*
+ * @format
+ */
+import { TartanConfig } from "../../src/tartan-config";
+import {
+    InvalidOutputDirectoryError,
+    PageProcessor,
+} from "../../src/processors/page";
+import { Resolver } from "../../src/resolve";
 import mock from "mock-fs";
-import {HTMLProcessor} from "../../src/processors/html";
+import { HTMLProcessor } from "../../src/processors/html";
 import fs from "fs/promises";
 import path from "path";
-import {SourceProcessor} from "../../src/source-processor";
-
+import { SourceProcessor } from "../../src/source-processor";
 
 describe("The PageProcessor class", () => {
     afterEach(() => {
@@ -17,24 +22,30 @@ describe("The PageProcessor class", () => {
         outputDir: "dist",
     };
     beforeAll(async () => {
-        spyOn(HTMLProcessor.prototype, "process").and.callFake(async function () {
-            return {
-                content: this.htmlContent,
-                dependencies: [],
-            };
-        });
+        spyOn(HTMLProcessor.prototype, "process").and.callFake(
+            async function () {
+                return {
+                    content: this.htmlContent,
+                    dependencies: [],
+                };
+            },
+        );
     });
     describe("(when using neither a source processor nor a template)", () => {
         let pageProcessor: PageProcessor;
         let resolver: Resolver;
         beforeEach(async () => {
             resolver = await Resolver.create(projectConfig);
-            pageProcessor = new PageProcessor({
-                context: {},
-                sourcePath: "src/index.html",
-                outputDir: "dist/",
-                subpageMeta: [],
-            }, projectConfig, resolver);
+            pageProcessor = new PageProcessor(
+                {
+                    context: {},
+                    sourcePath: "src/index.html",
+                    outputDir: "dist/",
+                    subpageMeta: [],
+                },
+                projectConfig,
+                resolver,
+            );
         });
         it("should not modify the source content", async () => {
             const content = crypto.randomUUID();
@@ -43,7 +54,9 @@ describe("The PageProcessor class", () => {
             });
 
             const result = await pageProcessor.process();
-            const outputted = await fs.readFile(path.join(result.outputDir, "index.html"));
+            const outputted = await fs.readFile(
+                path.join(result.outputDir, "index.html"),
+            );
 
             expect(outputted.toString()).toBe(content);
         });
@@ -54,52 +67,68 @@ describe("The PageProcessor class", () => {
             resolver = await Resolver.create(projectConfig);
         });
         it("should not allow the modified output dir to be above the original dir", async () => {
-            const pageProcessor = new PageProcessor({
-                context: {
-                    sourceProcessor: async (input) => ({
-                        processedContents: "",
-                        outputDir: "sub/../..",
-                    }),
+            const pageProcessor = new PageProcessor(
+                {
+                    context: {
+                        sourceProcessor: async (input) => ({
+                            processedContents: "",
+                            outputDir: "sub/../..",
+                        }),
+                    },
+                    sourcePath: "src/index.html",
+                    outputDir: "dist/",
+                    subpageMeta: [],
                 },
-                sourcePath: "src/index.html",
-                outputDir: "dist/",
-                subpageMeta: [],
-            }, projectConfig, resolver);
+                projectConfig,
+                resolver,
+            );
 
             mock({
                 "src/index.html": "",
             });
-            await expectAsync(pageProcessor.process()).toBeRejectedWithError(InvalidOutputDirectoryError);
+            await expectAsync(pageProcessor.process()).toBeRejectedWithError(
+                InvalidOutputDirectoryError,
+            );
         });
         it("should not allow duplicate output directories to be provided by source processors", async () => {
             const outputDir = crypto.randomUUID();
             const sourceProcessor: SourceProcessor = async (input) => ({
                 processedContents: "",
                 outputDir,
-            })
-            const processorOne = new PageProcessor({
-                context: {
-                    sourceProcessor,
+            });
+            const processorOne = new PageProcessor(
+                {
+                    context: {
+                        sourceProcessor,
+                    },
+                    sourcePath: "src/index.html",
+                    outputDir: "dist/",
+                    subpageMeta: [],
                 },
-                sourcePath: "src/index.html",
-                outputDir: "dist/",
-                subpageMeta: [],
-            }, projectConfig, resolver);
-            const processorTwo = new PageProcessor({
-                context: {
-                    sourceProcessor,
+                projectConfig,
+                resolver,
+            );
+            const processorTwo = new PageProcessor(
+                {
+                    context: {
+                        sourceProcessor,
+                    },
+                    sourcePath: "src/index.html",
+                    outputDir: "dist/",
+                    subpageMeta: [],
                 },
-                sourcePath: "src/index.html",
-                outputDir: "dist/",
-                subpageMeta: [],
-            }, projectConfig, resolver);
+                projectConfig,
+                resolver,
+            );
 
             mock({
                 "src/index.html": "",
             });
 
             await processorOne.process();
-            await expectAsync(processorTwo.process()).toBeRejectedWithError(InvalidOutputDirectoryError);
+            await expectAsync(processorTwo.process()).toBeRejectedWithError(
+                InvalidOutputDirectoryError,
+            );
         });
         it("should pass return the modified output directory, not the original output directory", async () => {
             const outputDir: string = crypto.randomUUID();
@@ -107,14 +136,18 @@ describe("The PageProcessor class", () => {
                 processedContents: input.sourceContents,
                 outputDir,
             });
-            const processor = new PageProcessor({
-                context: {
-                    sourceProcessor,
+            const processor = new PageProcessor(
+                {
+                    context: {
+                        sourceProcessor,
+                    },
+                    subpageMeta: [],
+                    sourcePath: "src/index.html",
+                    outputDir: crypto.randomUUID(),
                 },
-                subpageMeta: [],
-                sourcePath: "src/index.html",
-                outputDir: crypto.randomUUID(),
-            }, projectConfig, resolver);
+                projectConfig,
+                resolver,
+            );
 
             mock({
                 "src/index.html": "",
@@ -132,14 +165,18 @@ describe("The PageProcessor class", () => {
                 processedContents: input.sourceContents,
                 extraMeta,
             });
-            const processor = new PageProcessor({
-                context: {
-                    sourceProcessor,
+            const processor = new PageProcessor(
+                {
+                    context: {
+                        sourceProcessor,
+                    },
+                    subpageMeta: [],
+                    sourcePath: "src/index.html",
+                    outputDir: crypto.randomUUID(),
                 },
-                subpageMeta: [],
-                sourcePath: "src/index.html",
-                outputDir: crypto.randomUUID(),
-            }, projectConfig, resolver);
+                projectConfig,
+                resolver,
+            );
 
             mock({
                 "src/index.html": "",
@@ -147,12 +184,9 @@ describe("The PageProcessor class", () => {
 
             const result = await processor.process();
             expect(result.extra).toEqual(extraMeta);
-
         });
     });
     describe("(when using a template)", () => {
-        it("", async () => {
-
-        });
+        it("", async () => {});
     });
 });
