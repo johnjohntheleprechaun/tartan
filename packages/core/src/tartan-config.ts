@@ -21,5 +21,9 @@ export type TartanConfig = {
      * A map of path prefixes to paths that are relative to the CWD.
      */
     pathPrefixes?: Record<string, string>;
+    /**
+     * A list of regular expressions that match paths that'll be ignored.
+     */
+    ignoredPaths?: string[];
     rootContext?: FullTartanContext;
 };

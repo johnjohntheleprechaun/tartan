@@ -32,6 +32,7 @@ export class HTMLProcessor {
     private readonly resolver: Resolver;
     private readonly pagePath: string | undefined;
     private readonly projectConfig: TartanConfig;
+    private readonly compiledIgnorePaths: RegExp[];
 
     /**
      * @param htmlContent The content to process.
@@ -48,6 +49,9 @@ export class HTMLProcessor {
         this.pagePath = pagePath;
         this.resolver = resolver;
         this.rootNode = parse.default(this.htmlContent);
+        this.compiledIgnorePaths = (this.projectConfig.ignoredPaths || []).map(
+            (item) => new RegExp(item),
+        );
     }
 
     /**
@@ -151,7 +155,12 @@ export class HTMLProcessor {
 
         for (const key in localDependencies) {
             const dependency = localDependencies[key];
-            if (dependency === undefined) {
+            if (
+                dependency === undefined ||
+                this.compiledIgnorePaths.some((pattern) =>
+                    pattern.test(dependency),
+                )
+            ) {
                 continue;
             }
             const sourcePath: string = this.resolver.resolvePath(
