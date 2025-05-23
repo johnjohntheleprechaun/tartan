@@ -22,15 +22,15 @@ I think it would make a lot of sense to allow (but NOT require) some kind of con
 
 What kind of context might somebody want? Obviously handlebars params can just be whatever the dev wants. Other things?
 
-- The template to use. As a path? Relative to where the file is, but use the prefix thingies that like webpack does.
-- Template parameters to pass to the handlebars template
-- What kind of general option could I use to allow markdown content? Maybe like, `pageSource`, and default to `index.html`?
-- `sourceType` to define what kind of thing `pageSource` is. Options like `plaintext`, `html`, `markdown`, etc (and of course default to `html`).
-    - Should I define the source type, or the source behavior? Like, should I say this is markdown, or should I say this file needs to be HTML-escaped or added as a source file
+-   The template to use. As a path? Relative to where the file is, but use the prefix thingies that like webpack does.
+-   Template parameters to pass to the handlebars template
+-   What kind of general option could I use to allow markdown content? Maybe like, `pageSource`, and default to `index.html`?
+-   `sourceType` to define what kind of thing `pageSource` is. Options like `plaintext`, `html`, `markdown`, etc (and of course default to `html`).
+    -   Should I define the source type, or the source behavior? Like, should I say this is markdown, or should I say this file needs to be HTML-escaped or added as a source file
 
 ## Source/Context Generators
 
-JS functions (or modules?) that generate source files or handlebars parameter objects. I think to do this it makes sense to have context be provided by *either* `tartan.context.json` or `tartan.context.js` with a default export.
+JS functions (or modules?) that generate source files or handlebars parameter objects. I think to do this it makes sense to have context be provided by _either_ `tartan.context.json` or `tartan.context.js` with a default export.
 
 ## Processing Steps
 

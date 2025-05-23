@@ -1,4 +1,4 @@
-import {PartialTartanContext} from "./tartan-context.js";
+import { PartialTartanContext } from "./tartan-context.js";
 
 /**
  * Information about a processed page.
@@ -20,7 +20,7 @@ export type PageMeta = {
      * Any extra metadata provided by the sourceProcessor.
      */
     extra?: any;
-}
+};
 /**
  * The meta for a page, in the context of being a sub-page.
  */
@@ -34,7 +34,7 @@ export type SubPageMeta = PageMeta & {
      * The depth of the page (effectively the distance from root).
      */
     depth: number;
-}
+};
 /**
  * The data passed to a source processor.
  */
@@ -56,7 +56,7 @@ export type SourceProcessorInput = {
      * The depth of this page within the root dir.
      */
     depth: number;
-}
+};
 export type SourceProcessorOutput = {
     processedContents: string;
     /**
@@ -65,5 +65,7 @@ export type SourceProcessorOutput = {
      */
     outputDir?: string;
     extraMeta?: any;
-}
-export type SourceProcessor = (input: SourceProcessorInput) => SourceProcessorOutput | Promise<SourceProcessorOutput>;
+};
+export type SourceProcessor = (
+    input: SourceProcessorInput,
+) => SourceProcessorOutput | Promise<SourceProcessorOutput>;

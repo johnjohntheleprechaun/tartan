@@ -1,6 +1,3 @@
-/*
- * @format
- */
 import { Package } from "custom-elements-manifest";
 import { TemplateManifest } from "./template-manifest.js";
 

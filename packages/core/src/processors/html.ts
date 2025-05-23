@@ -1,6 +1,3 @@
-/*
- * @format
- */
 import { Resolver } from "../resolve.js";
 import {
     Statement,

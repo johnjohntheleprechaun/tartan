@@ -1,17 +1,17 @@
-import {Logger} from "./logger.js";
-import {DirectoryProcessor, PageProcessor} from "./processors/index.js";
-import {Resolver} from "./resolve.js";
-import {TartanConfig} from "./tartan-config.js";
+import { Logger } from "./logger.js";
+import { DirectoryProcessor, PageProcessor } from "./processors/index.js";
+import { Resolver } from "./resolve.js";
+import { TartanConfig } from "./tartan-config.js";
 import path from "path";
-import {PartialTartanContext} from "./tartan-context.js";
-import {PageMeta, SubPageMeta} from "./source-processor.js";
+import { PartialTartanContext } from "./tartan-context.js";
+import { PageMeta, SubPageMeta } from "./source-processor.js";
 
 type TreeNode = {
     key: string;
     value: PartialTartanContext;
     children: TreeNode[];
 };
-type SubPageMetaWithDepth = Omit<SubPageMeta, "distance"> & {depth: number};
+type SubPageMetaWithDepth = Omit<SubPageMeta, "distance"> & { depth: number };
 
 export class TartanProject {
     public readonly config: TartanConfig;
@@ -32,7 +32,10 @@ export class TartanProject {
         }
 
         this.resolver = new Resolver(this.config);
-        this.directoryProcessor = new DirectoryProcessor(this.config, this.resolver);
+        this.directoryProcessor = new DirectoryProcessor(
+            this.config,
+            this.resolver,
+        );
     }
 
     /**
@@ -44,7 +47,9 @@ export class TartanProject {
         await this.directoryProcessor.loadContextTree();
     }
 
-    private flatToTree(flat: typeof this.directoryProcessor.contextTree): TreeNode {
+    private flatToTree(
+        flat: typeof this.directoryProcessor.contextTree,
+    ): TreeNode {
         Logger.log(flat);
         const nodes: Record<string, TreeNode> = {};
         let root: TreeNode | undefined = undefined;
@@ -62,8 +67,7 @@ export class TartanProject {
             Logger.log(parent);
             if (parent === undefined) {
                 root = nodes[key];
-            }
-            else {
+            } else {
                 nodes[parent].children.push(nodes[key]);
             }
         }
@@ -82,54 +86,81 @@ export class TartanProject {
         /*
          * The page processing function
          */
-        const processPage = async (page: string, context: PartialTartanContext, depth: number, subpageMeta: SubPageMeta[]): Promise<PageMeta> => {
+        const processPage = async (
+            page: string,
+            context: PartialTartanContext,
+            depth: number,
+            subpageMeta: SubPageMeta[],
+        ): Promise<PageMeta> => {
             Logger.log(`${page} : ${context}`);
             let sourcePath: string;
             let outputDir: string;
 
             // if it's a directory
             if (page.endsWith(path.sep)) {
-                sourcePath = page.endsWith(path.sep) ? path.join(page, context.pageSource || "") : page;
-                outputDir = path.join(this.config.outputDir as string, path.relative(this.config.rootDir as string, page));
+                sourcePath = page.endsWith(path.sep)
+                    ? path.join(page, context.pageSource || "")
+                    : page;
+                outputDir = path.join(
+                    this.config.outputDir as string,
+                    path.relative(this.config.rootDir as string, page),
+                );
             }
             // if it's a file
             else {
                 const parsed = path.parse(page);
                 sourcePath = page;
-                outputDir = path.join(this.config.outputDir as string, path.relative(this.config.rootDir as string, parsed.dir), parsed.name);
+                outputDir = path.join(
+                    this.config.outputDir as string,
+                    path.relative(this.config.rootDir as string, parsed.dir),
+                    parsed.name,
+                );
             }
 
-            const pageProcessor = new PageProcessor({
-                sourcePath,
-                context: context,
-                outputDir,
-                subpageMeta: subpageMeta,
-                depth,
-            }, this.config, this.resolver);
+            const pageProcessor = new PageProcessor(
+                {
+                    sourcePath,
+                    context: context,
+                    outputDir,
+                    subpageMeta: subpageMeta,
+                    depth,
+                },
+                this.config,
+                this.resolver,
+            );
 
             const result = await pageProcessor.process();
             return result;
-        }
+        };
 
         /*
          * Define the recursive function to process the tree bottom-up
          */
-        const processFromBottom = async (node: TreeNode, depth: number = 0): Promise<SubPageMetaWithDepth[]> => {
+        const processFromBottom = async (
+            node: TreeNode,
+            depth: number = 0,
+        ): Promise<SubPageMetaWithDepth[]> => {
             let results: SubPageMetaWithDepth[] = [];
             for (const child of node.children) {
-                results = results.concat(await processFromBottom(child, depth + 1));
+                results = results.concat(
+                    await processFromBottom(child, depth + 1),
+                );
             }
             return results.concat({
-                ...(await processPage(node.key, node.value, depth, results.map(a => ({...a, distance: a.depth - depth})))),
+                ...(await processPage(
+                    node.key,
+                    node.value,
+                    depth,
+                    results.map((a) => ({ ...a, distance: a.depth - depth })),
+                )),
                 depth: depth,
             } as SubPageMetaWithDepth);
-        }
+        };
 
         const thing = await processFromBottom(tree);
-        Logger.log(thing)
+        Logger.log(thing);
     }
 }
-
 
 export * from "./tartan-config.js";
 export * from "./tartan-context.js";

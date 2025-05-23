@@ -1,6 +1,3 @@
-/*
- * @format
- */
 import { TartanConfig } from "../../src/tartan-config";
 import {
     InvalidOutputDirectoryError,

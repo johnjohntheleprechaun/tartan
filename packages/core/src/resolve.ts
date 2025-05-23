@@ -1,6 +1,3 @@
-/**
- * @format
- */
 import { TartanConfig } from "./tartan-config.js";
 import { TartanModule } from "./tartan-module.js";
 import path from "path";

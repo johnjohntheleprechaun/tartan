@@ -1,4 +1,4 @@
-import {TartanConfig} from "@tartan/core";
+import { TartanConfig } from "@tartan/core";
 
 export default {
     rootDir: "docs/root/",

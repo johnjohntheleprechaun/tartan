@@ -2,15 +2,24 @@ import { Resolver } from "../resolve.js";
 import fs from "fs/promises";
 import path from "path";
 import { TartanConfig } from "../tartan-config.js";
-import { PartialTartanContext, FullTartanContext, TartanContextFile } from "../tartan-context.js";
+import {
+    PartialTartanContext,
+    FullTartanContext,
+    TartanContextFile,
+} from "../tartan-context.js";
 import { glob } from "glob";
 import { Logger } from "../logger.js";
 
 export class DirectoryProcessor {
     private readonly resolver: Resolver;
     private projectConfig: TartanConfig;
-    public contextTree: { [key: string]: { context: FullTartanContext, parent?: string } } = {};
-    private rootContext: FullTartanContext = { pageMode: "directory", pageSource: "index.html" };
+    public contextTree: {
+        [key: string]: { context: FullTartanContext; parent?: string };
+    } = {};
+    private rootContext: FullTartanContext = {
+        pageMode: "directory",
+        pageSource: "index.html",
+    };
     /**
      * @param config The project's config
      * @param resolver The fully initialized module resovler to use
@@ -27,21 +36,32 @@ export class DirectoryProcessor {
     public async loadContextTree(): Promise<typeof this.contextTree> {
         // This should be... better.
         if (this.projectConfig.rootContext) {
-            this.rootContext = await this.resolver.initializeContext(this.projectConfig.rootContext) as FullTartanContext;
+            this.rootContext = (await this.resolver.initializeContext(
+                this.projectConfig.rootContext,
+            )) as FullTartanContext;
         }
         // Go through the treeeeeee
         type QueueItem = {
             path: string;
             parent?: string;
         };
-        const queue: QueueItem[] = [{ path: path.normalize(this.projectConfig.rootDir) }];
-        const results: { [key: string]: { defaultContext: PartialTartanContext, currentContext: PartialTartanContext, mergedContext: PartialTartanContext, parent?: string } } = {};
+        const queue: QueueItem[] = [
+            { path: path.normalize(this.projectConfig.rootDir) },
+        ];
+        const results: {
+            [key: string]: {
+                defaultContext: PartialTartanContext;
+                currentContext: PartialTartanContext;
+                mergedContext: PartialTartanContext;
+                parent?: string;
+            };
+        } = {};
         let queueSize = 1;
         for (let i = 0; i < queueSize; i++) {
             /**
              * The current queue item being processed.
              */
-            const item = queue[i]
+            const item = queue[i];
             Logger.log(item);
             Logger.log(queue.slice(i));
 
@@ -55,52 +75,67 @@ export class DirectoryProcessor {
                 contextFilename = "tartan.context";
 
                 // add child directories
-                const dirContents = await fs.readdir(item.path, { withFileTypes: true });
+                const dirContents = await fs.readdir(item.path, {
+                    withFileTypes: true,
+                });
                 for (const child of dirContents) {
-                    Logger.log(child)
+                    Logger.log(child);
                     if (child.isDirectory()) {
                         Logger.log(true);
-                        queue.push(
-                            {
-                                path: path.normalize(path.join(item.path, child.name, "./")),
-                                parent: item.path,
-                            }
-                        );
+                        queue.push({
+                            path: path.normalize(
+                                path.join(item.path, child.name, "./"),
+                            ),
+                            parent: item.path,
+                        });
                     }
                 }
-            }
-            else {
+            } else {
                 dir = path.dirname(item.path);
                 contextFilename = `${path.basename(item.path)}.context`;
             }
 
-            let defaultContextFile: TartanContextFile | undefined = await Resolver.loadObjectFromFile<TartanContextFile>(path.join(dir, "tartan.context.default"));
-            let currentContextFile: TartanContextFile | undefined = await Resolver.loadObjectFromFile<TartanContextFile>(path.join(dir, contextFilename));
+            let defaultContextFile: TartanContextFile | undefined =
+                await Resolver.loadObjectFromFile<TartanContextFile>(
+                    path.join(dir, "tartan.context.default"),
+                );
+            let currentContextFile: TartanContextFile | undefined =
+                await Resolver.loadObjectFromFile<TartanContextFile>(
+                    path.join(dir, contextFilename),
+                );
 
             let defaultContext: PartialTartanContext;
             let currentContext: PartialTartanContext = {};
 
             if (defaultContextFile) {
-                const loadedContext: PartialTartanContext = await this.resolver.initializeContext(defaultContextFile);
-                defaultContext = this.mergeContexts(item.parent ? results[item.parent].defaultContext : this.rootContext, loadedContext);
-            }
-            else if (!item.parent) {
+                const loadedContext: PartialTartanContext =
+                    await this.resolver.initializeContext(defaultContextFile);
+                defaultContext = this.mergeContexts(
+                    item.parent
+                        ? results[item.parent].defaultContext
+                        : this.rootContext,
+                    loadedContext,
+                );
+            } else if (!item.parent) {
                 defaultContext = this.mergeContexts({}, this.rootContext);
-            }
-            else {
+            } else {
                 defaultContext = results[item.parent].defaultContext;
             }
 
             // get context
             if (currentContextFile) {
-                const loadedContext: PartialTartanContext = await this.resolver.initializeContext(currentContextFile);
+                const loadedContext: PartialTartanContext =
+                    await this.resolver.initializeContext(currentContextFile);
                 currentContext = loadedContext;
             }
 
             const contexts = {
                 defaultContext,
                 currentContext,
-                mergedContext: this.mergeContexts(defaultContext, currentContext),
+                mergedContext: this.mergeContexts(
+                    defaultContext,
+                    currentContext,
+                ),
             };
 
             // Add pages to the queue for file mode
@@ -115,14 +150,18 @@ export class DirectoryProcessor {
                     cwd: dir,
                 });
 
-                for (const page of pages.filter(val => path.normalize(val) !== path.normalize(contexts.mergedContext.pageSource as string))) {
+                for (const page of pages.filter(
+                    (val) =>
+                        path.normalize(val) !==
+                        path.normalize(
+                            contexts.mergedContext.pageSource as string,
+                        ),
+                )) {
                     Logger.log(page);
-                    queue.push(
-                        {
-                            path: path.normalize(path.join(item.path, page)),
-                            parent: item.path,
-                        }
-                    );
+                    queue.push({
+                        path: path.normalize(path.join(item.path, page)),
+                        parent: item.path,
+                    });
                 }
             }
 
@@ -152,7 +191,10 @@ export class DirectoryProcessor {
      *
      * @returns The merged context object.
      */
-    private mergeContexts(a: PartialTartanContext, b: PartialTartanContext): PartialTartanContext {
+    private mergeContexts(
+        a: PartialTartanContext,
+        b: PartialTartanContext,
+    ): PartialTartanContext {
         if (b.inherit === false) {
             a = this.rootContext;
             delete b.inherit;

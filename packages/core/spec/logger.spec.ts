@@ -1,6 +1,3 @@
-/*
- * @format
- */
 import { Logger } from "../src/logger";
 
 describe("Test log level logic", () => {

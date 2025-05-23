@@ -1,6 +1,3 @@
-/*
- * @format
- */
 import { FromSchema, JSONSchema } from "json-schema-to-ts";
 
 /*

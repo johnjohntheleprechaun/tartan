@@ -1,6 +1,3 @@
-/*
- * @format
- */
 import { DirectoryProcessor } from "../../src/processors/directory";
 import mock from "mock-fs";
 import { Resolver } from "../../src/resolve";
