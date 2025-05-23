@@ -1,6 +1,7 @@
 /**
  * @format
  */
+import fs from "fs/promises";
 import { Resolver } from "../src/resolve";
 import path from "path";
 import mock from "mock-fs";
@@ -53,6 +54,46 @@ function createFakePackage(input: FakePackageInput) {
 }
 
 describe("The Resolver class", () => {
+    describe("findUp function", () => {
+        afterEach(() => {
+            mock.restore();
+        });
+        it("should find the file if it's in the current dir", async () => {
+            mock({
+                file: "",
+            });
+
+            const result = await Resolver.findUp("file");
+            expect(result).toBe(path.join(process.cwd(), "file"));
+        });
+        it("should find the file in a parent directory", async () => {
+            mock({
+                "/mock": {
+                    file: "",
+                    "sub-dir": {},
+                },
+            });
+
+            spyOn(process, "cwd").and.callFake(() => "/mock/sub-dir");
+
+            const result = await Resolver.findUp("file");
+            expect(result).toBe("/mock/file");
+        });
+        it("should throw an error if there's no match", async () => {
+            mock({
+                "/mock": {
+                    "sub-dir": {
+                        "other-sub-dir": {},
+                    },
+                },
+            });
+            spyOn(process, "cwd").and.callFake(
+                () => "/mock/sub-dir/other-sub-dir",
+            );
+            const promise: Promise<string> = Resolver.findUp("file");
+            return expectAsync(promise).toBeRejected();
+        });
+    });
     describe("template resolver", () => {
         let resolver: Resolver;
         beforeAll(async () => {

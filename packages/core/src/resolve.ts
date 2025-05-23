@@ -43,7 +43,7 @@ export class Resolver {
     }
 
     public async init(): Promise<Resolver> {
-        const packageLockPath = "package-lock.json";
+        const packageLockPath = await Resolver.findUp("package-lock.json");
         const packageLock = await fs
             .readFile(packageLockPath)
             .then((res) => JSON.parse(res.toString()))
@@ -153,6 +153,23 @@ export class Resolver {
 
         Logger.log(this.componentMap);
         return this;
+    }
+    public static async findUp(filename: string): Promise<string> {
+        let currentDir: string = process.cwd();
+        while (currentDir !== "/") {
+            const testPath = path.join(currentDir, filename);
+            if (
+                await fs
+                    .access(testPath)
+                    .then(() => true)
+                    .catch(() => false)
+            ) {
+                return testPath;
+            } else {
+                currentDir = path.resolve(currentDir, "..");
+            }
+        }
+        throw `file "${filename}" not found in any parent directories`;
     }
     private isCustomElementDeclaration(
         declaration: Declaration,
