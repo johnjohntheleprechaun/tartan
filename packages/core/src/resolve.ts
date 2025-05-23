@@ -140,9 +140,9 @@ export class Resolver {
                     this.templateMap[template.name] =
                         Handlebars.compile(templateFile);
                 }
-                // Load all the partials
-                for (const partial of manifest.partials || []) {
-                }
+                /*
+                 * TODO: load partials
+                 */
             }
 
             // if the module had anything relevant to Tartan

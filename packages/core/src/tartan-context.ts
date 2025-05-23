@@ -1,5 +1,5 @@
 import {JSONSchema, FromSchema} from "json-schema-to-ts";
-import {ReplaceTypes, RequireKeys} from "./util.js";
+import {ReplaceTypes} from "./util.js";
 import {SourceProcessor} from "./source-processor.js";
 
 export const tartanContextSchema = {

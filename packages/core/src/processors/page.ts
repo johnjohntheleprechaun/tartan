@@ -42,11 +42,6 @@ export class PageProcessor {
     private readonly projectConfig: TartanConfig;
     private readonly context: PartialTartanContext;
     public static directoriesOutputed: string[] = [];
-    private htmlInfo: {
-        htmlContent?: string;
-        rootNode?: HTMLElement;
-        resolver?: Resolver;
-    } = {};
 
     constructor(
         pageConfig: PageProcessorConfig,

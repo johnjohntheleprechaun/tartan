@@ -12,7 +12,6 @@ import generate from "@babel/generator";
 import { build } from "esbuild";
 import parse, { HTMLElement } from "node-html-parser";
 import path from "path";
-import { Logger } from "../logger.js";
 import { TartanConfig } from "../tartan-config.js";
 import crypto from "crypto";
 
@@ -203,9 +202,7 @@ export class HTMLProcessor {
         }
 
         for (const child of node.children) {
-            dependencies = dependencies.concat(
-                this.findDependencies(child, seen),
-            );
+            dependencies = dependencies.concat(this.findDependencies(child));
         }
 
         return dependencies;

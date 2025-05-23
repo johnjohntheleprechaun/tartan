@@ -17,7 +17,6 @@ export class TartanProject {
     public readonly config: TartanConfig;
     private readonly directoryProcessor: DirectoryProcessor;
     private readonly resolver: Resolver;
-    private initialized: boolean = false;
 
     constructor(config: TartanConfig, logLevel?: number) {
         this.config = config;

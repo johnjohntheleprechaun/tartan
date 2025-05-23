@@ -1,6 +1,5 @@
 import { Resolver } from "../resolve.js";
 import fs from "fs/promises";
-import fsSync from "fs";
 import path from "path";
 import { TartanConfig } from "../tartan-config.js";
 import { PartialTartanContext, FullTartanContext, TartanContextFile } from "../tartan-context.js";
