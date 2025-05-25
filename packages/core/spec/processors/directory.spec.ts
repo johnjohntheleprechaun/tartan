@@ -1,4 +1,5 @@
 import { DirectoryProcessor } from "../../src/processors/directory";
+import fs from "fs/promises";
 import mock from "mock-fs";
 import { Resolver } from "../../src/resolve";
 import { TartanConfig } from "../../src/tartan-config";
@@ -104,10 +105,12 @@ describe("The directory processor", () => {
             src: {
                 context: defaultContextFile as FullTartanContext,
                 parent: undefined,
+                skip: true,
             },
             "src/subpage/": {
                 context: { ...rootContext },
                 parent: "src",
+                skip: true,
             },
         });
     });
@@ -139,14 +142,64 @@ describe("The directory processor", () => {
             src: {
                 context: rootDefaultContext as FullTartanContext,
                 parent: undefined,
+                skip: true,
             },
             "src/page/": {
                 context: rootContext,
                 parent: "src",
+                skip: true,
             },
             "src/page/subpage/": {
                 context: rootContext,
                 parent: "src/page/",
+                skip: true,
+            },
+        });
+    });
+
+    it("should skip directories when no `pageSource` is defined", async () => {
+        const config: TartanConfig = {
+            rootDir: "src",
+            outputDir: "dist",
+            rootContext: {
+                pageMode: "file",
+                pagePattern: "*.md",
+            },
+        };
+        const resolver = await Resolver.create(config);
+        const specialProcessor = new DirectoryProcessor(config, resolver);
+        mock({
+            src: {},
+        });
+        const results = await specialProcessor.loadContextTree();
+        expect(results).toEqual({
+            src: {
+                context: config.rootContext as FullTartanContext,
+                parent: undefined,
+                skip: true,
+            },
+        });
+    });
+    it("should skip directories when the file defined by `pageSource` doesn't exist", async () => {
+        const config: TartanConfig = {
+            rootDir: "src",
+            outputDir: "dist",
+            rootContext: {
+                pageMode: "directory",
+                pageSource: "index.md",
+            },
+        };
+        const resolver = await Resolver.create(config);
+        const specialProcessor = new DirectoryProcessor(config, resolver);
+        mock({
+            src: {},
+        });
+        const results = await specialProcessor.loadContextTree();
+        expect(results).toEqual({
+            src: {
+                context: config.rootContext as FullTartanContext,
+                parent: undefined,
+                skip: true,
             },
         });
     });

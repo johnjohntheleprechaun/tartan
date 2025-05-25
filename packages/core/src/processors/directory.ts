@@ -14,7 +14,11 @@ export class DirectoryProcessor {
     private readonly resolver: Resolver;
     private projectConfig: TartanConfig;
     public contextTree: {
-        [key: string]: { context: FullTartanContext; parent?: string };
+        [key: string]: {
+            context: FullTartanContext;
+            parent?: string;
+            skip: boolean;
+        };
     } = {};
     private rootContext: FullTartanContext = {
         pageMode: "directory",
@@ -54,8 +58,10 @@ export class DirectoryProcessor {
                 currentContext: PartialTartanContext;
                 mergedContext: PartialTartanContext;
                 parent?: string;
+                skip: boolean;
             };
         } = {};
+        // this is needed cause otherwise if just put queue.length in the while loop it would present 1, and wouldn't change as the length changes (I think?)
         let queueSize = 1;
         for (let i = 0; i < queueSize; i++) {
             /**
@@ -165,9 +171,29 @@ export class DirectoryProcessor {
                 }
             }
 
+            /*
+             * If you're a directory but you don't have a file that matches page source (or no page source at all), don't add it to the results.
+             * Not having a page source is... technically allowed. idk why anyone would ever want that though lol.
+             */
+            let skip: boolean = false;
+            if (
+                isDirectory &&
+                (contexts.mergedContext.pageSource === undefined ||
+                    // no access to file
+                    !(await fs
+                        .access(
+                            path.join(dir, contexts.mergedContext.pageSource),
+                        )
+                        .then(() => true)
+                        .catch(() => false)))
+            ) {
+                Logger.log(`the root page for ${dir} should be skipped`);
+                skip = true;
+            }
             results[item.path] = {
                 ...contexts,
                 parent: item.parent,
+                skip,
             };
 
             queueSize = queue.length;
@@ -177,6 +203,7 @@ export class DirectoryProcessor {
             this.contextTree[key] = {
                 context: results[key].mergedContext as FullTartanContext,
                 parent: results[key].parent,
+                skip: results[key].skip,
             };
         }
 

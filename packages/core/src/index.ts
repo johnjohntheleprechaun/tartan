@@ -9,6 +9,7 @@ import { PageMeta, SubPageMeta } from "./source-processor.js";
 type TreeNode = {
     key: string;
     value: PartialTartanContext;
+    skip: boolean;
     children: TreeNode[];
 };
 type SubPageMetaWithDepth = Omit<SubPageMeta, "distance"> & { depth: number };
@@ -59,6 +60,7 @@ export class TartanProject {
                 key: key,
                 value: flat[key].context,
                 children: [],
+                skip: flat[key].skip,
             };
         }
 
@@ -145,6 +147,9 @@ export class TartanProject {
                 results = results.concat(
                     await processFromBottom(child, depth + 1),
                 );
+            }
+            if (node.skip) {
+                return results;
             }
             return results.concat({
                 ...(await processPage(
