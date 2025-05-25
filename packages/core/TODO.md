@@ -5,3 +5,11 @@
 - the custom elements manifest is supposed to define elements in the exports section, but some things (like shoelace) have malformed manifests. This needs to be handled gracefully. Also, maybe I should make a pull request to shoelace.
 - Put custom element classes in the global scope and mark those imports as external when processing javascript
 - add an `extraAssets` and an `asset` page mode, to handle assets that aren't explicitly referenced in HTML
+- gracefully handle missing `pageSource` files
+- add a page mode or modes that allows the user to stop the tree search from going further down and do one of the following:
+
+    - provide a simulated file tree to traverse (like the mock-fs input)
+    - receive as input an output directory (and whatever context would usually be provided to a source processor, minus the obvious) and be left to it's own devices in regards to generating output
+    - dynamically generate subdirectories on disk, to be processed as they usually would be (admittedly this is kind of a weird idea, but it would let me use `typedoc` to generate markdown files, and then just process them with the same theme as everything else)
+
+- add comments goddamn bro
