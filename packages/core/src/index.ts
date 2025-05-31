@@ -5,6 +5,7 @@ import { TartanConfig } from "./tartan-config.js";
 import path from "path";
 import { PartialTartanContext } from "./tartan-context.js";
 import { PageMeta, SubPageMeta } from "./source-processor.js";
+import fs from "fs/promises";
 
 type TreeNode = {
     key: string;
@@ -117,6 +118,14 @@ export class TartanProject {
                     path.relative(this.config.rootDir as string, parsed.dir),
                     parsed.name,
                 );
+                if (context.pageMode === "asset") {
+                    await fs.cp(sourcePath, outputDir + parsed.ext);
+                    return {
+                        sourcePath,
+                        outputDir,
+                        context,
+                    };
+                }
             }
 
             const pageProcessor = new PageProcessor(

@@ -11,7 +11,7 @@ export const tartanContextSchema = {
                 "Whether or not to inherit values from `tartan.context.default` files.",
         },
         pageMode: {
-            enum: ["directory", "file"],
+            enum: ["directory", "file", "asset"],
         },
         pagePattern: {
             type: "string",
@@ -37,7 +37,7 @@ export const tartanContextSchema = {
             description:
                 "A module specifier for a module who's default export is a string to string mapping function. So that you can (for example) pre-process markdown, and translate it into HTML",
         },
-        assets: {
+        extraAssets: {
             type: "array",
             items: {
                 type: "string",
@@ -65,4 +65,8 @@ export type FullTartanContext =
     | ReplaceTypes<
           PartialTartanContext,
           { pageMode: "directory"; pageSource: string }
+      >
+    | ReplaceTypes<
+          PartialTartanContext,
+          { pageMode: "asset"; pagePattern: string }
       >;

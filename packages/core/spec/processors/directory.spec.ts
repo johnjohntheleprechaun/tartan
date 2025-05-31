@@ -203,4 +203,33 @@ describe("The directory processor", () => {
             },
         });
     });
+    it('should add assets when pageMode is "asset"', async () => {
+        const defaultContext: TartanContextFile = {
+            pageMode: "asset",
+            pagePattern: "*.png",
+        };
+        const mergedContext: FullTartanContext = {
+            ...(defaultContext as FullTartanContext),
+            pageSource: "index.html", // because of what root context is
+        };
+        mock({
+            src: {
+                "tartan.context.json": JSON.stringify(defaultContext),
+                "thing.png": "",
+            },
+        });
+        const result = await directoryProcessor.loadContextTree();
+        expect(result).toEqual({
+            src: {
+                context: mergedContext,
+                parent: undefined,
+                skip: true,
+            },
+            "src/thing.png": {
+                context: mergedContext,
+                parent: "src",
+                skip: false,
+            },
+        });
+    });
 });

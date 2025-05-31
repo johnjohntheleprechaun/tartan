@@ -146,7 +146,9 @@ export class DirectoryProcessor {
 
             // Add pages to the queue for file mode
             if (isDirectory && contexts.mergedContext.pageMode === "file") {
-                Logger.log(`this is a pagemode directory ${contexts}`);
+                Logger.log(
+                    `this is either a file or asset page mode directory ${contexts}`,
+                );
                 if (!contexts.mergedContext.pagePattern) {
                     throw new Error(`You don't have a pagePattern for ${dir}`);
                 }
@@ -171,6 +173,31 @@ export class DirectoryProcessor {
                 }
             }
 
+            if (isDirectory && contexts.mergedContext.pageMode === "asset") {
+                if (!contexts.mergedContext.pagePattern) {
+                    throw new Error(`You don't have a pagePattern for ${dir}`);
+                }
+                const pages = await glob(contexts.mergedContext.pagePattern, {
+                    noglobstar: true,
+                    nodir: true,
+                    cwd: dir,
+                });
+
+                for (const page of pages.filter(
+                    (val) =>
+                        path.normalize(val) !==
+                        path.normalize(
+                            contexts.mergedContext.pageSource as string,
+                        ),
+                )) {
+                    results[path.normalize(path.join(item.path, page))] = {
+                        ...contexts,
+                        parent: item.path,
+                        skip: false,
+                    };
+                }
+            }
+
             /*
              * If you're a directory but you don't have a file that matches page source (or no page source at all), don't add it to the results.
              * Not having a page source is... technically allowed. idk why anyone would ever want that though lol.
@@ -179,6 +206,7 @@ export class DirectoryProcessor {
             if (
                 isDirectory &&
                 (contexts.mergedContext.pageSource === undefined ||
+                    contexts.mergedContext.pageMode === "asset" ||
                     // no access to file
                     !(await fs
                         .access(

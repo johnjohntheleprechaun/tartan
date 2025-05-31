@@ -12,6 +12,10 @@ type FullTartanContext =
     | ReplaceTypes<
           TartanContextFile,
           { pageMode: "directory"; pageSource: string }
+      >
+    | ReplaceTypes<
+          TartanContextFile,
+          { pageMode: "asset"; pagePattern: string }
       >;
 
 export type TartanConfig = {
