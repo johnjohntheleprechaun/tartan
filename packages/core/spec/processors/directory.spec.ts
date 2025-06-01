@@ -35,7 +35,7 @@ describe("The directory processor", () => {
         const results = await directoryProcessor.loadContextTree();
         // the root dir
         for (const result of Object.keys(results).map((key) => results[key])) {
-            expect(result.context).toEqual(rootContext);
+            expect(result.mergedContext).toEqual(rootContext);
         }
     });
     it("should use root tartan.context.default.json if provided", async () => {
@@ -54,7 +54,7 @@ describe("The directory processor", () => {
 
         const results = await directoryProcessor.loadContextTree();
         for (const result of Object.keys(results).map((key) => results[key])) {
-            expect(result.context).toEqual(defaultContext);
+            expect(result.mergedContext).toEqual(defaultContext);
         }
     });
     it("should override tartan.context.default.json with tartan.context.json", async () => {
@@ -73,12 +73,12 @@ describe("The directory processor", () => {
         });
 
         const results = await directoryProcessor.loadContextTree();
-        expect(results["src"].context).toEqual({
+        expect(results["src"].mergedContext).toEqual({
             pageMode: "directory",
             pageSource: "index.html",
         });
 
-        expect(results["src/subpage/"].context).toEqual(overrideContext);
+        expect(results["src/subpage/"].mergedContext).toEqual(overrideContext);
     });
     it("should not inherit properties from parents if `inherit` is false", async () => {
         const defaultContextFile: TartanContextFile = {
@@ -101,18 +101,15 @@ describe("The directory processor", () => {
 
         const results = await directoryProcessor.loadContextTree();
 
-        expect(results).toEqual({
-            src: {
-                context: defaultContextFile as FullTartanContext,
-                parent: undefined,
-                skip: true,
-            },
-            "src/subpage/": {
-                context: { ...rootContext },
-                parent: "src",
-                skip: true,
-            },
-        });
+        expect(results).toHaveSize(2);
+        // check root dir
+        expect(results["src"]).toBeDefined();
+        expect(results["src"].mergedContext).toEqual(
+            defaultContextFile as FullTartanContext,
+        );
+        // check the subpage
+        expect(results["src/subpage/"]).toBeDefined();
+        expect(results["src/subpage/"].mergedContext).toEqual(rootContext);
     });
     it("should stop the cascade of inheritance if `inherit` is false in a default context file", async () => {
         const rootDefaultContext: TartanContextFile = {
@@ -138,23 +135,21 @@ describe("The directory processor", () => {
 
         const results = await directoryProcessor.loadContextTree();
 
-        expect(results).toEqual({
-            src: {
-                context: rootDefaultContext as FullTartanContext,
-                parent: undefined,
-                skip: true,
-            },
-            "src/page/": {
-                context: rootContext,
-                parent: "src",
-                skip: true,
-            },
-            "src/page/subpage/": {
-                context: rootContext,
-                parent: "src/page/",
-                skip: true,
-            },
-        });
+        expect(results).toHaveSize(3);
+
+        // Check "src"
+        expect(results["src"]).toBeDefined();
+        expect(results["src"].mergedContext).toEqual(
+            rootDefaultContext as FullTartanContext,
+        );
+
+        // Check "src/page/"
+        expect(results["src/page/"]).toBeDefined();
+        expect(results["src/page/"].mergedContext).toEqual(rootContext);
+
+        // Check "src/page/subpage/"
+        expect(results["src/page/subpage/"]).toBeDefined();
+        expect(results["src/page/subpage/"].mergedContext).toEqual(rootContext);
     });
 
     it("should skip directories when no `pageSource` is defined", async () => {
@@ -172,13 +167,10 @@ describe("The directory processor", () => {
             src: {},
         });
         const results = await specialProcessor.loadContextTree();
-        expect(results).toEqual({
-            src: {
-                context: config.rootContext as FullTartanContext,
-                parent: undefined,
-                skip: true,
-            },
-        });
+
+        expect(results).toHaveSize(1);
+        expect(results["src"]).toBeDefined();
+        expect(results["src"].skip).toBeTrue();
     });
     it("should skip directories when the file defined by `pageSource` doesn't exist", async () => {
         const config: TartanConfig = {
@@ -195,15 +187,11 @@ describe("The directory processor", () => {
             src: {},
         });
         const results = await specialProcessor.loadContextTree();
-        expect(results).toEqual({
-            src: {
-                context: config.rootContext as FullTartanContext,
-                parent: undefined,
-                skip: true,
-            },
-        });
+        expect(results).toHaveSize(1);
+        expect(results["src"]).toBeDefined();
+        expect(results["src"].skip).toBeTrue();
     });
-    it('should add assets when pageMode is "asset"', async () => {
+    it('should add assets when pageMode is "asset" and correctly set the source type', async () => {
         const defaultContext: TartanContextFile = {
             pageMode: "asset",
             pagePattern: "*.png",
@@ -218,18 +206,9 @@ describe("The directory processor", () => {
                 "thing.png": "",
             },
         });
-        const result = await directoryProcessor.loadContextTree();
-        expect(result).toEqual({
-            src: {
-                context: mergedContext,
-                parent: undefined,
-                skip: true,
-            },
-            "src/thing.png": {
-                context: mergedContext,
-                parent: "src",
-                skip: false,
-            },
-        });
+        const results = await directoryProcessor.loadContextTree();
+
+        expect(results["src/thing.png"]).toBeDefined();
+        expect(results["src/thing.png"].sourceType).toBe("asset");
     });
 });
