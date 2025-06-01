@@ -13,3 +13,4 @@
     - dynamically generate subdirectories on disk, to be processed as they usually would be (admittedly this is kind of a weird idea, but it would let me use `typedoc` to generate markdown files, and then just process them with the same theme as everything else)
 
 - add comments goddamn bro
+- investigate switching to Node v22 (LTS) and builtin `fs.glob`
