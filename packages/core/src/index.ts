@@ -1,19 +1,25 @@
 import { Logger } from "./logger.js";
-import { DirectoryProcessor, PageProcessor } from "./processors/index.js";
+import {
+    ContextTreeNode,
+    DirectoryProcessor,
+    PageProcessor,
+} from "./processors/index.js";
 import { Resolver } from "./resolve.js";
 import { TartanConfig } from "./tartan-config.js";
 import path from "path";
-import { PartialTartanContext } from "./tartan-context.js";
-import { PageMeta, SubPageMeta } from "./source-processor.js";
+import { FullTartanContext, PartialTartanContext } from "./tartan-context.js";
+import { SourceMeta, SubSourceMeta } from "./source-processor.js";
 import fs from "fs/promises";
 
 type TreeNode = {
     key: string;
-    value: PartialTartanContext;
-    skip: boolean;
+    value: ContextTreeNode;
+    skip?: boolean;
     children: TreeNode[];
 };
-type SubPageMetaWithDepth = Omit<SubPageMeta, "distance"> & { depth: number };
+type SubSourceMetaWithDepth = Omit<SubSourceMeta, "distance"> & {
+    depth: number;
+};
 
 export class TartanProject {
     public readonly config: TartanConfig;
@@ -59,9 +65,8 @@ export class TartanProject {
         for (const key in flat) {
             nodes[key] = {
                 key: key,
-                value: flat[key].context,
+                value: flat[key],
                 children: [],
-                skip: flat[key].skip,
             };
         }
 
@@ -91,10 +96,10 @@ export class TartanProject {
          */
         const processPage = async (
             page: string,
-            context: PartialTartanContext,
+            context: FullTartanContext,
             depth: number,
-            subpageMeta: SubPageMeta[],
-        ): Promise<PageMeta> => {
+            subSourceMeta: SubSourceMeta[],
+        ): Promise<SourceMeta> => {
             Logger.log(`${page} : ${context}`);
             let sourcePath: string;
             let outputDir: string;
@@ -118,14 +123,6 @@ export class TartanProject {
                     path.relative(this.config.rootDir as string, parsed.dir),
                     parsed.name,
                 );
-                if (context.pageMode === "asset") {
-                    await fs.cp(sourcePath, outputDir + parsed.ext);
-                    return {
-                        sourcePath,
-                        outputDir,
-                        context,
-                    };
-                }
             }
 
             const pageProcessor = new PageProcessor(
@@ -133,7 +130,7 @@ export class TartanProject {
                     sourcePath,
                     context: context,
                     outputDir,
-                    subpageMeta: subpageMeta,
+                    subpageMeta: subSourceMeta,
                     depth,
                 },
                 this.config,
@@ -143,6 +140,27 @@ export class TartanProject {
             const result = await pageProcessor.process();
             return result;
         };
+        const processAsset = async (
+            filepath: string,
+            context: FullTartanContext,
+            depth: number,
+            subSourceMeta: SubSourceMeta[],
+        ): Promise<SourceMeta> => {
+            const parsed = path.parse(filepath);
+            const sourcePath = filepath;
+            const outputPath = path.join(
+                this.config.outputDir as string,
+                path.relative(this.config.rootDir as string, parsed.dir),
+                parsed.base,
+            );
+            await fs.cp(sourcePath, outputPath);
+            return {
+                sourcePath,
+                sourceType: "asset",
+                outputDir: outputPath,
+                context,
+            };
+        };
 
         /*
          * Define the recursive function to process the tree bottom-up
@@ -150,8 +168,8 @@ export class TartanProject {
         const processFromBottom = async (
             node: TreeNode,
             depth: number = 0,
-        ): Promise<SubPageMetaWithDepth[]> => {
-            let results: SubPageMetaWithDepth[] = [];
+        ): Promise<SubSourceMetaWithDepth[]> => {
+            let results: SubSourceMetaWithDepth[] = [];
             for (const child of node.children) {
                 results = results.concat(
                     await processFromBottom(child, depth + 1),
@@ -161,14 +179,27 @@ export class TartanProject {
                 return results;
             }
             return results.concat({
-                ...(await processPage(
-                    node.key,
-                    node.value,
-                    depth,
-                    results.map((a) => ({ ...a, distance: a.depth - depth })),
-                )),
+                ...(node.value.sourceType === "page"
+                    ? await processPage(
+                          node.key,
+                          node.value.mergedContext,
+                          depth,
+                          results.map((a) => ({
+                              ...a,
+                              distance: a.depth - depth,
+                          })),
+                      )
+                    : await processAsset(
+                          node.key,
+                          node.value.mergedContext,
+                          depth,
+                          results.map((a) => ({
+                              ...a,
+                              distance: a.depth - depth,
+                          })),
+                      )),
                 depth: depth,
-            } as SubPageMetaWithDepth);
+            });
         };
 
         const thing = await processFromBottom(tree);
