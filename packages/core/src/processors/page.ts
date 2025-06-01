@@ -64,7 +64,7 @@ export class PageProcessor {
                   depth: this.config.depth || 0,
                   subpageMeta: this.config.subpageMeta,
               })
-            : { processedContents: pageContent.toString() };
+            : { processedContents: pageContent };
 
         Logger.log(processorOutput, 2);
 
@@ -79,10 +79,10 @@ export class PageProcessor {
         // pass it into the handlebars template, if you need to
         let finished: string;
         if (!this.context.template) {
-            finished = processorOutput.processedContents;
+            finished = processorOutput.processedContents.toString("utf8");
         } else {
             finished = this.context.template({
-                pageContent: processorOutput.processedContents,
+                pageContent: processorOutput.processedContents.toString("utf8"),
                 extraContext: this.context.handlebarsParameters,
                 pageMeta,
                 subPageMeta: this.config.subpageMeta,

@@ -60,7 +60,7 @@ export type SourceProcessorInput = {
     depth: number;
 };
 export type SourceProcessorOutput = {
-    processedContents: string;
+    processedContents: Buffer;
     /**
      * Source processors are allowed to change the directory the page is outputted to.
      * This directory is relative to the parent, so effectively it's just *renaming* the page.

@@ -5,7 +5,10 @@ const converter = new showdown.Converter();
 export default ((input) => {
     Logger.log(input.subpageMeta);
     return {
-        processedContents: converter.makeHtml(input.sourceContents.toString()),
+        processedContents: Buffer.from(
+            converter.makeHtml(input.sourceContents.toString()),
+            "utf8",
+        ),
         extraMeta: "asdfasdfasdf",
     };
 }) as SourceProcessor;

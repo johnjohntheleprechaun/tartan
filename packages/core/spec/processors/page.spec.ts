@@ -68,7 +68,7 @@ describe("The PageProcessor class", () => {
                 {
                     context: {
                         sourceProcessor: async () => ({
-                            processedContents: "",
+                            processedContents: Buffer.from("", "utf8"),
                             outputDir: "sub/../..",
                         }),
                     },
@@ -90,7 +90,7 @@ describe("The PageProcessor class", () => {
         it("should not allow duplicate output directories to be provided by source processors", async () => {
             const outputDir = crypto.randomUUID();
             const sourceProcessor: SourceProcessor = async () => ({
-                processedContents: "",
+                processedContents: Buffer.from("", "utf8"),
                 outputDir,
             });
             const processorOne = new PageProcessor(
