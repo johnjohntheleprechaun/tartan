@@ -191,18 +191,13 @@ describe("The directory processor", () => {
         expect(results["src"]).toBeDefined();
         expect(results["src"].skip).toBeTrue();
     });
-    it('should add assets when pageMode is "asset" and correctly set the source type', async () => {
-        const defaultContext: TartanContextFile = {
-            pageMode: "asset",
-            pagePattern: "*.png",
-        };
-        const mergedContext: FullTartanContext = {
-            ...(defaultContext as FullTartanContext),
-            pageSource: "index.html", // because of what root context is
-        };
+    it('should add assets and set their sourceType to "asset" when pageMode is "asset"', async () => {
         mock({
             src: {
-                "tartan.context.json": JSON.stringify(defaultContext),
+                "tartan.context.json": JSON.stringify({
+                    pageMode: "asset",
+                    pagePattern: "*.png",
+                } as TartanContextFile),
                 "thing.png": "",
             },
         });
