@@ -6,9 +6,9 @@ import { PartialTartanContext } from "../tartan-context.js";
 import { DependencyMap, HTMLProcessor } from "./html.js";
 import { Logger } from "../logger.js";
 import {
-    PageMeta,
+    SourceMeta,
     SourceProcessorOutput,
-    SubPageMeta,
+    SubSourceMeta,
 } from "../source-processor.js";
 import { HandlebarsContext } from "../handlebars.js";
 
@@ -31,7 +31,7 @@ export interface PageProcessorConfig {
     outputDir: string;
     /**
      */
-    subpageMeta: SubPageMeta[];
+    subpageMeta: SubSourceMeta[];
 }
 export class PageProcessor {
     private readonly resolver: Resolver;
@@ -51,7 +51,7 @@ export class PageProcessor {
         this.projectConfig = projectConfig;
     }
 
-    public async process(): Promise<PageMeta> {
+    public async process(): Promise<SourceMeta> {
         Logger.log(this.config, 2);
         // load and process the content
         const pageContent = await fs.readFile(this.config.sourcePath);
@@ -60,7 +60,7 @@ export class PageProcessor {
             .sourceProcessor
             ? await this.context.sourceProcessor({
                   context: this.context,
-                  sourceContents: pageContent.toString(),
+                  sourceContents: pageContent,
                   depth: this.config.depth || 0,
                   subpageMeta: this.config.subpageMeta,
               })
@@ -68,7 +68,8 @@ export class PageProcessor {
 
         Logger.log(processorOutput, 2);
 
-        const pageMeta: PageMeta = {
+        const pageMeta: SourceMeta = {
+            sourceType: "page",
             sourcePath: this.config.sourcePath,
             outputDir: this.config.outputDir,
             context: this.context,

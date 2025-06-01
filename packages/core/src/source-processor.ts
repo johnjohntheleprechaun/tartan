@@ -1,9 +1,11 @@
 import { PartialTartanContext } from "./tartan-context.js";
 
+export type SourceType = "page" | "asset";
 /**
  * Information about a processed page.
  */
-export type PageMeta = {
+export type SourceMeta = {
+    sourceType: SourceType;
     /**
      * The source file used (relative to rootDir).
      */
@@ -24,7 +26,7 @@ export type PageMeta = {
 /**
  * The meta for a page, in the context of being a sub-page.
  */
-export type SubPageMeta = PageMeta & {
+export type SubSourceMeta = SourceMeta & {
     /**
      * The number of levels away this page is from the one currently being processed.
      * This will never be 0, because meta from pages on the same level is not accessible.
@@ -42,7 +44,7 @@ export type SourceProcessorInput = {
     /**
      * The contents of the source file, as a string.
      */
-    sourceContents: string;
+    sourceContents: Buffer;
     /**
      * The fully processed context object for this page.
      */
@@ -51,7 +53,7 @@ export type SourceProcessorInput = {
      * Metadata from all subpages.
      * When pageMode is `file`, all pages matched by `pagePattern` are considered to be on the same level, and the page matched by `pageSource` is one level above them.
      */
-    subpageMeta: SubPageMeta[];
+    subpageMeta: SubSourceMeta[];
     /**
      * The depth of this page within the root dir.
      */
