@@ -16,7 +16,7 @@ export const tartanContextSchema = {
         pagePattern: {
             type: "string",
             description:
-                "A blob pattern to match files when `pageMode = `file`.",
+                "A blob pattern to match files when `pageMode` is `file` or `asset`.",
         },
         handlebarsParameters: {
             type: "object",
