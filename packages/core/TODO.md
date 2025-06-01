@@ -5,7 +5,6 @@
 - the custom elements manifest is supposed to define elements in the exports section, but some things (like shoelace) have malformed manifests. This needs to be handled gracefully. Also, maybe I should make a pull request to shoelace.
 - Put custom element classes in the global scope and mark those imports as external when processing javascript
 - implement the `extraAssets` property, to handle assets that aren't explicitly referenced in HTML
-- automatically ignore any context files in an asset directory, and if `pagePattern` is undefined default to "\*"
 - add a page mode or modes that allows the user to stop the tree search from going further down and do one of the following:
 
     - provide a simulated file tree to traverse (like the mock-fs input)
