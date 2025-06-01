@@ -43,7 +43,7 @@ export const tartanContextSchema = {
                 type: "string",
             },
             description:
-                "A list of paths to include in the output directory. Usually asset dependencies are inferred from HTML content, but this is necessary for any instances where that might not be possible",
+                "A list of glob patterns to search for in the current directory, and add any files that match as assets",
         },
     },
     additionalProperties: false,

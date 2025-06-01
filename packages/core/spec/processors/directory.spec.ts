@@ -206,4 +206,19 @@ describe("The directory processor", () => {
         expect(results["src/thing.png"]).toBeDefined();
         expect(results["src/thing.png"].sourceType).toBe("asset");
     });
+    it("should add assets defined by the extraAssets context property", async () => {
+        mock({
+            src: {
+                "tartan.context.json": JSON.stringify({
+                    extraAssets: ["thing.png"],
+                } as TartanContextFile),
+                "thing.png": "",
+            },
+        });
+
+        const results = await directoryProcessor.loadContextTree();
+
+        expect(results["src/thing.png"]).toBeDefined();
+        expect(results["src/thing.png"].sourceType).toBe("asset");
+    });
 });

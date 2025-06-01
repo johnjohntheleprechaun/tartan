@@ -190,9 +190,11 @@ export class DirectoryProcessor {
                     nodir: true,
                     cwd: dir,
                     // ignore the pageSource if it was defined and this is a filemode directory
-                    ignore: contexts.mergedContext.pageSource
-                        ? [contexts.mergedContext.pageSource]
-                        : [],
+                    ignore:
+                        contexts.mergedContext.pageSource &&
+                        contexts.mergedContext.pageMode === "file"
+                            ? [contexts.mergedContext.pageSource]
+                            : [],
                 });
 
                 for (const file of files) {
@@ -208,6 +210,22 @@ export class DirectoryProcessor {
                         parent: item.path,
                     });
                 }
+            }
+
+            const extraAssetFiles = await glob(
+                contexts.mergedContext.extraAssets || [],
+                {
+                    noglobstar: true,
+                    nodir: true,
+                    cwd: dir,
+                },
+            );
+            for (const asset of extraAssetFiles) {
+                queue.push({
+                    path: path.normalize(path.join(item.path, asset)),
+                    sourceType: "asset",
+                    parent: item.path,
+                });
             }
 
             /*
