@@ -1,5 +1,4 @@
 - Decide whether to remove the spec testing the order of priority of files when using `loadObjectFromFile`
-- Create a way to add processors for different file types
 - Have some kind of prefix or something to let paths be relative to wherever the template you're using is located (but only for paths inside the template)
 - Register handlebars partials
 - the custom elements manifest is supposed to define elements in the exports section, but some things (like shoelace) have malformed manifests. This needs to be handled gracefully. Also, maybe I should make a pull request to shoelace.
