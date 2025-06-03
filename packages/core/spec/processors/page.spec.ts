@@ -55,7 +55,7 @@ describe("The PageProcessor class", () => {
 
             const result = await pageProcessor.process();
             const outputted = await fs.readFile(
-                path.join(result.outputDir, "index.html"),
+                path.join(result.outputPath, "index.html"),
             );
 
             expect(outputted.toString()).toBe(content);
@@ -162,7 +162,7 @@ describe("The PageProcessor class", () => {
             });
 
             const result = await processor.process();
-            expect(result.outputDir).toBe(outputDir);
+            expect(result.outputPath).toBe(outputDir);
         });
         it("should pass through extra meta from the source processor", async () => {
             const extraMeta: any = {

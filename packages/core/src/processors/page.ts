@@ -71,7 +71,7 @@ export class PageProcessor {
         const pageMeta: SourceMeta = {
             sourceType: "page",
             sourcePath: this.config.sourcePath,
-            outputDir: this.config.outputDir,
+            outputPath: this.config.outputDir,
             context: this.context,
             extra: processorOutput.extraMeta,
         };
@@ -109,29 +109,29 @@ export class PageProcessor {
          */
         let outputFilename = path.join(this.config.outputDir, "index.html");
         if (processorOutput.outputDir) {
-            pageMeta.outputDir = path.join(
+            pageMeta.outputPath = path.join(
                 path.dirname(this.config.outputDir),
                 processorOutput.outputDir,
             );
             const relativeToOutput = path.relative(
                 path.dirname(this.config.outputDir),
-                pageMeta.outputDir,
+                pageMeta.outputPath,
             );
             if (relativeToOutput.startsWith("..") || relativeToOutput === "") {
                 throw new InvalidOutputDirectoryError(
                     `output dir (modified by source processor) for page with source ${this.config.sourcePath} is invalid`,
                 );
             }
-            outputFilename = path.join(pageMeta.outputDir, "index.html");
+            outputFilename = path.join(pageMeta.outputPath, "index.html");
         }
-        if (PageProcessor.directoriesOutputed.includes(pageMeta.outputDir)) {
+        if (PageProcessor.directoriesOutputed.includes(pageMeta.outputPath)) {
             Logger.log(PageProcessor.directoriesOutputed);
             throw new InvalidOutputDirectoryError(
                 "duplicate output directory provided by a source processor",
             );
         }
-        PageProcessor.directoriesOutputed.push(pageMeta.outputDir);
-        await fs.mkdir(pageMeta.outputDir, { recursive: true });
+        PageProcessor.directoriesOutputed.push(pageMeta.outputPath);
+        await fs.mkdir(pageMeta.outputPath, { recursive: true });
         await fs.writeFile(outputFilename, processedHTML.content);
 
         await this.writeDependencies(processedHTML.dependencies);
