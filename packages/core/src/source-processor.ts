@@ -1,10 +1,13 @@
-import { PartialTartanContext } from "./tartan-context.js";
+import { FullTartanContext } from "./tartan-context.js";
 
 export type SourceType = "page" | "asset";
 /**
  * Information about a processed page.
  */
 export type SourceMeta = {
+    /**
+     * The type of this source
+     */
     sourceType: SourceType;
     /**
      * The source file used (relative to rootDir).
@@ -17,7 +20,7 @@ export type SourceMeta = {
     /**
      * The full context object for this page.
      */
-    context: PartialTartanContext;
+    context: FullTartanContext;
     /**
      * Any extra metadata provided by the sourceProcessor.
      */
@@ -48,7 +51,7 @@ export type SourceProcessorInput = {
     /**
      * The fully processed context object for this page.
      */
-    context: PartialTartanContext;
+    context: FullTartanContext;
     /**
      * Metadata from all subpages.
      * When pageMode is `file`, all pages matched by `pagePattern` are considered to be on the same level, and the page matched by `pageSource` is one level above them.

@@ -35,7 +35,10 @@ describe("The PageProcessor class", () => {
             resolver = await Resolver.create(projectConfig);
             pageProcessor = new PageProcessor(
                 {
-                    context: {},
+                    context: {
+                        pageMode: "directory",
+                        pageSource: "index.html",
+                    },
                     sourcePath: "src/index.html",
                     outputDir: "dist/",
                     subpageMeta: [],
@@ -67,6 +70,8 @@ describe("The PageProcessor class", () => {
             const pageProcessor = new PageProcessor(
                 {
                     context: {
+                        pageMode: "directory",
+                        pageSource: "index.html",
                         sourceProcessor: async () => ({
                             processedContents: Buffer.from("", "utf8"),
                             outputDir: "sub/../..",
@@ -96,6 +101,8 @@ describe("The PageProcessor class", () => {
             const processorOne = new PageProcessor(
                 {
                     context: {
+                        pageMode: "directory",
+                        pageSource: "index.html",
                         sourceProcessor,
                     },
                     sourcePath: "src/index.html",
@@ -108,6 +115,8 @@ describe("The PageProcessor class", () => {
             const processorTwo = new PageProcessor(
                 {
                     context: {
+                        pageMode: "directory",
+                        pageSource: "index.html",
                         sourceProcessor,
                     },
                     sourcePath: "src/index.html",
@@ -136,6 +145,8 @@ describe("The PageProcessor class", () => {
             const processor = new PageProcessor(
                 {
                     context: {
+                        pageMode: "directory",
+                        pageSource: "index.html",
                         sourceProcessor,
                     },
                     subpageMeta: [],
@@ -165,6 +176,8 @@ describe("The PageProcessor class", () => {
             const processor = new PageProcessor(
                 {
                     context: {
+                        pageMode: "directory",
+                        pageSource: "index.html",
                         sourceProcessor,
                     },
                     subpageMeta: [],
