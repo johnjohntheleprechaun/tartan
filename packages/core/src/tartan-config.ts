@@ -9,6 +9,10 @@ export type TartanConfig = {
      */
     pathPrefixes?: Record<string, string>;
     /**
+     * A map of globs to asset processor modules references. Globs will be evaluated against the entire source path (not just the base filename), so you'll want to match (for example) PNG files with the glob "**\/*.png".
+     */
+    extraAssetProcessors?: Record<string, string>;
+    /**
      * A list of regular expressions that match paths that'll be ignored.
      */
     ignoredPaths?: string[];

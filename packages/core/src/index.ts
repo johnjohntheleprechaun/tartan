@@ -10,6 +10,7 @@ import path from "path";
 import { FullTartanContext, PartialTartanContext } from "./tartan-context.js";
 import { SourceMeta, SubSourceMeta } from "./source-processor.js";
 import fs from "fs/promises";
+import { AssetHandler } from "./processors/asset.js";
 
 type TreeNode = {
     key: string;
@@ -52,6 +53,11 @@ export class TartanProject {
      */
     public async init() {
         await this.resolver.init();
+        for (const [glob, processor] of Object.entries(
+            this.config.extraAssetProcessors || {},
+        )) {
+            await AssetHandler.registerProcessor(glob, processor);
+        }
         await this.directoryProcessor.loadContextTree();
     }
 
@@ -143,21 +149,22 @@ export class TartanProject {
         const processAsset = async (
             filepath: string,
             context: FullTartanContext,
-            depth: number,
-            subSourceMeta: SubSourceMeta[],
         ): Promise<SourceMeta> => {
             const parsed = path.parse(filepath);
             const sourcePath = filepath;
-            const outputPath = path.join(
+            const outputDir = path.join(
                 this.config.outputDir as string,
                 path.relative(this.config.rootDir as string, parsed.dir),
-                parsed.base,
             );
-            await fs.cp(sourcePath, outputPath);
+            const handler = new AssetHandler({
+                sourcePath,
+                outputDir,
+            });
+            const filename = await handler.process();
             return {
                 sourcePath,
                 sourceType: "asset",
-                outputDir: outputPath,
+                outputPath: path.join(outputDir, filename),
                 context,
             };
         };
@@ -189,15 +196,7 @@ export class TartanProject {
                               distance: a.depth - depth,
                           })),
                       )
-                    : await processAsset(
-                          node.key,
-                          node.value.mergedContext,
-                          depth,
-                          results.map((a) => ({
-                              ...a,
-                              distance: a.depth - depth,
-                          })),
-                      )),
+                    : await processAsset(node.key, node.value.mergedContext)),
                 depth: depth,
             });
         };

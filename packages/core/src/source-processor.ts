@@ -14,9 +14,9 @@ export type SourceMeta = {
      */
     sourcePath: string;
     /**
-     * The path this page was outputted to (relative to outputDir). This will be a directory, since all pages end up as an `index.html` within their own directory.
+     * The path this source was outputted to (relative to outputDir). This will be a directory if sourceType is "page", file if it's "file".
      */
-    outputDir: string;
+    outputPath: string;
     /**
      * The full context object for this page.
      */
