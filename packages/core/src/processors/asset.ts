@@ -31,7 +31,7 @@ export type AssetHandlerConfig = {
     //context: FullTartanContext;
 };
 export class AssetHandler {
-    private static processorRegistry: ProcessorRegistryEntry[];
+    private static processorRegistry: ProcessorRegistryEntry[] = [];
 
     /**
      * Register an asset processor. The most recently registered processor has the highest precedence.
@@ -54,6 +54,9 @@ export class AssetHandler {
         };
         this.processorRegistry = [entry].concat(this.processorRegistry);
         return entry;
+    }
+    public static resetRegistry() {
+        this.processorRegistry = [];
     }
 
     private sourcePath: string;
@@ -91,7 +94,10 @@ export class AssetHandler {
         }
 
         // no matching processors
-        await fs.cp(this.sourcePath, path.join(this.outputDir, this.basename));
+        await fs.copyFile(
+            this.sourcePath,
+            path.join(this.outputDir, this.basename),
+        );
         return this.basename;
     }
 }

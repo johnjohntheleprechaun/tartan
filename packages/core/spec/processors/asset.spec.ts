@@ -5,6 +5,22 @@ import { Resolver } from "../../src/resolve";
 describe("The AssetHandler class", () => {
     afterEach(() => {
         mock.restore();
+        AssetHandler.resetRegistry();
+    });
+    it("should copy file if no processors are defined", async () => {
+        const handler = new AssetHandler({
+            outputDir: "out/",
+            sourcePath: "src/test.png",
+        });
+        mock({
+            "src/test.png": "hello world",
+            out: {},
+        });
+        await handler.process();
+
+        return expectAsync(fs.readFile("out/test.png", "utf8")).toBeResolvedTo(
+            "hello world",
+        );
     });
     it("should use registered processors", async () => {
         spyOn(Resolver, "import").and.callFake(
