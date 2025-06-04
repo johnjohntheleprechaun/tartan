@@ -152,7 +152,7 @@ describe("The directory processor", () => {
         expect(results["src/page/subpage/"].mergedContext).toEqual(rootContext);
     });
 
-    it("should skip directories when no `pageSource` is defined", async () => {
+    it("should flag directories to be skipped when no `pageSource` is defined", async () => {
         const config: TartanConfig = {
             rootDir: "src",
             outputDir: "dist",
@@ -172,7 +172,7 @@ describe("The directory processor", () => {
         expect(results["src"]).toBeDefined();
         expect(results["src"].skip).toBeTrue();
     });
-    it("should skip directories when the file defined by `pageSource` doesn't exist", async () => {
+    it("should flag directories to be skipped when the file defined by `pageSource` doesn't exist", async () => {
         const config: TartanConfig = {
             rootDir: "src",
             outputDir: "dist",
