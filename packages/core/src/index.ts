@@ -15,7 +15,6 @@ import { AssetHandler } from "./processors/asset.js";
 type TreeNode = {
     key: string;
     value: ContextTreeNode;
-    skip?: boolean;
     children: TreeNode[];
 };
 type SubSourceMetaWithDepth = Omit<SubSourceMeta, "distance"> & {
@@ -182,7 +181,8 @@ export class TartanProject {
                     await processFromBottom(child, depth + 1),
                 );
             }
-            if (node.skip) {
+            Logger.log(node);
+            if (node.value.skip) {
                 return results;
             }
             return results.concat({
