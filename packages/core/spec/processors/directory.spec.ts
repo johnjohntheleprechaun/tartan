@@ -4,6 +4,7 @@ import mock from "mock-fs";
 import { Resolver } from "../../src/resolve";
 import { TartanConfig } from "../../src/tartan-config";
 import { FullTartanContext, TartanContextFile } from "../../src/tartan-context";
+import { MockDirectory } from "../../src/mock-generator";
 
 describe("The directory processor", () => {
     let directoryProcessor: DirectoryProcessor;
@@ -21,6 +22,7 @@ describe("The directory processor", () => {
     });
     afterEach(() => {
         mock.restore();
+        Resolver.resetUfs();
     });
 
     it("should use rootContext by default", async () => {
@@ -220,5 +222,27 @@ describe("The directory processor", () => {
 
         expect(results["src/thing.png"]).toBeDefined();
         expect(results["src/thing.png"].sourceType).toBe("asset");
+    });
+    it('should mock and reprocess directories with the "mock" page mode', async () => {
+        spyOn(Resolver, "import").and.callFake((() => {
+            return () =>
+                ({
+                    "tartan.context.json": JSON.stringify({
+                        pageMode: "directory",
+                    } as TartanContextFile), // should override the mock page mode
+                }) as MockDirectory;
+        }) as any);
+        mock({
+            src: {
+                "tartan.context.json": JSON.stringify({
+                    pageMode: "mock",
+                    mockGenerator: "mock-gen",
+                } as TartanContextFile),
+            },
+        });
+
+        const results = await directoryProcessor.loadContextTree();
+        expect(results["src"]).toBeDefined();
+        expect(results["src"].mergedContext.pageMode).toBe("directory");
     });
 });

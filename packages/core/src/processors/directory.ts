@@ -188,16 +188,12 @@ export class DirectoryProcessor {
                         path.isAbsolute(key),
                     )
                 ) {
-                    throw "Halt controller illegally attempted to specify a non-relative directory";
+                    throw "mock generator illegally attempted to specify a non-relative directory";
                 }
-                const volumeDir = crypto.randomUUID();
-                const volume = Volume.fromJSON(mockDirectory, `/${volumeDir}`);
+                const volume = Volume.fromJSON(mockDirectory, dir);
                 const memfs = createFsFromVolume(volume);
-                await memfs.promises.symlink(
-                    `/${volumeDir}`,
-                    path.resolve(dir),
-                );
-                Resolver.prependFs(memfs as any); // type fuckery
+
+                Resolver.baseUfs.use(memfs as any); // type fuckery
                 // reprocess this directory, now that we've got the mocked filesystem in place
                 queue.push(item);
             }

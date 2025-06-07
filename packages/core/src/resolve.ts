@@ -40,13 +40,11 @@ export class Resolver {
     public static ufs: IUnionFs["promises"] = this.baseUfs.promises;
     private static fsStack: IFS[] = [fs];
 
-    public static prependFs(fs: IFS) {
-        this.fsStack = [fs].concat(this.fsStack);
+    public static resetUfs() {
         this.baseUfs = new Union();
         this.ufs = this.baseUfs.promises;
-        for (const fs of this.fsStack) {
-            this.baseUfs.use(fs);
-        }
+        this.fsStack = [fs];
+        this.baseUfs.use(fs);
     }
 
     public static async create(projectConfig: TartanConfig): Promise<Resolver> {
