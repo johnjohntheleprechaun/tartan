@@ -251,7 +251,8 @@ export class Resolver {
                 : prev,
         );
         const filepath =
-            `.${path.sep}` + path.join(dirent.parentPath, dirent.name);
+            (path.isAbsolute(dirent.parentPath) ? "" : `.${path.sep}`) +
+            path.join(dirent.parentPath, dirent.name);
 
         if (path.extname(filepath) === ".json") {
             return JSON.parse((await this.ufs.readFile(filepath)).toString());
