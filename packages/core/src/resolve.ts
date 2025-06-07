@@ -13,8 +13,8 @@ import {
     Package,
 } from "custom-elements-manifest";
 import { TemplateManifest } from "./template-manifest.js";
-import { ufs, IUnionFs } from "unionfs";
 import { MockGenerator } from "./mock-generator.js";
+import { IUnionFs, IFS, Union } from "unionfs";
 
 const require = createRequire(import.meta.url);
 
@@ -36,8 +36,18 @@ export class Resolver {
     /**
      * The merged filesystem to use
      */
-    public static readonly syncUfs: IUnionFs = ufs.use(fs);
-    public static readonly ufs: IUnionFs["promises"] = this.syncUfs.promises;
+    public static baseUfs: IUnionFs = new Union().use(fs);
+    public static ufs: IUnionFs["promises"] = this.baseUfs.promises;
+    private static fsStack: IFS[] = [fs];
+
+    public static prependFs(fs: IFS) {
+        this.fsStack = [fs].concat(this.fsStack);
+        this.baseUfs = new Union();
+        this.ufs = this.baseUfs.promises;
+        for (const fs of this.fsStack) {
+            this.baseUfs.use(fs);
+        }
+    }
 
     public static async create(projectConfig: TartanConfig): Promise<Resolver> {
         return new Resolver(projectConfig).init();

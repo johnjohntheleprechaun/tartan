@@ -9,6 +9,7 @@ import {
 import { glob } from "glob";
 import { Logger } from "../logger.js";
 import { SourceType } from "../source-processor.js";
+import { createFsFromVolume, Volume } from "memfs";
 
 export type ContextTreeNode = {
     defaultContext: FullTartanContext;
@@ -174,6 +175,32 @@ export class DirectoryProcessor {
                     currentContext,
                 ) as FullTartanContext,
             };
+
+            if (isDirectory && contexts.mergedContext.pageMode === "mock") {
+                Logger.log(
+                    `the page mode for ${item.path} was "mock", so we're creating an in-memory filesystem and re-adding this path to the queue`,
+                );
+                const mockDirectory =
+                    await contexts.mergedContext.mockGenerator();
+                // if anything is an absolute path, abort
+                if (
+                    Object.keys(mockDirectory).some((key) =>
+                        path.isAbsolute(key),
+                    )
+                ) {
+                    throw "Halt controller illegally attempted to specify a non-relative directory";
+                }
+                const volumeDir = crypto.randomUUID();
+                const volume = Volume.fromJSON(mockDirectory, `/${volumeDir}`);
+                const memfs = createFsFromVolume(volume);
+                await memfs.promises.symlink(
+                    `/${volumeDir}`,
+                    path.resolve(dir),
+                );
+                Resolver.prependFs(memfs as any); // type fuckery
+                // reprocess this directory, now that we've got the mocked filesystem in place
+                queue.push(item);
+            }
 
             // Add pages to the queue for file mode and asset mode
             if (
