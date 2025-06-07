@@ -245,4 +245,19 @@ describe("The directory processor", () => {
         expect(results["src"]).toBeDefined();
         expect(results["src"].mergedContext.pageMode).toBe("directory");
     });
+    it("should stop infinite mocking loop", async () => {
+        spyOn(Resolver, "import").and.callFake((() => {
+            return () => ({});
+        }) as any);
+        mock({
+            src: {
+                "tartan.context.json": JSON.stringify({
+                    pageMode: "mock",
+                    mockGenerator: "mock-gen",
+                } as TartanContextFile),
+            },
+        });
+
+        return expectAsync(directoryProcessor.loadContextTree()).toBeRejected();
+    });
 });

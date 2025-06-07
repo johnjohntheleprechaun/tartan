@@ -54,6 +54,7 @@ export class DirectoryProcessor {
             path: string;
             sourceType: SourceType;
             parent?: string;
+            postMock?: boolean;
         };
         const queue: QueueItem[] = [
             {
@@ -177,6 +178,9 @@ export class DirectoryProcessor {
             };
 
             if (isDirectory && contexts.mergedContext.pageMode === "mock") {
+                if (item.postMock === true) {
+                    throw `Double mock encountered at ${item.path}`;
+                }
                 Logger.log(
                     `the page mode for ${item.path} was "mock", so we're creating an in-memory filesystem and re-adding this path to the queue`,
                 );
@@ -190,12 +194,13 @@ export class DirectoryProcessor {
                 ) {
                     throw "mock generator illegally attempted to specify a non-relative directory";
                 }
+
                 const volume = Volume.fromJSON(mockDirectory, dir);
                 const memfs = createFsFromVolume(volume);
 
                 Resolver.baseUfs.use(memfs as any); // type fuckery
                 // reprocess this directory, now that we've got the mocked filesystem in place
-                queue.push(item);
+                queue.push({ ...item, postMock: true });
             }
 
             // Add pages to the queue for file mode and asset mode
