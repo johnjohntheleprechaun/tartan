@@ -214,3 +214,4 @@ export * from "./resolve.js";
 export * from "./handlebars.js";
 export * from "./logger.js";
 export * from "./template-manifest.js";
+export * from "./halt-controller.js";
