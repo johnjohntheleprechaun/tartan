@@ -1,7 +1,7 @@
 import { JSONSchema, FromSchema } from "json-schema-to-ts";
 import { ReplaceTypes } from "./util.js";
 import { SourceProcessor } from "./source-processor.js";
-import { HaltController } from "./halt-controller.js";
+import { MockGenerator } from "./mock-generator.js";
 
 export const tartanContextSchema = {
     type: "object",
@@ -12,7 +12,7 @@ export const tartanContextSchema = {
                 "Whether or not to inherit values from `tartan.context.default` files.",
         },
         pageMode: {
-            enum: ["directory", "file", "asset", "halt"],
+            enum: ["directory", "file", "asset", "mock", "handoff"],
         },
         pagePattern: {
             type: "string",
@@ -33,10 +33,10 @@ export const tartanContextSchema = {
             description:
                 "The file to use for the index of the current directory, *regardless of `pageMode`*.",
         },
-        haltController: {
+        mockGenerator: {
             type: "string",
             description:
-                "A module specifier for a module who's default export is a `HaltController`.",
+                "A module specifier for a module who's default export is a function that returns an object matching `DirectoryJSON`",
         },
         sourceProcessor: {
             type: "string",
@@ -61,7 +61,7 @@ export type PartialTartanContext = ReplaceTypes<
     {
         sourceProcessor?: SourceProcessor;
         template?: ReturnType<typeof Handlebars.compile>;
-        haltController?: HaltController;
+        mockGenerator?: MockGenerator;
     }
 >;
 export type FullTartanContext =
@@ -79,5 +79,5 @@ export type FullTartanContext =
       >
     | ReplaceTypes<
           PartialTartanContext,
-          { pageMode: "halt"; haltController: HaltController }
+          { pageMode: "mock"; mockGenerator: MockGenerator }
       >;

@@ -13,8 +13,8 @@ import {
     Package,
 } from "custom-elements-manifest";
 import { TemplateManifest } from "./template-manifest.js";
-import { HaltController } from "./halt-controller.js";
 import { ufs, IUnionFs } from "unionfs";
+import { MockGenerator } from "./mock-generator.js";
 
 const require = createRequire(import.meta.url);
 
@@ -352,10 +352,10 @@ export class Resolver {
                       this.resolvePath(contextFile.sourceProcessor, filePath),
                   )) as SourceProcessor)
                 : undefined,
-            haltController: contextFile.haltController
+            mockGenerator: contextFile.mockGenerator
                 ? ((await Resolver.import(
-                      this.resolvePath(contextFile.haltController, filePath),
-                  )) as HaltController)
+                      this.resolvePath(contextFile.mockGenerator, filePath),
+                  )) as MockGenerator)
                 : undefined,
         };
 
@@ -365,8 +365,8 @@ export class Resolver {
         if (context.sourceProcessor === undefined) {
             delete context.sourceProcessor;
         }
-        if (context.haltController === undefined) {
-            delete context.haltController;
+        if (context.mockGenerator === undefined) {
+            delete context.mockGenerator;
         }
 
         return context;
