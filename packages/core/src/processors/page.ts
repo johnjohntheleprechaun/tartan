@@ -1,5 +1,4 @@
 import { Resolver } from "../resolve.js";
-import fs from "fs/promises";
 import path from "path";
 import { TartanConfig } from "../tartan-config.js";
 import { FullTartanContext, PartialTartanContext } from "../tartan-context.js";
@@ -54,7 +53,7 @@ export class PageProcessor {
     public async process(): Promise<SourceMeta> {
         Logger.log(this.config, 2);
         // load and process the content
-        const pageContent = await fs.readFile(this.config.sourcePath);
+        const pageContent = await Resolver.ufs.readFile(this.config.sourcePath);
         Logger.log(pageContent.toString(), 2);
         const processorOutput: SourceProcessorOutput = this.context
             .sourceProcessor
@@ -131,8 +130,8 @@ export class PageProcessor {
             );
         }
         PageProcessor.directoriesOutputed.push(pageMeta.outputPath);
-        await fs.mkdir(pageMeta.outputPath, { recursive: true });
-        await fs.writeFile(outputFilename, processedHTML.content);
+        await Resolver.ufs.mkdir(pageMeta.outputPath, { recursive: true });
+        await Resolver.ufs.writeFile(outputFilename, processedHTML.content);
 
         await this.writeDependencies(processedHTML.dependencies);
 
@@ -141,10 +140,10 @@ export class PageProcessor {
 
     async writeDependencies(dependencies: DependencyMap[]) {
         for (const dependency of dependencies) {
-            await fs.mkdir(path.dirname(dependency.output), {
+            await Resolver.ufs.mkdir(path.dirname(dependency.output), {
                 recursive: true,
             });
-            await fs.copyFile(dependency.source, dependency.output);
+            await Resolver.ufs.copyFile(dependency.source, dependency.output);
         }
     }
 }

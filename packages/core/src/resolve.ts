@@ -1,7 +1,7 @@
 import { TartanConfig } from "./tartan-config.js";
 import { TartanModule } from "./tartan-module.js";
 import path from "path";
-import fs from "fs/promises";
+import fs from "fs";
 import { createRequire } from "module";
 import { Logger } from "./logger.js";
 import { PartialTartanContext, TartanContextFile } from "./tartan-context.js";
@@ -13,6 +13,8 @@ import {
     Package,
 } from "custom-elements-manifest";
 import { TemplateManifest } from "./template-manifest.js";
+import { HaltController } from "./halt-controller.js";
+import { ufs, IUnionFs } from "unionfs";
 
 const require = createRequire(import.meta.url);
 
@@ -31,6 +33,12 @@ export class Resolver {
         [key: string]: ReturnType<typeof Handlebars.compile>;
     } = {};
 
+    /**
+     * The merged filesystem to use
+     */
+    public static readonly syncUfs: IUnionFs = ufs.use(fs);
+    public static readonly ufs: IUnionFs["promises"] = this.syncUfs.promises;
+
     public static async create(projectConfig: TartanConfig): Promise<Resolver> {
         return new Resolver(projectConfig).init();
     }
@@ -41,7 +49,7 @@ export class Resolver {
 
     public async init(): Promise<Resolver> {
         const packageLockPath = await Resolver.findUp("package-lock.json");
-        const packageLock = await fs
+        const packageLock = await Resolver.ufs
             .readFile(packageLockPath)
             .then((res) => JSON.parse(res.toString()))
             .catch(() => ({ packages: [] }));
@@ -60,14 +68,14 @@ export class Resolver {
                 "package.json",
             );
             if (
-                !(await fs
+                !(await Resolver.ufs
                     .access(packageDefinitionPath)
                     .then(() => true)
                     .catch(() => false))
             ) {
                 continue;
             }
-            const packageDefinitionFile: Buffer = await fs.readFile(
+            const packageDefinitionFile: Buffer = await Resolver.ufs.readFile(
                 packageDefinitionPath,
             );
             const packageDefinition = JSON.parse(
@@ -83,7 +91,8 @@ export class Resolver {
                     packagePath,
                     packageDefinition.customElements,
                 );
-                const manifestFile: Buffer = await fs.readFile(manifestPath);
+                const manifestFile: Buffer =
+                    await Resolver.ufs.readFile(manifestPath);
                 const manifest: Package = JSON.parse(manifestFile.toString());
                 module.componentManifest = manifest;
 
@@ -118,7 +127,8 @@ export class Resolver {
                     packagePath,
                     packageDefinition.tartanTemplateManifest,
                 );
-                const manifestFile: Buffer = await fs.readFile(manifestPath);
+                const manifestFile: Buffer =
+                    await Resolver.ufs.readFile(manifestPath);
                 const manifest: TemplateManifest = JSON.parse(
                     manifestFile.toString(),
                 );
@@ -130,7 +140,7 @@ export class Resolver {
                         path.dirname(manifestPath),
                         template.path,
                     );
-                    const templateFile: string = await fs.readFile(
+                    const templateFile: string = await Resolver.ufs.readFile(
                         templatePath,
                         "utf8",
                     );
@@ -156,7 +166,7 @@ export class Resolver {
         while (currentDir !== "/") {
             const testPath = path.join(currentDir, filename);
             if (
-                await fs
+                await this.ufs
                     .access(testPath)
                     .then(() => true)
                     .catch(() => false)
@@ -208,7 +218,7 @@ export class Resolver {
             {},
         );
 
-        const dirContents = await fs.readdir(path.dirname(filename), {
+        const dirContents = await this.ufs.readdir(path.dirname(filename), {
             withFileTypes: true,
         });
 
@@ -236,7 +246,7 @@ export class Resolver {
             `.${path.sep}` + path.join(dirent.parentPath, dirent.name);
 
         if (path.extname(filepath) === ".json") {
-            return JSON.parse((await fs.readFile(filepath)).toString());
+            return JSON.parse((await this.ufs.readFile(filepath)).toString());
         } else {
             return this.import(filepath);
         }
@@ -331,7 +341,7 @@ export class Resolver {
                 ? this.resolveTemplateName(contextFile.template) ||
                   Handlebars.compile(
                       (
-                          await fs.readFile(
+                          await Resolver.ufs.readFile(
                               this.resolvePath(contextFile.template, filePath),
                           )
                       ).toString(),
@@ -342,6 +352,11 @@ export class Resolver {
                       this.resolvePath(contextFile.sourceProcessor, filePath),
                   )) as SourceProcessor)
                 : undefined,
+            haltController: contextFile.haltController
+                ? ((await Resolver.import(
+                      this.resolvePath(contextFile.haltController, filePath),
+                  )) as HaltController)
+                : undefined,
         };
 
         if (context.template === undefined) {
@@ -349,6 +364,9 @@ export class Resolver {
         }
         if (context.sourceProcessor === undefined) {
             delete context.sourceProcessor;
+        }
+        if (context.haltController === undefined) {
+            delete context.haltController;
         }
 
         return context;

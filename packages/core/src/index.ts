@@ -9,7 +9,6 @@ import { TartanConfig } from "./tartan-config.js";
 import path from "path";
 import { FullTartanContext, PartialTartanContext } from "./tartan-context.js";
 import { SourceMeta, SubSourceMeta } from "./source-processor.js";
-import fs from "fs/promises";
 import { AssetHandler } from "./processors/asset.js";
 
 type TreeNode = {

@@ -1,6 +1,5 @@
 import { minimatch } from "minimatch";
 import path from "path";
-import fs from "fs/promises";
 import { Resolver } from "../resolve.js";
 
 export type AssetProcessorOutput = {
@@ -77,14 +76,16 @@ export class AssetHandler {
     public async process(): Promise<string> {
         for (const entry of AssetHandler.processorRegistry) {
             if (minimatch(this.sourcePath, entry.glob)) {
-                const fileContents = await fs.readFile(this.sourcePath);
+                const fileContents = await Resolver.ufs.readFile(
+                    this.sourcePath,
+                );
                 const result = await entry.processor(
                     fileContents,
                     this.basename,
                 );
 
                 // write the file
-                await fs.writeFile(
+                await Resolver.ufs.writeFile(
                     path.join(this.outputDir, result.filename || this.basename),
                     result.processedContents,
                 );
@@ -94,7 +95,7 @@ export class AssetHandler {
         }
 
         // no matching processors
-        await fs.copyFile(
+        await Resolver.ufs.copyFile(
             this.sourcePath,
             path.join(this.outputDir, this.basename),
         );

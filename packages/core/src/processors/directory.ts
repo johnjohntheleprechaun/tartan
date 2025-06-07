@@ -1,5 +1,4 @@
 import { Resolver } from "../resolve.js";
-import fs from "fs/promises";
 import path from "path";
 import { TartanConfig } from "../tartan-config.js";
 import {
@@ -79,7 +78,9 @@ export class DirectoryProcessor {
             let contextFilename: string;
             let dir: string;
 
-            const isDirectory = (await fs.stat(item.path)).isDirectory();
+            const isDirectory = (
+                await Resolver.ufs.stat(item.path)
+            ).isDirectory();
             Logger.log(
                 `${item.path} is${isDirectory ? "" : " not"} a directory`,
                 2,
@@ -89,7 +90,7 @@ export class DirectoryProcessor {
                 contextFilename = "tartan.context";
 
                 // add child directories
-                const dirContents = await fs.readdir(item.path, {
+                const dirContents = await Resolver.ufs.readdir(item.path, {
                     withFileTypes: true,
                 });
                 for (const child of dirContents) {
@@ -238,7 +239,7 @@ export class DirectoryProcessor {
                 (contexts.mergedContext.pageSource === undefined ||
                     contexts.mergedContext.pageMode === "asset" ||
                     // no access to file
-                    !(await fs
+                    !(await Resolver.ufs
                         .access(
                             path.join(dir, contexts.mergedContext.pageSource),
                         )

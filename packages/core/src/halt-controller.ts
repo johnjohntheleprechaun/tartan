@@ -1,3 +1,4 @@
+import { IFs } from "memfs";
 import { FullTartanContext } from "./tartan-context.js";
 
 /**
@@ -9,9 +10,9 @@ export type HaltControllerInput = {
     context: FullTartanContext;
 };
 /**
- * The equivelant of an in-memory filesystem.
+ * An in-memory filesystem.
  */
-export type MockDirectory = { [key: string]: Buffer | MockDirectory };
+export type MockDirectory = IFs;
 /**
  * The output of a halt controller.
  */
