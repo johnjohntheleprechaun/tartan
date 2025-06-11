@@ -15,6 +15,7 @@ import {
 import { TemplateManifest } from "./template-manifest.js";
 import { MockGenerator } from "./mock-generator.js";
 import { IUnionFs, IFS, Union } from "unionfs";
+import { HandoffHandler } from "./handoff-handler.js";
 
 const require = createRequire(import.meta.url);
 
@@ -366,8 +367,14 @@ export class Resolver {
                       this.resolvePath(contextFile.mockGenerator, filePath),
                   )) as MockGenerator)
                 : undefined,
+            handoffHandler: contextFile.handoffHandler
+                ? ((await Resolver.import(
+                      this.resolvePath(contextFile.handoffHandler, filePath),
+                  )) as HandoffHandler)
+                : undefined,
         };
 
+        // Should prolly convert this to a for loop or smth
         if (context.template === undefined) {
             delete context.template;
         }
@@ -376,6 +383,9 @@ export class Resolver {
         }
         if (context.mockGenerator === undefined) {
             delete context.mockGenerator;
+        }
+        if (context.handoffHandler === undefined) {
+            delete context.handoffHandler;
         }
 
         return context;
