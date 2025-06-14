@@ -224,3 +224,4 @@ export * from "./handlebars.js";
 export * from "./logger.js";
 export * from "./template-manifest.js";
 export * from "./mock-generator.js";
+export * from "./handoff-handler.js";
