@@ -1,6 +1,6 @@
 # Lit Integration
 
-Lit is a super cool library. The problem is that it's designed to have web components imported with JS. It is therefore not *directly* compatible with Tartan.
+Lit is a super cool library. The problem is that it's designed to have web components imported with JS. It is therefore not _directly_ compatible with Tartan.
 
 A few different possibilities are gonna be explored here.
 
@@ -10,7 +10,7 @@ Write simple packages that do include the `tartan.components.json` file, and map
 
 ## Scanning Module Exports
 
-I *really* don't like this idea. First of all it would be ridiculously slow. Plus, most (if not all major) Lit libraries use the decorators that automatically register the elements which is gonna really fuck with my code. I also don't wanna force users to manually import, for obvious reasons.
+I _really_ don't like this idea. First of all it would be ridiculously slow. Plus, most (if not all major) Lit libraries use the decorators that automatically register the elements which is gonna really fuck with my code. I also don't wanna force users to manually import, for obvious reasons.
 
 What if I import everything, look at the custom element names that were registered, scan the document for the ones that were used, and only import those?
 

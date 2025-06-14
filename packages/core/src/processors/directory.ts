@@ -1,23 +1,35 @@
-import {Resolver} from "../resolve.js";
-import fs from "fs/promises";
-import fsSync from "fs";
+import { Resolver } from "../resolve.js";
 import path from "path";
-import {TartanConfig} from "../tartan-config.js";
-import {TartanContext, TartanContextFile} from "../tartan-context.js";
-import Handlebars from "handlebars";
-import {glob} from "glob";
-import {Logger} from "../logger.js";
-import {SourceProcessor} from "../source-processor.js";
+import { TartanConfig } from "../tartan-config.js";
+import {
+    PartialTartanContext,
+    FullTartanContext,
+    TartanContextFile,
+} from "../tartan-context.js";
+import { glob } from "glob";
+import { Logger } from "../logger.js";
+import { SourceType } from "../source-processor.js";
+import { createFsFromVolume, Volume } from "memfs";
+import { context } from "esbuild";
 
+export type ContextTreeNode = {
+    defaultContext: FullTartanContext;
+    currentContext: PartialTartanContext;
+    mergedContext: FullTartanContext;
+    sourceType: SourceType;
+    parent?: string;
+    skip?: boolean;
+};
 export class DirectoryProcessor {
     private readonly resolver: Resolver;
     private projectConfig: TartanConfig;
-    public contextTree: {[key: string]: {context: TartanContext, parent?: string}} = {};
-    private readonly rootContext: TartanContext = {
+    public contextTree: {
+        [key: string]: ContextTreeNode;
+    } = {};
+    private rootContext: FullTartanContext = {
         pageMode: "directory",
         pageSource: "index.html",
-    }
-
+    };
     /**
      * @param config The project's config
      * @param resolver The fully initialized module resovler to use
@@ -32,117 +44,255 @@ export class DirectoryProcessor {
      * `this.contextTree` is set to the result, and returned.
      */
     public async loadContextTree(): Promise<typeof this.contextTree> {
-        // Go through the treeeeeee
+        // This should be... better.
+        if (this.projectConfig.rootContext) {
+            this.rootContext = (await this.resolver.initializeContext(
+                this.projectConfig.rootContext,
+            )) as FullTartanContext;
+        }
+        // set up the queue
         type QueueItem = {
             path: string;
+            sourceType: SourceType;
             parent?: string;
+            postMock?: boolean;
         };
-        const queue: QueueItem[] = [{path: path.normalize(this.projectConfig.rootDir)}];
-        const results: {[key: string]: {defaultContext: TartanContext, currentContext: TartanContext, mergedContext: TartanContext, parent?: string}} = {};
-        let queueSize = 1;
+        const queue: QueueItem[] = [
+            {
+                path: path.normalize(this.projectConfig.rootDir),
+                sourceType: "page",
+            },
+        ];
+        // this is needed cause otherwise if just put queue.length in the while loop it would present 1, and wouldn't change as the length changes (I think?)
+        let queueSize = queue.length;
         for (let i = 0; i < queueSize; i++) {
             /**
              * The current queue item being processed.
              */
-            const item = queue[i]
-            Logger.log(item);
-            Logger.log(queue.slice(i));
+            const item = queue[i];
 
+            Logger.log(
+                `Now processing queue item ${item.path} (parent is ${item.parent})`,
+            );
+
+            /*
+             * Now we figure out where the item we're processing is, and how to find its context file.
+             */
+            let contextFilename: string;
             let dir: string;
-            let dirContents: fsSync.Dirent[];
-            let defaultContextFilename: fsSync.Dirent | undefined;
-            let contextFilename: fsSync.Dirent | undefined;
 
-            const isDirectory = (await fs.stat(item.path)).isDirectory();
-            Logger.log(isDirectory);
+            const isDirectory = (
+                await Resolver.ufs.stat(item.path)
+            ).isDirectory();
+            Logger.log(
+                `${item.path} is${isDirectory ? "" : " not"} a directory`,
+                2,
+            );
             if (isDirectory) {
                 dir = item.path;
-                dirContents = await fs.readdir(item.path, {withFileTypes: true});
-                defaultContextFilename = dirContents.find((val) => /^tartan\.context\.default\.(mjs|js|json)$/.exec(val.name) && val.isFile());
-                contextFilename = dirContents.find((val) => /^tartan\.context\.(mjs|js|json)$/.exec(val.name) && val.isFile());
+                contextFilename = "tartan.context";
+            } else {
+                dir = path.dirname(item.path);
+                contextFilename = `${path.basename(item.path)}.context`;
+            }
 
+            let defaultContextFile: TartanContextFile | undefined;
+            // you only actually need to load this if you're a directory, cause files aren't allowed to have default contexts (cause they can't have children)
+            if (isDirectory) {
+                Logger.log(`Trying to load the default context file`);
+                defaultContextFile =
+                    await Resolver.loadObjectFromFile<TartanContextFile>(
+                        path.join(dir, "tartan.context.default"),
+                    );
+                Logger.log(
+                    `Default context file has contents:\n${JSON.stringify(defaultContextFile)}`,
+                );
+            }
+            let currentContextFile: TartanContextFile | undefined =
+                await Resolver.loadObjectFromFile<TartanContextFile>(
+                    path.join(dir, contextFilename),
+                );
+
+            let defaultContext: FullTartanContext;
+            let currentContext: PartialTartanContext = {};
+
+            /*
+             * Figure out what your default context is
+             */
+            if (defaultContextFile) {
+                // you just wanna load from file
+                const loadedContext: PartialTartanContext =
+                    await this.resolver.initializeContext(
+                        defaultContextFile,
+                        path.join(dir, "tartan.context.default"),
+                    );
+                defaultContext = this.mergeContexts(
+                    item.parent
+                        ? this.contextTree[item.parent].defaultContext
+                        : this.rootContext,
+                    loadedContext,
+                ) as FullTartanContext;
+            } else if (!item.parent) {
+                // your default context is just the root context
+                defaultContext = this.mergeContexts(
+                    {},
+                    this.rootContext,
+                ) as FullTartanContext;
+            } else {
+                defaultContext = this.contextTree[item.parent].defaultContext;
+            }
+
+            // if you've got your own special context, initialize it
+            if (currentContextFile) {
+                currentContext = await this.resolver.initializeContext(
+                    currentContextFile,
+                    path.join(dir, "tartan.context"),
+                );
+            }
+
+            const contexts: {
+                defaultContext: FullTartanContext;
+                currentContext: PartialTartanContext;
+                mergedContext: FullTartanContext;
+            } = {
+                defaultContext,
+                currentContext,
+                mergedContext: this.mergeContexts(
+                    defaultContext,
+                    currentContext,
+                ) as FullTartanContext,
+            };
+
+            if (isDirectory) {
                 // add child directories
+                const dirContents = await Resolver.ufs.readdir(item.path, {
+                    withFileTypes: true,
+                });
                 for (const child of dirContents) {
-                    Logger.log(child)
                     if (child.isDirectory()) {
-                        Logger.log(true);
-                        queue.push(
-                            {
-                                path: path.normalize(path.join(item.path, child.name, "./")),
-                                parent: item.path,
-                            }
+                        Logger.log(
+                            `adding the subdirectory ${child.name} from ${item.path} to the queue`,
+                            2,
                         );
+                        queue.push({
+                            path: path.normalize(
+                                path.join(item.path, child.name, "./"),
+                            ),
+                            sourceType: "page",
+                            parent: item.path,
+                        });
                     }
                 }
             }
-            else {
-                dir = path.join(path.dirname(item.path), "./");
-                dirContents = await fs.readdir(path.dirname(item.path), {withFileTypes: true});
-                defaultContextFilename = dirContents.find((val) => /^tartan\.context\.default\.(mjs|js|json)$/.exec(val.name) && val.isFile());
-                contextFilename = dirContents.find((val) => new RegExp(`^${path.basename(item.path)}\\.context\\.(mjs|js|json)$`).exec(val.name) && val.isFile());
+            if (isDirectory && contexts.mergedContext.pageMode === "mock") {
+                if (item.postMock === true) {
+                    throw `Double mock encountered at ${item.path}`;
+                }
+                Logger.log(
+                    `the page mode for ${item.path} was "mock", so we're creating an in-memory filesystem and re-adding this path to the queue`,
+                );
+                const mockDirectory =
+                    await contexts.mergedContext.mockGenerator();
+                // if anything is an absolute path, abort
+                if (
+                    Object.keys(mockDirectory).some((key) =>
+                        path.isAbsolute(key),
+                    )
+                ) {
+                    throw "mock generator illegally attempted to specify a non-relative directory";
+                }
+
+                const volume = Volume.fromJSON(mockDirectory, dir);
+                const memfs = createFsFromVolume(volume);
+
+                Resolver.baseUfs.use(memfs as any); // type fuckery
+                // reprocess this directory, now that we've got the mocked filesystem in place
+                queue.push({ ...item, postMock: true });
             }
 
-            let defaultContext: TartanContext = {};
-            let currentContext: TartanContext = {};
-
-            if (defaultContextFilename) {
-                const loadedContext = await this.loadContext(path.join(dir, defaultContextFilename.name));
-                defaultContext = this.mergeContexts(item.parent ? results[item.parent].defaultContext : this.rootContext, loadedContext);
-            }
-            else if (!item.parent) {
-                defaultContext = this.mergeContexts({}, this.rootContext);
-            }
-            else {
-                defaultContext = results[item.parent].defaultContext;
-            }
-
-            // get context
-            if (contextFilename) {
-                currentContext = await this.loadContext(path.join(dir, contextFilename.name));
-            }
-
-            const contexts = {
-                defaultContext,
-                currentContext,
-                mergedContext: this.mergeContexts(defaultContext, currentContext),
-            }
-
-            // Add pages to the queue for file mode
-            if (isDirectory && contexts.mergedContext.pageMode === "file") {
-                Logger.log(`this is a pagemode directory ${contexts}`);
+            // Add pages to the queue for file mode and asset mode
+            if (
+                (isDirectory && contexts.mergedContext.pageMode === "file") ||
+                contexts.mergedContext.pageMode === "asset"
+            ) {
+                Logger.log(
+                    `this is a ${contexts.mergedContext.pageMode} page mode directory`,
+                );
                 if (!contexts.mergedContext.pagePattern) {
                     throw new Error(`You don't have a pagePattern for ${dir}`);
                 }
-                const pages = await glob(contexts.mergedContext.pagePattern, {
+                const files = await glob(contexts.mergedContext.pagePattern, {
                     noglobstar: true,
                     nodir: true,
                     cwd: dir,
+                    // ignore the pageSource if it was defined and this is a filemode directory
+                    ignore:
+                        contexts.mergedContext.pageSource &&
+                        contexts.mergedContext.pageMode === "file"
+                            ? [contexts.mergedContext.pageSource]
+                            : [],
                 });
 
-                for (const page of pages.filter(val => path.normalize(val) !== path.normalize(contexts.mergedContext.pageSource as string))) {
-                    Logger.log(page);
-                    queue.push(
-                        {
-                            path: path.normalize(path.join(item.path, page)),
-                            parent: item.path,
-                        }
+                for (const file of files) {
+                    Logger.log(
+                        `Adding the file ${file} from ${item.path} to the queue (matched by pagePattern)`,
                     );
+                    queue.push({
+                        path: path.normalize(path.join(item.path, file)),
+                        sourceType:
+                            contexts.mergedContext.pageMode === "asset"
+                                ? "asset"
+                                : "page",
+                        parent: item.path,
+                    });
                 }
             }
 
-            results[item.path] = {
+            const extraAssetFiles = await glob(
+                contexts.mergedContext.extraAssets || [],
+                {
+                    noglobstar: true,
+                    nodir: true,
+                    cwd: dir,
+                },
+            );
+            for (const asset of extraAssetFiles) {
+                queue.push({
+                    path: path.normalize(path.join(item.path, asset)),
+                    sourceType: "asset",
+                    parent: item.path,
+                });
+            }
+
+            /*
+             * If you're a directory but you don't have a file that matches page source (or no page source at all), don't add it to the results.
+             * Not having a page source is... technically allowed. idk why anyone would ever want that though lol.
+             */
+            let skip: boolean = false;
+            if (
+                isDirectory &&
+                contexts.mergedContext.pageMode !== "handoff" &&
+                (contexts.mergedContext.pageSource === undefined ||
+                    contexts.mergedContext.pageMode === "asset" ||
+                    // no access to file
+                    !(await Resolver.ufs
+                        .access(
+                            path.join(dir, contexts.mergedContext.pageSource),
+                        )
+                        .then(() => true)
+                        .catch(() => false)))
+            ) {
+                Logger.log(`the root page for ${dir} should be skipped`);
+                skip = true;
+            }
+            this.contextTree[item.path] = {
                 ...contexts,
+                sourceType: item.sourceType,
                 parent: item.parent,
+                skip,
             };
 
             queueSize = queue.length;
-        }
-
-        for (const key in results) {
-            this.contextTree[key] = {
-                context: results[key].mergedContext,
-                parent: results[key].parent,
-            };
         }
 
         return this.contextTree;
@@ -156,50 +306,15 @@ export class DirectoryProcessor {
      *
      * @returns The merged context object.
      */
-    private mergeContexts(a: TartanContext, b: TartanContext): TartanContext {
+    private mergeContexts(
+        a: PartialTartanContext,
+        b: PartialTartanContext,
+    ): PartialTartanContext {
         if (b.inherit === false) {
             a = this.rootContext;
             delete b.inherit;
         }
 
-        return {...a, ...b};
-    }
-
-    /**
-     * Load a context file, whether it's a js module or a JSON file.
-     *
-     * @param contextPath The path to the context file.
-     * @returns The context object.
-     */
-    private async loadContext(contextPath: string): Promise<TartanContext> {
-        if (!contextPath.startsWith("./")) {
-            contextPath = path.join("./", contextPath);
-        }
-        let contextFile: TartanContextFile = {};
-        if (contextPath.endsWith(".js") || contextPath.endsWith(".mjs")) {
-            const module = await Resolver.import<TartanContextFile>("." + path.sep + contextPath);
-            contextFile = module;
-        }
-        else if (contextPath.endsWith(".json")) {
-            const contents = (await fs.readFile(contextPath)).toString();
-            contextFile = JSON.parse(contents);
-        }
-
-        const context: TartanContext = {
-            ...contextFile,
-            template: contextFile.template ? Handlebars.compile(
-                (await fs.readFile(this.resolver.resolveTemplateName(contextFile.template) || this.resolver.resolvePath(contextFile.template, contextPath))).toString()
-            ) : undefined,
-            sourceProcessor: contextFile.sourceProcessor ? await Resolver.import(this.resolver.resolvePath(contextFile.sourceProcessor, contextPath)) as SourceProcessor : undefined,
-        }
-
-        if (context.template === undefined) {
-            delete context.template;
-        }
-        if (context.sourceProcessor === undefined) {
-            delete context.sourceProcessor;
-        }
-
-        return context;
+        return { ...a, ...b };
     }
 }

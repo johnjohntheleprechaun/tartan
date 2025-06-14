@@ -19,7 +19,7 @@ Somehow, I need to inform the default `<tartan-theme-provider>` element of all t
 
 It's prolly not safe to try and replace the `this` for a class, especially if there's multiple on one element. Don't want those interacting badly.
 
-So, I can do a shadow DOM with all the providers I need nested together, and a nice little slot underneath them. Only potential problem is that custom events don't cross the shadow boundary by default. Not sure yet if that really affects me? It... Might not? *All* of my content is under the same shadow, so anything that needed to cross a boundary would've already needed to, which means that functionality isn't my responsibility.
+So, I can do a shadow DOM with all the providers I need nested together, and a nice little slot underneath them. Only potential problem is that custom events don't cross the shadow boundary by default. Not sure yet if that really affects me? It... Might not? _All_ of my content is under the same shadow, so anything that needed to cross a boundary would've already needed to, which means that functionality isn't my responsibility.
 
 The one other thing I need to do is write up a standard for the Tartan `theme-provider`, so that custom translator providers can use it. Oh... And also need to figure out if libraries usually use a custom event or the more standard `request-context` event.
 

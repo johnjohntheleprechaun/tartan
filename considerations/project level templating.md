@@ -30,7 +30,7 @@ What kind of context might somebody want? Obviously handlebars params can just b
 
 ## Source/Context Generators
 
-JS functions (or modules?) that generate source files or handlebars parameter objects. I think to do this it makes sense to have context be provided by *either* `tartan.context.json` or `tartan.context.js` with a default export.
+JS functions (or modules?) that generate source files or handlebars parameter objects. I think to do this it makes sense to have context be provided by _either_ `tartan.context.json` or `tartan.context.js` with a default export.
 
 ## Processing Steps
 

@@ -1,4 +1,4 @@
-import {PageMeta, SubPageMeta} from "./source-processor.js";
+import { SourceMeta, SubSourceMeta } from "./source-processor.js";
 
 export interface HandlebarsContext {
     /**
@@ -12,9 +12,9 @@ export interface HandlebarsContext {
     /**
      * The current page's meta.
      */
-    pageMeta: PageMeta;
+    pageMeta: SourceMeta;
     /**
      * Metadata from all the sub pages.
      */
-    subPageMeta: SubPageMeta[];
+    subPageMeta: SubSourceMeta[];
 }
