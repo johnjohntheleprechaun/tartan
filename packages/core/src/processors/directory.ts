@@ -121,7 +121,10 @@ export class DirectoryProcessor {
             if (defaultContextFile) {
                 // you just wanna load from file
                 const loadedContext: PartialTartanContext =
-                    await this.resolver.initializeContext(defaultContextFile);
+                    await this.resolver.initializeContext(
+                        defaultContextFile,
+                        path.join(dir, "tartan.context.default"),
+                    );
                 defaultContext = this.mergeContexts(
                     item.parent
                         ? this.contextTree[item.parent].defaultContext
@@ -140,8 +143,10 @@ export class DirectoryProcessor {
 
             // if you've got your own special context, initialize it
             if (currentContextFile) {
-                currentContext =
-                    await this.resolver.initializeContext(currentContextFile);
+                currentContext = await this.resolver.initializeContext(
+                    currentContextFile,
+                    path.join(dir, "tartan.context"),
+                );
             }
 
             const contexts: {
