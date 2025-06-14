@@ -318,8 +318,8 @@ export class Resolver {
     /**
      * Get the default export of an ESM module.
      *
-     * @argument moduleSpecifier The specifier of the ESM module.
-     * @argument relativeTo The ***directory*** the specifier is relative to. Must not be a file.
+     * @param moduleSpecifier The specifier of the ESM module.
+     * @param relativeTo The ***directory*** the specifier is relative to. Must not be a file.
      *
      * @returns The default export of the module.
      */
@@ -394,8 +394,8 @@ export class Resolver {
     /**
      * Resolve a module specifier relative to a directory.
      *
-     * @argument moduleSpecifier The specifier to resolve.
-     * @argument relativeTo The directory the specifier is relative to.
+     * @param moduleSpecifier The specifier to resolve.
+     * @param relativeTo The directory the specifier is relative to.
      *
      * @returns The fully resolved module specifier as an absolute path.
      */
