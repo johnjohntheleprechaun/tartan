@@ -4,10 +4,10 @@ I need some kind of standard context for tartan, and then for every package I ma
 
 ## Context Dependencies of Component Libraries
 
--   Colors
--   Icon size info
--   Sometimes icons (although I think this is a bad practice)
--   Language context
+- Colors
+- Icon size info
+- Sometimes icons (although I think this is a bad practice)
+- Language context
 
 ## Notes
 

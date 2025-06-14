@@ -35,7 +35,10 @@ describe("The PageProcessor class", () => {
             resolver = await Resolver.create(projectConfig);
             pageProcessor = new PageProcessor(
                 {
-                    context: {},
+                    context: {
+                        pageMode: "directory",
+                        pageSource: "index.html",
+                    },
                     sourcePath: "src/index.html",
                     outputDir: "dist/",
                     subpageMeta: [],
@@ -52,7 +55,7 @@ describe("The PageProcessor class", () => {
 
             const result = await pageProcessor.process();
             const outputted = await fs.readFile(
-                path.join(result.outputDir, "index.html"),
+                path.join(result.outputPath, "index.html"),
             );
 
             expect(outputted.toString()).toBe(content);
@@ -67,8 +70,10 @@ describe("The PageProcessor class", () => {
             const pageProcessor = new PageProcessor(
                 {
                     context: {
+                        pageMode: "directory",
+                        pageSource: "index.html",
                         sourceProcessor: async () => ({
-                            processedContents: "",
+                            processedContents: Buffer.from("", "utf8"),
                             outputDir: "sub/../..",
                         }),
                     },
@@ -90,12 +95,14 @@ describe("The PageProcessor class", () => {
         it("should not allow duplicate output directories to be provided by source processors", async () => {
             const outputDir = crypto.randomUUID();
             const sourceProcessor: SourceProcessor = async () => ({
-                processedContents: "",
+                processedContents: Buffer.from("", "utf8"),
                 outputDir,
             });
             const processorOne = new PageProcessor(
                 {
                     context: {
+                        pageMode: "directory",
+                        pageSource: "index.html",
                         sourceProcessor,
                     },
                     sourcePath: "src/index.html",
@@ -108,6 +115,8 @@ describe("The PageProcessor class", () => {
             const processorTwo = new PageProcessor(
                 {
                     context: {
+                        pageMode: "directory",
+                        pageSource: "index.html",
                         sourceProcessor,
                     },
                     sourcePath: "src/index.html",
@@ -136,6 +145,8 @@ describe("The PageProcessor class", () => {
             const processor = new PageProcessor(
                 {
                     context: {
+                        pageMode: "directory",
+                        pageSource: "index.html",
                         sourceProcessor,
                     },
                     subpageMeta: [],
@@ -151,7 +162,7 @@ describe("The PageProcessor class", () => {
             });
 
             const result = await processor.process();
-            expect(result.outputDir).toBe(outputDir);
+            expect(result.outputPath).toBe(outputDir);
         });
         it("should pass through extra meta from the source processor", async () => {
             const extraMeta: any = {
@@ -165,6 +176,8 @@ describe("The PageProcessor class", () => {
             const processor = new PageProcessor(
                 {
                     context: {
+                        pageMode: "directory",
+                        pageSource: "index.html",
                         sourceProcessor,
                     },
                     subpageMeta: [],

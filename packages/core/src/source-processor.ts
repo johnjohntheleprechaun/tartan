@@ -1,21 +1,26 @@
-import { PartialTartanContext } from "./tartan-context.js";
+import { FullTartanContext } from "./tartan-context.js";
 
+export type SourceType = "page" | "asset";
 /**
  * Information about a processed page.
  */
-export type PageMeta = {
+export type SourceMeta = {
+    /**
+     * The type of this source
+     */
+    sourceType: SourceType;
     /**
      * The source file used (relative to rootDir).
      */
     sourcePath: string;
     /**
-     * The path this page was outputted to (relative to outputDir). This will be a directory, since all pages end up as an `index.html` within their own directory.
+     * The path this source was outputted to (relative to outputDir). This will be a directory if sourceType is "page", file if it's "file".
      */
-    outputDir: string;
+    outputPath: string;
     /**
      * The full context object for this page.
      */
-    context: PartialTartanContext;
+    context: FullTartanContext;
     /**
      * Any extra metadata provided by the sourceProcessor.
      */
@@ -24,7 +29,7 @@ export type PageMeta = {
 /**
  * The meta for a page, in the context of being a sub-page.
  */
-export type SubPageMeta = PageMeta & {
+export type SubSourceMeta = SourceMeta & {
     /**
      * The number of levels away this page is from the one currently being processed.
      * This will never be 0, because meta from pages on the same level is not accessible.
@@ -42,23 +47,23 @@ export type SourceProcessorInput = {
     /**
      * The contents of the source file, as a string.
      */
-    sourceContents: string;
+    sourceContents: Buffer;
     /**
      * The fully processed context object for this page.
      */
-    context: PartialTartanContext;
+    context: FullTartanContext;
     /**
      * Metadata from all subpages.
      * When pageMode is `file`, all pages matched by `pagePattern` are considered to be on the same level, and the page matched by `pageSource` is one level above them.
      */
-    subpageMeta: SubPageMeta[];
+    subpageMeta: SubSourceMeta[];
     /**
      * The depth of this page within the root dir.
      */
     depth: number;
 };
 export type SourceProcessorOutput = {
-    processedContents: string;
+    processedContents: Buffer;
     /**
      * Source processors are allowed to change the directory the page is outputted to.
      * This directory is relative to the parent, so effectively it's just *renaming* the page.

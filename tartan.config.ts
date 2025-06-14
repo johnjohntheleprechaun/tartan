@@ -10,4 +10,5 @@ export default {
         sourceProcessor: "./docs/processor.ts",
         template: "docs/base-template.html",
     },
+    ignoredPaths: ["^https?://"],
 } as TartanConfig;

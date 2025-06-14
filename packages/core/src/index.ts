@@ -1,17 +1,24 @@
 import { Logger } from "./logger.js";
-import { DirectoryProcessor, PageProcessor } from "./processors/index.js";
+import {
+    ContextTreeNode,
+    DirectoryProcessor,
+    PageProcessor,
+} from "./processors/index.js";
 import { Resolver } from "./resolve.js";
 import { TartanConfig } from "./tartan-config.js";
 import path from "path";
-import { PartialTartanContext } from "./tartan-context.js";
-import { PageMeta, SubPageMeta } from "./source-processor.js";
+import { FullTartanContext, PartialTartanContext } from "./tartan-context.js";
+import { SourceMeta, SubSourceMeta } from "./source-processor.js";
+import { AssetHandler } from "./processors/asset.js";
 
 type TreeNode = {
     key: string;
-    value: PartialTartanContext;
+    value: ContextTreeNode;
     children: TreeNode[];
 };
-type SubPageMetaWithDepth = Omit<SubPageMeta, "distance"> & { depth: number };
+type SubSourceMetaWithDepth = Omit<SubSourceMeta, "distance"> & {
+    depth: number;
+};
 
 export class TartanProject {
     public readonly config: TartanConfig;
@@ -44,6 +51,11 @@ export class TartanProject {
      */
     public async init() {
         await this.resolver.init();
+        for (const [glob, processor] of Object.entries(
+            this.config.extraAssetProcessors || {},
+        )) {
+            await AssetHandler.registerProcessor(glob, processor);
+        }
         await this.directoryProcessor.loadContextTree();
     }
 
@@ -57,7 +69,7 @@ export class TartanProject {
         for (const key in flat) {
             nodes[key] = {
                 key: key,
-                value: flat[key].context,
+                value: flat[key],
                 children: [],
             };
         }
@@ -88,10 +100,10 @@ export class TartanProject {
          */
         const processPage = async (
             page: string,
-            context: PartialTartanContext,
+            context: FullTartanContext,
             depth: number,
-            subpageMeta: SubPageMeta[],
-        ): Promise<PageMeta> => {
+            subSourceMeta: SubSourceMeta[],
+        ): Promise<SourceMeta> => {
             Logger.log(`${page} : ${context}`);
             let sourcePath: string;
             let outputDir: string;
@@ -117,20 +129,52 @@ export class TartanProject {
                 );
             }
 
-            const pageProcessor = new PageProcessor(
-                {
-                    sourcePath,
+            if (context.pageMode === "handoff") {
+                const extra = await context.handoffHandler(outputDir);
+                return {
                     context: context,
-                    outputDir,
-                    subpageMeta: subpageMeta,
-                    depth,
-                },
-                this.config,
-                this.resolver,
-            );
+                    sourcePath: sourcePath,
+                    outputPath: outputDir,
+                    sourceType: "page",
+                    extra,
+                };
+            } else {
+                const pageProcessor = new PageProcessor(
+                    {
+                        sourcePath,
+                        context: context,
+                        outputDir,
+                        subpageMeta: subSourceMeta,
+                        depth,
+                    },
+                    this.config,
+                    this.resolver,
+                );
 
-            const result = await pageProcessor.process();
-            return result;
+                return await pageProcessor.process();
+            }
+        };
+        const processAsset = async (
+            filepath: string,
+            context: FullTartanContext,
+        ): Promise<SourceMeta> => {
+            const parsed = path.parse(filepath);
+            const sourcePath = filepath;
+            const outputDir = path.join(
+                this.config.outputDir as string,
+                path.relative(this.config.rootDir as string, parsed.dir),
+            );
+            const handler = new AssetHandler({
+                sourcePath,
+                outputDir,
+            });
+            const filename = await handler.process();
+            return {
+                sourcePath,
+                sourceType: "asset",
+                outputPath: path.join(outputDir, filename),
+                context,
+            };
         };
 
         /*
@@ -139,22 +183,31 @@ export class TartanProject {
         const processFromBottom = async (
             node: TreeNode,
             depth: number = 0,
-        ): Promise<SubPageMetaWithDepth[]> => {
-            let results: SubPageMetaWithDepth[] = [];
+        ): Promise<SubSourceMetaWithDepth[]> => {
+            let results: SubSourceMetaWithDepth[] = [];
             for (const child of node.children) {
                 results = results.concat(
                     await processFromBottom(child, depth + 1),
                 );
             }
+            Logger.log(node);
+            if (node.value.skip) {
+                return results;
+            }
             return results.concat({
-                ...(await processPage(
-                    node.key,
-                    node.value,
-                    depth,
-                    results.map((a) => ({ ...a, distance: a.depth - depth })),
-                )),
+                ...(node.value.sourceType === "page"
+                    ? await processPage(
+                          node.key,
+                          node.value.mergedContext,
+                          depth,
+                          results.map((a) => ({
+                              ...a,
+                              distance: a.depth - depth,
+                          })),
+                      )
+                    : await processAsset(node.key, node.value.mergedContext)),
                 depth: depth,
-            } as SubPageMetaWithDepth);
+            });
         };
 
         const thing = await processFromBottom(tree);
@@ -170,3 +223,5 @@ export * from "./resolve.js";
 export * from "./handlebars.js";
 export * from "./logger.js";
 export * from "./template-manifest.js";
+export * from "./mock-generator.js";
+export * from "./handoff-handler.js";

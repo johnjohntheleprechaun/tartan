@@ -1,7 +1,7 @@
 import { TartanConfig } from "./tartan-config.js";
 import { TartanModule } from "./tartan-module.js";
 import path from "path";
-import fs from "fs/promises";
+import fs from "fs";
 import { createRequire } from "module";
 import { Logger } from "./logger.js";
 import { PartialTartanContext, TartanContextFile } from "./tartan-context.js";
@@ -13,6 +13,9 @@ import {
     Package,
 } from "custom-elements-manifest";
 import { TemplateManifest } from "./template-manifest.js";
+import { MockGenerator } from "./mock-generator.js";
+import { IUnionFs, IFS, Union } from "unionfs";
+import { HandoffHandler } from "./handoff-handler.js";
 
 const require = createRequire(import.meta.url);
 
@@ -31,6 +34,20 @@ export class Resolver {
         [key: string]: ReturnType<typeof Handlebars.compile>;
     } = {};
 
+    /**
+     * The merged filesystem to use
+     */
+    public static baseUfs: IUnionFs = new Union().use(fs);
+    public static ufs: IUnionFs["promises"] = this.baseUfs.promises;
+    private static fsStack: IFS[] = [fs];
+
+    public static resetUfs() {
+        this.baseUfs = new Union();
+        this.ufs = this.baseUfs.promises;
+        this.fsStack = [fs];
+        this.baseUfs.use(fs);
+    }
+
     public static async create(projectConfig: TartanConfig): Promise<Resolver> {
         return new Resolver(projectConfig).init();
     }
@@ -41,7 +58,7 @@ export class Resolver {
 
     public async init(): Promise<Resolver> {
         const packageLockPath = await Resolver.findUp("package-lock.json");
-        const packageLock = await fs
+        const packageLock = await Resolver.ufs
             .readFile(packageLockPath)
             .then((res) => JSON.parse(res.toString()))
             .catch(() => ({ packages: [] }));
@@ -60,14 +77,14 @@ export class Resolver {
                 "package.json",
             );
             if (
-                !(await fs
+                !(await Resolver.ufs
                     .access(packageDefinitionPath)
                     .then(() => true)
                     .catch(() => false))
             ) {
                 continue;
             }
-            const packageDefinitionFile: Buffer = await fs.readFile(
+            const packageDefinitionFile: Buffer = await Resolver.ufs.readFile(
                 packageDefinitionPath,
             );
             const packageDefinition = JSON.parse(
@@ -83,7 +100,8 @@ export class Resolver {
                     packagePath,
                     packageDefinition.customElements,
                 );
-                const manifestFile: Buffer = await fs.readFile(manifestPath);
+                const manifestFile: Buffer =
+                    await Resolver.ufs.readFile(manifestPath);
                 const manifest: Package = JSON.parse(manifestFile.toString());
                 module.componentManifest = manifest;
 
@@ -118,7 +136,8 @@ export class Resolver {
                     packagePath,
                     packageDefinition.tartanTemplateManifest,
                 );
-                const manifestFile: Buffer = await fs.readFile(manifestPath);
+                const manifestFile: Buffer =
+                    await Resolver.ufs.readFile(manifestPath);
                 const manifest: TemplateManifest = JSON.parse(
                     manifestFile.toString(),
                 );
@@ -130,7 +149,7 @@ export class Resolver {
                         path.dirname(manifestPath),
                         template.path,
                     );
-                    const templateFile: string = await fs.readFile(
+                    const templateFile: string = await Resolver.ufs.readFile(
                         templatePath,
                         "utf8",
                     );
@@ -156,7 +175,7 @@ export class Resolver {
         while (currentDir !== "/") {
             const testPath = path.join(currentDir, filename);
             if (
-                await fs
+                await this.ufs
                     .access(testPath)
                     .then(() => true)
                     .catch(() => false)
@@ -208,7 +227,7 @@ export class Resolver {
             {},
         );
 
-        const dirContents = await fs.readdir(path.dirname(filename), {
+        const dirContents = await this.ufs.readdir(path.dirname(filename), {
             withFileTypes: true,
         });
 
@@ -233,10 +252,11 @@ export class Resolver {
                 : prev,
         );
         const filepath =
-            `.${path.sep}` + path.join(dirent.parentPath, dirent.name);
+            (path.isAbsolute(dirent.parentPath) ? "" : `.${path.sep}`) +
+            path.join(dirent.parentPath, dirent.name);
 
         if (path.extname(filepath) === ".json") {
-            return JSON.parse((await fs.readFile(filepath)).toString());
+            return JSON.parse((await this.ufs.readFile(filepath)).toString());
         } else {
             return this.import(filepath);
         }
@@ -331,7 +351,7 @@ export class Resolver {
                 ? this.resolveTemplateName(contextFile.template) ||
                   Handlebars.compile(
                       (
-                          await fs.readFile(
+                          await Resolver.ufs.readFile(
                               this.resolvePath(contextFile.template, filePath),
                           )
                       ).toString(),
@@ -342,13 +362,30 @@ export class Resolver {
                       this.resolvePath(contextFile.sourceProcessor, filePath),
                   )) as SourceProcessor)
                 : undefined,
+            mockGenerator: contextFile.mockGenerator
+                ? ((await Resolver.import(
+                      this.resolvePath(contextFile.mockGenerator, filePath),
+                  )) as MockGenerator)
+                : undefined,
+            handoffHandler: contextFile.handoffHandler
+                ? ((await Resolver.import(
+                      this.resolvePath(contextFile.handoffHandler, filePath),
+                  )) as HandoffHandler)
+                : undefined,
         };
 
+        // Should prolly convert this to a for loop or smth
         if (context.template === undefined) {
             delete context.template;
         }
         if (context.sourceProcessor === undefined) {
             delete context.sourceProcessor;
+        }
+        if (context.mockGenerator === undefined) {
+            delete context.mockGenerator;
+        }
+        if (context.handoffHandler === undefined) {
+            delete context.handoffHandler;
         }
 
         return context;
