@@ -90,26 +90,6 @@ export class DirectoryProcessor {
             if (isDirectory) {
                 dir = item.path;
                 contextFilename = "tartan.context";
-
-                // add child directories
-                const dirContents = await Resolver.ufs.readdir(item.path, {
-                    withFileTypes: true,
-                });
-                for (const child of dirContents) {
-                    if (child.isDirectory()) {
-                        Logger.log(
-                            `adding the subdirectory ${child.name} from ${item.path} to the queue`,
-                            2,
-                        );
-                        queue.push({
-                            path: path.normalize(
-                                path.join(item.path, child.name, "./"),
-                            ),
-                            sourceType: "page",
-                            parent: item.path,
-                        });
-                    }
-                }
             } else {
                 dir = path.dirname(item.path);
                 contextFilename = `${path.basename(item.path)}.context`;
@@ -177,6 +157,27 @@ export class DirectoryProcessor {
                 ) as FullTartanContext,
             };
 
+            if (isDirectory) {
+                // add child directories
+                const dirContents = await Resolver.ufs.readdir(item.path, {
+                    withFileTypes: true,
+                });
+                for (const child of dirContents) {
+                    if (child.isDirectory()) {
+                        Logger.log(
+                            `adding the subdirectory ${child.name} from ${item.path} to the queue`,
+                            2,
+                        );
+                        queue.push({
+                            path: path.normalize(
+                                path.join(item.path, child.name, "./"),
+                            ),
+                            sourceType: "page",
+                            parent: item.path,
+                        });
+                    }
+                }
+            }
             if (isDirectory && contexts.mergedContext.pageMode === "mock") {
                 if (item.postMock === true) {
                     throw `Double mock encountered at ${item.path}`;

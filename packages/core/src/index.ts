@@ -129,20 +129,30 @@ export class TartanProject {
                 );
             }
 
-            const pageProcessor = new PageProcessor(
-                {
-                    sourcePath,
+            if (context.pageMode === "handoff") {
+                const extra = await context.handoffHandler(outputDir);
+                return {
                     context: context,
-                    outputDir,
-                    subpageMeta: subSourceMeta,
-                    depth,
-                },
-                this.config,
-                this.resolver,
-            );
+                    sourcePath: sourcePath,
+                    outputPath: outputDir,
+                    sourceType: "page",
+                    extra,
+                };
+            } else {
+                const pageProcessor = new PageProcessor(
+                    {
+                        sourcePath,
+                        context: context,
+                        outputDir,
+                        subpageMeta: subSourceMeta,
+                        depth,
+                    },
+                    this.config,
+                    this.resolver,
+                );
 
-            const result = await pageProcessor.process();
-            return result;
+                return await pageProcessor.process();
+            }
         };
         const processAsset = async (
             filepath: string,

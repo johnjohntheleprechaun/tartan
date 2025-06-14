@@ -1,1 +1,1 @@
-export type HandoffHandler = (outputDir: string) => void | Promise<void>;
+export type HandoffHandler = (outputDir: string) => any | Promise<any>;
