@@ -260,4 +260,21 @@ describe("The directory processor", () => {
 
         return expectAsync(directoryProcessor.loadContextTree()).toBeRejected();
     });
+    it("shouldn't skip handoff dirs", async () => {
+        spyOn(Resolver, "import").and.callFake((() => {
+            return () => ({});
+        }) as any);
+        mock({
+            src: {
+                "tartan.context.json": JSON.stringify({
+                    pageMode: "handoff",
+                    handoffHandler: "",
+                } as TartanContextFile),
+            },
+        });
+
+        const result = await directoryProcessor.loadContextTree();
+        expect(result["src"]).toBeDefined();
+        expect(result["src"].skip).toBeFalsy();
+    });
 });

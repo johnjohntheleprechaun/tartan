@@ -10,6 +10,7 @@ import { glob } from "glob";
 import { Logger } from "../logger.js";
 import { SourceType } from "../source-processor.js";
 import { createFsFromVolume, Volume } from "memfs";
+import { context } from "esbuild";
 
 export type ContextTreeNode = {
     defaultContext: FullTartanContext;
@@ -270,6 +271,7 @@ export class DirectoryProcessor {
             let skip: boolean = false;
             if (
                 isDirectory &&
+                contexts.mergedContext.pageMode !== "handoff" &&
                 (contexts.mergedContext.pageSource === undefined ||
                     contexts.mergedContext.pageMode === "asset" ||
                     // no access to file
