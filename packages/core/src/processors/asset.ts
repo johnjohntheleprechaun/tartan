@@ -8,7 +8,10 @@ export type AssetProcessorOutput = {
 };
 export type AssetProcessor = (
     asset: Buffer,
-    filename: string,
+    /**
+     * The fully resolved path to the file
+     */
+    sourcePath: string, // we do this so that processors can resolve any dependencies
 ) => Promise<AssetProcessorOutput> | AssetProcessorOutput;
 
 export type ProcessorRegistryEntry = {
@@ -81,7 +84,7 @@ export class AssetHandler {
                 );
                 const result = await entry.processor(
                     fileContents,
-                    this.basename,
+                    this.sourcePath,
                 );
 
                 // write the file

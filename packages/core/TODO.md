@@ -5,3 +5,4 @@
 - Put custom element classes in the global scope and mark those imports as external when processing javascript
 - add comments goddamn bro
 - investigate switching to Node v22 (LTS) and builtin `fs.glob`
+- let asset handlers define dependencies of assets, maybe?
