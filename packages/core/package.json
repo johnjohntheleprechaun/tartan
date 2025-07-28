@@ -35,6 +35,7 @@
         "memfs": "^4.17.2",
         "minimatch": "^10.0.1",
         "node-html-parser": "^7.0.1",
+        "rxjs": "^7.8.2",
         "unionfs": "^4.5.4"
     },
     "devDependencies": {
