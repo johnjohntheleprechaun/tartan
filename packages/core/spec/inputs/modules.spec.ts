@@ -3,7 +3,7 @@ import { makeTempFile, performOperationAfterEachEmission } from "../utils";
 import { loadModule } from "../../src/inputs/modules.ts";
 import fs from "fs/promises";
 
-describe("Building and Rebuilding of modules", () => {
+describe("The module loader", () => {
     it("should load a module, once", async () => {
         const testFile: string = await makeTempFile(
             "test.ts",
@@ -44,7 +44,7 @@ describe("Building and Rebuilding of modules", () => {
 
         expect(result).toBe(50);
     });
-    it("should watch dependencies for changes too", async () => {
+    it("should watch dependencies for changes", async () => {
         const dep: string = await makeTempFile("dep.ts", "export default 50");
         const main: string = await makeTempFile(
             "main.ts",
