@@ -7,6 +7,16 @@ export const DEBOUNCE_ENVIRONMENT_VARIABLE = "TARTAN_FILE_OPERATION_DEBOUNCE";
 export const defaultFileOperationDebounce = () =>
     debounceTime(parseInt(process.env[DEBOUNCE_ENVIRONMENT_VARIABLE] || "100"));
 
+export function loadFile(filename: string): Observable<Buffer> {
+    const reloadSubject = new Subject<void>();
+    const watcher = new FileWatcher(reloadSubject);
+    watcher.setWatchedPaths([filename]);
+    return reloadSubject.pipe(
+        startWith(undefined),
+        defaultFileOperationDebounce(),
+        switchMap((_) => fs.readFile(filename).catch((_) => Buffer.from([]))),
+    );
+}
 
 export class FileWatcher {
     private static subscription: watcher.AsyncSubscription; // I guess this isn't really used, but I'm keeping it in memory anyway idk
