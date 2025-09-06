@@ -1,6 +1,12 @@
 import watcher from "@parcel/watcher";
 import path from "node:path";
-import { Subject } from "rxjs";
+import { debounceTime, Observable, startWith, Subject, switchMap } from "rxjs";
+import fs from "fs/promises";
+
+export const DEBOUNCE_ENVIRONMENT_VARIABLE = "TARTAN_FILE_OPERATION_DEBOUNCE";
+export const defaultFileOperationDebounce = () =>
+    debounceTime(parseInt(process.env[DEBOUNCE_ENVIRONMENT_VARIABLE] || "100"));
+
 
 export class FileWatcher {
     private static subscription: watcher.AsyncSubscription; // I guess this isn't really used, but I'm keeping it in memory anyway idk

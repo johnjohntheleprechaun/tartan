@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import rxjs, { filter, Observable, startWith, Subject, switchMap } from "rxjs"; // we need to import the entire rxjs lib so that we can provide it in the vm (so that things like instanceof will work across the boundary)
 import esbuild from "esbuild";
-import { FileWatcher } from "./files.js";
+import { defaultFileOperationDebounce, FileWatcher } from "./files.js";
 import { Script } from "node:vm";
 
 const require = createRequire(import.meta.url);
@@ -40,6 +40,7 @@ export function loadModule<T>(
         rebuildTrigger
             .pipe(
                 startWith(undefined), // initial build
+                defaultFileOperationDebounce(),
                 switchMap(() =>
                     ctx
                         .cancel()
