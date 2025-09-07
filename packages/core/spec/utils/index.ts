@@ -6,6 +6,9 @@ export async function makeTempFile(
     name: string,
     contents: string,
 ): Promise<string> {
+    if (!globalThis.tmpDir) {
+        fail("no temp dir was provided");
+    }
     const filePath = resolve(join(globalThis.tmpDir, name));
     await fs.writeFile(filePath, contents);
     return filePath;

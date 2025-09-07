@@ -138,4 +138,47 @@ describe("The object loader", () => {
         );
         expect(results).toEqual([tsObject, jsonObject]);
     });
+    it("should emit the default when provided", async () => {
+        const defaultObject = {
+            key: "value",
+        };
+
+        if (!globalThis.tmpDir) {
+            fail("no tmpDir was provided, but it definitely should've been");
+            return;
+        }
+        const objectObservable = loadObjectFromFile(
+            path.join(globalThis.tmpDir, "not-a-real-basename"),
+            defaultObject,
+        );
+
+        const result = await firstValueFrom(objectObservable);
+        expect(result).toEqual(defaultObject);
+    });
+    it("should emit the default, then emit from a file when one becomes available", async () => {
+        const defaultObject = {
+            key: "default object",
+        };
+        const fileObject = {
+            key: "JSON object",
+        };
+
+        if (!globalThis.tmpDir) {
+            fail("no tmpDir was provided, but it definitely should've been");
+            return;
+        }
+        const objectObservable = loadObjectFromFile(
+            path.join(globalThis.tmpDir, "object"),
+            defaultObject,
+        );
+
+        const results = await performOperationAfterEachEmission(
+            objectObservable,
+            [
+                async () =>
+                    makeTempFile("object.json", JSON.stringify(fileObject)),
+            ],
+        );
+        expect(results).toEqual([defaultObject, fileObject]);
+    });
 });

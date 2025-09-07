@@ -5,6 +5,7 @@ import {
     filter,
     map,
     Observable,
+    of,
     startWith,
     Subject,
     switchMap,
@@ -38,7 +39,10 @@ const extensionIndexMap: { [key: string]: number } =
         (prev, curr, i) => ({ ...prev, [curr]: i }),
         {} as { [key: string]: number },
     );
-export function loadObjectFromFile<T>(basename: string): Observable<T> {
+export function loadObjectFromFile<T>(
+    basename: string,
+    defaultIfNoFileExists?: T,
+): Observable<T> {
     const reloadSubject = new Subject<void>();
     const watcher = new FileWatcher(reloadSubject);
     watcher.setWatchedPaths(
@@ -68,8 +72,10 @@ export function loadObjectFromFile<T>(basename: string): Observable<T> {
 
             // parse the file
             if (!matchingFiles[0]) {
-                // No available matched files
-                return undefined;
+                // No available matched files, return the default if none existed
+                return defaultIfNoFileExists
+                    ? of(defaultIfNoFileExists)
+                    : undefined;
             }
 
             const pathToLoad = path.parse(
@@ -83,7 +89,7 @@ export function loadObjectFromFile<T>(basename: string): Observable<T> {
                 );
             }
         }),
-        // just don't emit if there's no matching files
+        // just don't emit if there's no matching files (and no default object was set)
         // I'll add an error warning eventually
         filter((val) => val !== undefined),
         switchMap((val) => val),
