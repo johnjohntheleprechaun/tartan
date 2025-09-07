@@ -6,8 +6,7 @@ export async function makeTempFile(
     name: string,
     contents: string,
 ): Promise<string> {
-    const tempDir = await fs.mkdtemp(".tmp/tartan-test-");
-    const filePath = resolve(join(tempDir, name));
+    const filePath = resolve(join(globalThis.tmpDir, name));
     await fs.writeFile(filePath, contents);
     return filePath;
 }
@@ -25,7 +24,6 @@ export async function performOperationAfterEachEmission<T>(
     return firstValueFrom(
         observable.pipe(
             switchMap(async (emission) => {
-                //console.log(emission);
                 if (operations[i]) {
                     await operations[i](emission);
                     emissions.push(emission);
