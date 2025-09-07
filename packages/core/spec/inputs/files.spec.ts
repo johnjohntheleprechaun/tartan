@@ -1,7 +1,8 @@
 import { firstValueFrom } from "rxjs";
 import fs from "fs/promises";
-import { loadFile } from "../../src/inputs/files";
+import { loadFile, loadObjectFromFile } from "../../src/inputs/files";
 import { makeTempFile, performOperationAfterEachEmission } from "../utils";
+import path from "path";
 
 describe("The file loader", () => {
     it("should load a file", async () => {
@@ -21,5 +22,120 @@ describe("The file loader", () => {
             [async () => await fs.writeFile(filename, "2")],
         );
         expect(results.map((val) => val.toString())).toEqual(["1", "2"]);
+    });
+});
+
+describe("The object loader", () => {
+    it("should load from a JSON file", async () => {
+        const object = {
+            key: "value",
+        };
+        const filename = await makeTempFile(
+            "file.json",
+            JSON.stringify(object),
+        );
+        const parsedFilename = path.parse(filename);
+
+        const fileObservable = loadObjectFromFile(
+            path.join(parsedFilename.dir, parsedFilename.name),
+        );
+        const result = await firstValueFrom(fileObservable);
+        expect(result).toEqual(object);
+    });
+    it("should load from a TS file", async () => {
+        const object = {
+            key: "value",
+        };
+        const filename = await makeTempFile(
+            "object.ts",
+            `export default ${JSON.stringify(object)}`,
+        );
+        const parsedFilename = path.parse(filename);
+
+        const fileObservable = loadObjectFromFile(
+            path.join(parsedFilename.dir, parsedFilename.name),
+        );
+
+        const result = await firstValueFrom(fileObservable);
+        expect(result).toEqual(object);
+    });
+    it("should prioritize TS over JSON", async () => {
+        const object = {
+            key: "value",
+        };
+        const ignoredJSON = await makeTempFile(
+            "object.json",
+            JSON.stringify({}),
+        );
+        const filename = await makeTempFile(
+            "object.ts",
+            `export default ${JSON.stringify(object)}`,
+        );
+        const parsedFilename = path.parse(filename);
+
+        const fileObservable = loadObjectFromFile(
+            path.join(parsedFilename.dir, parsedFilename.name),
+        );
+
+        const result = await firstValueFrom(fileObservable);
+        expect(result).toEqual(object);
+    });
+    it("should load JSON, then switch to TS after the TS file is created", async () => {
+        const jsonObject = {
+            key: "JSON value",
+        };
+        const tsObject = {
+            key: "TS value",
+        };
+
+        const jsonFilename = await makeTempFile(
+            "object.json",
+            JSON.stringify(jsonObject),
+        );
+        const parsedFilename = path.parse(jsonFilename);
+        const fileObservable = loadObjectFromFile(
+            path.join(parsedFilename.dir, parsedFilename.name),
+        );
+
+        const results = await performOperationAfterEachEmission(
+            fileObservable,
+            [
+                async () =>
+                    await makeTempFile(
+                        "object.ts",
+                        `export default ${JSON.stringify(tsObject)}`,
+                    ),
+            ],
+        );
+
+        expect(results).toEqual([jsonObject, tsObject]);
+    });
+    it("should load TS, then switch to existing JSON after TS is deleted", async () => {
+        const tsObject = {
+            key: "TS Object",
+        };
+        const jsonObject = {
+            key: "JSON Object",
+        };
+
+        const jsonFilename = await makeTempFile(
+            "object.json",
+            JSON.stringify(jsonObject),
+        );
+        const tsFilename = await makeTempFile(
+            "object.ts",
+            `export default ${JSON.stringify(tsObject)}`,
+        );
+        const parsedFilename = path.parse(jsonFilename);
+
+        const objectObservable = loadObjectFromFile(
+            path.join(parsedFilename.dir, parsedFilename.name),
+        );
+
+        const results = await performOperationAfterEachEmission(
+            objectObservable,
+            [async () => await fs.rm(tsFilename)],
+        );
+        expect(results).toEqual([tsObject, jsonObject]);
     });
 });
