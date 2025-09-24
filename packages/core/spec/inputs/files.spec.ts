@@ -1,6 +1,10 @@
-import { firstValueFrom } from "rxjs";
+import { async, firstValueFrom, Subject } from "rxjs";
 import fs from "fs/promises";
-import { loadFile, loadObjectFromFile } from "../../src/inputs/files";
+import {
+    FileWatcher,
+    loadFile,
+    loadObjectFromFile,
+} from "../../src/inputs/files";
 import { makeTempFile, performOperationAfterEachEmission } from "../utils";
 import path from "path";
 
@@ -22,6 +26,33 @@ describe("The file loader", () => {
             [async () => await fs.writeFile(filename, "2")],
         );
         expect(results.map((val) => val.toString())).toEqual(["1", "2"]);
+    });
+});
+
+describe("The file watcher", () => {
+    it("should watch multiple files for changes", async () => {
+        const f1 = await makeTempFile("file1.txt", "hello world");
+        const f2 = await makeTempFile("file2.txt", "hello other world");
+        const changeSubject: Subject<void> = new Subject();
+        const watcher = new FileWatcher(changeSubject);
+        watcher.setWatchedPaths([f1, f2]);
+
+        const results = performOperationAfterEachEmission(changeSubject, [
+            async () => await fs.writeFile(f2, "asldkfjnlkjn"),
+        ]);
+        await fs.writeFile(f1, "asnlkjnclkjnas");
+
+        expect(await results).toHaveSize(2);
+    });
+    it("should watch a glob pattern", async () => {
+        const changeSubject: Subject<void> = new Subject();
+        const watcher = new FileWatcher(changeSubject);
+        watcher.setWatchedPaths([path.join(globalThis.tmpDir, "*.txt")]);
+        const res = performOperationAfterEachEmission(changeSubject, []);
+        await makeTempFile("poopshit.txt", "asdlfkjansldfjn");
+
+        await makeTempFile("poopshit.not-txt", "asdlfkjansldfjn");
+        expect(await res).toHaveSize(1);
     });
 });
 

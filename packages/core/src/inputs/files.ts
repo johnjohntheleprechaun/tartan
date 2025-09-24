@@ -12,6 +12,7 @@ import {
 } from "rxjs";
 import fs from "fs/promises";
 import { loadModule } from "./modules.js";
+import { minimatch } from "minimatch";
 
 export const DEBOUNCE_ENVIRONMENT_VARIABLE = "TARTAN_FILE_OPERATION_DEBOUNCE";
 export const defaultFileOperationDebounce = () =>
@@ -97,6 +98,9 @@ export function loadObjectFromFile<T>(
 }
 
 export class FileWatcher {
+    /*
+     * STATIC
+     */
     private static subscription: watcher.AsyncSubscription; // I guess this isn't really used, but I'm keeping it in memory anyway idk
     private static callbacks: watcher.SubscribeCallback[] = [];
     public static addCallback(callback: watcher.SubscribeCallback) {
@@ -108,24 +112,41 @@ export class FileWatcher {
     public static async dispose(): Promise<void> {
         if (this.subscription) {
             await this.subscription.unsubscribe();
+            this.callbacks.length = 0;
         }
     }
-    static {
-        watcher
-            .subscribe(".", this.callback.bind(this), {
+    public static async load() {
+        this.subscription = await watcher.subscribe(
+            ".",
+            this.callback.bind(this),
+            {
                 ignore: ["./node_modules/*"],
-            })
-            .then((sub) => (this.subscription = sub));
+            },
+        );
+    }
+    public static async reload(): Promise<void> {
+        await this.dispose();
+        await this.load();
+    }
+    static {
+        this.load();
     }
 
-    public watchedPaths: Set<string> = new Set<string>();
+    /*
+     * INSTANCE
+     */
+
+    private watchedPaths: readonly string[] = [];
     private subject: Subject<void>;
     constructor(subscriber: Subject<void>) {
         this.subject = subscriber;
         FileWatcher.addCallback(this.localCallback.bind(this));
     }
     setWatchedPaths(paths: string[]) {
-        this.watchedPaths = new Set<string>(paths.map((a) => path.resolve(a)));
+        this.watchedPaths = Object.freeze(paths.map((p) => path.resolve(p)));
+    }
+    getWatchedPaths(): readonly string[] {
+        return this.watchedPaths;
     }
     localCallback(err: Error | null, events: watcher.Event[]) {
         /*
@@ -133,7 +154,7 @@ export class FileWatcher {
         console.log("watched paths", this.watchedPaths);
         */
         for (const event of events) {
-            if (this.watchedPaths.has(event.path)) {
+            if (this.watchedPaths.some((val) => minimatch(event.path, val))) {
                 // just emit that something relevant happened
                 this.subject.next();
                 return;
