@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { bufferCount, firstValueFrom, Observable, switchMap, tap } from "rxjs";
+import { bufferCount, concatMap, firstValueFrom, Observable } from "rxjs";
 
 export async function makeTempFile(
     name: string,
@@ -26,7 +26,7 @@ export async function performOperationAfterEachEmission<T>(
 
     return firstValueFrom(
         observable.pipe(
-            switchMap(async (emission) => {
+            concatMap(async (emission) => {
                 if (operations[i]) {
                     await operations[i](emission);
                     emissions.push(emission);

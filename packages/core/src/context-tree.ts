@@ -1,17 +1,8 @@
-import {
-    combineLatestWith,
-    map,
-    Observable,
-    of,
-    startWith,
-    Subject,
-    switchMap,
-} from "rxjs";
+import { combineLatestWith, map, Observable, of, Subject } from "rxjs";
 import { FullTartanContext, PartialTartanContext } from "./tartan-context.js";
 import { SourceType } from "./source-processor.js";
-import { FileWatcher, loadObjectFromFile } from "./inputs/files.js";
+import { loadObjectFromFile } from "./inputs/files.js";
 import path from "node:path";
-import fs from "fs/promises";
 
 export type ContextTreeNode = {
     inheritableContext: Observable<FullTartanContext>;
@@ -33,11 +24,11 @@ export function loadContextTreeNode(
         filename?: string;
     } & ( // one must exist
         | {
-              rootContext?: FullTartanContext;
+              rootContext?: FullTartanContext | Observable<FullTartanContext>;
               parent: ContextTreeNode;
           }
         | {
-              rootContext: FullTartanContext;
+              rootContext: FullTartanContext | Observable<FullTartanContext>;
               parent?: ContextTreeNode;
           }
     ),
@@ -73,7 +64,9 @@ export function loadContextTreeNode(
     const inheritableContext: Observable<FullTartanContext> = (
         (parent
             ? parent.inheritableContext
-            : of(params.rootContext)) as Observable<FullTartanContext>
+            : params.rootContext instanceof Observable
+              ? params.rootContext
+              : of(params.rootContext)) as Observable<FullTartanContext>
     ).pipe(
         combineLatestWith(defaultContextObservable),
         map(

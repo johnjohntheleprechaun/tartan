@@ -1,4 +1,13 @@
-import { async, firstValueFrom, Subject } from "rxjs";
+import {
+    async,
+    firstValueFrom,
+    of,
+    skip,
+    startWith,
+    Subject,
+    take,
+    timeout,
+} from "rxjs";
 import fs from "fs/promises";
 import {
     FileWatcher,
@@ -27,6 +36,29 @@ describe("The file loader", () => {
         );
         expect(results.map((val) => val.toString())).toEqual(["1", "2"]);
     });
+    it("should not emit when other file changes", async () => {
+        const f1: string = await makeTempFile("f1.txt", "1");
+        const f2: string = await makeTempFile("f2.txt", "2");
+
+        const f1Observable = loadFile(f1);
+
+        const results = await performOperationAfterEachEmission(
+            f1Observable.pipe(
+                skip(1), // Gotta skip the first to test it, because the watcher will emit the creation of the new temp file, even though we started watching after it was created
+                take(2),
+                timeout({
+                    each: 500,
+                    with: () => of(Buffer.from("nothing changed")),
+                }),
+            ),
+            [async () => fs.writeFile(f2, "asdf")],
+        );
+
+        expect(results.map((buf) => buf.toString())).toEqual([
+            "1",
+            "nothing changed",
+        ]);
+    });
 });
 
 describe("The file watcher", () => {
@@ -53,6 +85,49 @@ describe("The file watcher", () => {
 
         await makeTempFile("poopshit.not-txt", "asdlfkjansldfjn");
         expect(await res).toHaveSize(1);
+    });
+    it("should not emit when unwatched file changes", async () => {
+        const f1: string = await makeTempFile("f1.txt", "1");
+        const f2: string = await makeTempFile("f2.txt", "2");
+
+        const changeSubject: Subject<void> = new Subject();
+        const watcher = new FileWatcher(changeSubject);
+        watcher.setWatchedPaths([f1]);
+
+        const results = await performOperationAfterEachEmission(
+            changeSubject.pipe(
+                timeout({
+                    each: 100,
+                    with: () => of("hehe"),
+                }),
+            ),
+            [async () => fs.writeFile(f2, "asdf")],
+        );
+
+        expect(results).toEqual([undefined, "hehe"]);
+    });
+    it("should not emit when a file from another watcher instance changes", async () => {
+        const f1: string = await makeTempFile("f1.txt", "1");
+        const f2: string = await makeTempFile("f2.txt", "2");
+
+        const changeSubject: Subject<void> = new Subject();
+        const watcher = new FileWatcher(changeSubject);
+        watcher.setWatchedPaths([f1]);
+
+        const otherWatcher = new FileWatcher(new Subject<void>());
+        otherWatcher.setWatchedPaths([f2]);
+
+        const results = await performOperationAfterEachEmission(
+            changeSubject.pipe(
+                timeout({
+                    each: 100,
+                    with: () => of("hehe"),
+                }),
+            ),
+            [async () => fs.writeFile(f2, "asdf")],
+        );
+
+        expect(results).toEqual([undefined, "hehe"]);
     });
 });
 
