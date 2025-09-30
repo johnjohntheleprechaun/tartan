@@ -100,7 +100,7 @@ export function loadModule<T>(
                         })
                         .catch((reason) => {
                             // if the build failed on the first go, make sure to watch the module path
-                            if (fileWatcher.watchedPaths.size === 0) {
+                            if (fileWatcher.getWatchedPaths().length === 0) {
                                 fileWatcher.setWatchedPaths([modulePath]);
                             }
                             // format logs
