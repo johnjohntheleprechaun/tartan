@@ -1,15 +1,29 @@
-import { combineLatestWith, map, Observable, of, Subject } from "rxjs";
+import {
+    combineLatestWith,
+    identity,
+    map,
+    Observable,
+    of,
+    ReplaySubject,
+    startWith,
+    Subject,
+    switchMap,
+} from "rxjs";
 import { FullTartanContext, PartialTartanContext } from "./tartan-context.js";
-import { SourceType } from "./source-processor.js";
-import { loadObjectFromFile } from "./inputs/files.js";
+import {
+    FileWatcher,
+    loadObjectFromFile,
+    skipFirstFileChange,
+} from "./inputs/files.js";
 import path from "node:path";
+import fs from "fs/promises";
 
+export type NodeType = "page" | "asset" | "handoff";
 export type ContextTreeNode = {
     inheritableContext: Observable<FullTartanContext>;
     context: Observable<FullTartanContext>;
-    type: Observable<SourceType>;
+    type: Observable<NodeType>;
     children: Observable<Set<ContextTreeNode>>; // this is a set so that it's trivial to tell if a node is attached to the tree
-    skip: Observable<boolean>;
     attached: Observable<boolean>;
 };
 
@@ -35,12 +49,11 @@ export function loadContextTreeNode(
 ): ContextTreeNode {
     const { directory, parent, filename } = params;
     const thisNode: Subjectify<ContextTreeNode> = {
-        inheritableContext: new Subject(),
-        context: new Subject(),
-        type: new Subject(),
-        skip: new Subject(),
-        attached: new Subject(),
-        children: new Subject(),
+        inheritableContext: new ReplaySubject(),
+        context: new ReplaySubject(),
+        type: new ReplaySubject(),
+        attached: new ReplaySubject(),
+        children: new ReplaySubject(),
     };
 
     /*
@@ -93,6 +106,62 @@ export function loadContextTreeNode(
         ),
     );
     context.subscribe((val) => thisNode.context.next(val));
+
+    /*
+     * Load children
+     */
+    const fileChangeSubject: Subject<void> = new Subject();
+    const watcher = new FileWatcher(fileChangeSubject);
+    const childCache: Map<string, ContextTreeNode> = new Map();
+    const children: Observable<Set<ContextTreeNode>> = filename
+        ? of(new Set<ContextTreeNode>()) // if it's a file then it can't have children, so just emit an empty set
+        : fileChangeSubject.pipe(
+              startWith(undefined),
+              combineLatestWith(context),
+              switchMap(async ([, context]) => {
+                  switch (context.pageMode) {
+                      case "directory":
+                          // watch all subDirectories
+                          watcher.setWatchedPaths([path.join(directory, "*")]);
+                          const subDirs = await fs
+                              .readdir(directory, { withFileTypes: true })
+                              .then((entries) =>
+                                  entries.filter((entry) =>
+                                      entry.isDirectory(),
+                                  ),
+                              );
+                          return new Set(
+                              subDirs.map((dir) => {
+                                  const childDir = path.join(
+                                      dir.parentPath,
+                                      dir.name,
+                                  );
+                                  const cacheKey = JSON.stringify({
+                                      entry: childDir,
+                                      pageMode: context.pageMode,
+                                  });
+
+                                  return (
+                                      childCache.get(cacheKey) ||
+                                      loadContextTreeNode({
+                                          directory: childDir,
+                                          parent: thisNode,
+                                      })
+                                  );
+                              }),
+                          );
+                      case "file":
+                          return new Set<ContextTreeNode>();
+                      case "asset":
+                          return new Set<ContextTreeNode>();
+                      case "mock":
+                          return new Set<ContextTreeNode>();
+                      case "handoff":
+                          return new Set<ContextTreeNode>();
+                  }
+              }),
+          );
+    children.subscribe((val) => thisNode.children.next(val));
 
     return thisNode;
 }
