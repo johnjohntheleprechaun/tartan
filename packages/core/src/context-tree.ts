@@ -39,7 +39,7 @@ export function loadContextTreeNode(params: {
     rootContext: FullTartanContext | Observable<FullTartanContext>;
     parent?: ContextTreeNode;
 }): ContextTreeNode {
-    const { directory, parent, filename } = params;
+    const { directory, parent, filename, rootContext } = params;
     const thisNode: Subjectify<ContextTreeNode> = {
         inheritableContext: new ReplaySubject(),
         context: new ReplaySubject(),
@@ -69,9 +69,9 @@ export function loadContextTreeNode(params: {
     const inheritableContext: Observable<FullTartanContext> = (
         (parent
             ? parent.inheritableContext
-            : params.rootContext instanceof Observable
-              ? params.rootContext
-              : of(params.rootContext)) as Observable<FullTartanContext>
+            : rootContext instanceof Observable
+              ? rootContext
+              : of(rootContext)) as Observable<FullTartanContext>
     ).pipe(
         combineLatestWith(defaultContextObservable),
         map(

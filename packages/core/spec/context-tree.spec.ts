@@ -19,7 +19,7 @@ import fs from "fs/promises";
 import path from "path";
 
 describe("The context tree loader", () => {
-    it("should return the parent context when no context files are on disk", async () => {
+    it("should return the root context when no context files are on disk", async () => {
         const rootContext: FullTartanContext = {
             pageMode: "directory",
             pageSource: "yourmom.html",
@@ -59,6 +59,39 @@ describe("The context tree loader", () => {
 
         const localContext = await firstValueFrom(node.context);
         expect(localContext).toEqual(expectedResult);
+    });
+    it("should overlay a local context on the root context when a new local context file is created", async () => {
+        const rootContext: FullTartanContext = {
+            pageMode: "directory",
+            pageSource: "root.html",
+        };
+        const localContextFile: PartialTartanContext = {
+            pageSource: "local.html",
+        };
+
+        const node = loadContextTreeNode({
+            directory: globalThis.tmpDir,
+            rootContext,
+        });
+
+        const results = await performOperationAfterEachEmission(node.context, [
+            async () =>
+                makeTempFile(
+                    "tartan.context.json",
+                    JSON.stringify(localContextFile),
+                ),
+        ]);
+
+        expect(results).toEqual([
+            {
+                pageMode: "directory",
+                pageSource: "root.html",
+            },
+            {
+                pageMode: "directory",
+                pageSource: "local.html",
+            },
+        ]);
     });
     it("should use a default context file as both inheritable and local contexts", async () => {
         const rootContext: FullTartanContext = {
