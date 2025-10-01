@@ -160,6 +160,10 @@ describe("The context tree loader", () => {
         ]);
     });
     it("should inherit context from a parent if provided", async () => {
+        const rootContext: FullTartanContext = {
+            pageMode: "directory",
+            pageSource: "aldkfjnaslkdjfn",
+        };
         const parent: ContextTreeNode = {
             inheritableContext: of({
                 pageMode: "directory",
@@ -174,6 +178,7 @@ describe("The context tree loader", () => {
         const childNode = loadContextTreeNode({
             directory: globalThis.tmpDir,
             parent,
+            rootContext,
         });
 
         const childContext = await firstValueFrom(childNode.context);
@@ -183,6 +188,10 @@ describe("The context tree loader", () => {
         });
     });
     it("should override parent context when parent is provided", async () => {
+        const rootContext: FullTartanContext = {
+            pageMode: "directory",
+            pageSource: "aldkfjnaslkdjfn",
+        };
         const parent: ContextTreeNode = {
             inheritableContext: of({
                 pageMode: "directory",
@@ -203,6 +212,7 @@ describe("The context tree loader", () => {
         const childNode = loadContextTreeNode({
             directory: globalThis.tmpDir,
             parent,
+            rootContext,
         });
 
         const childContext = await firstValueFrom(childNode.context);

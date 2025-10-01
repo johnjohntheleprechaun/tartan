@@ -33,21 +33,12 @@ type Subjectify<T> = {
         ? Subject<P>
         : T[Property];
 };
-export function loadContextTreeNode(
-    params: {
-        directory: string;
-        filename?: string;
-    } & ( // one must exist
-        | {
-              rootContext?: FullTartanContext | Observable<FullTartanContext>;
-              parent: ContextTreeNode;
-          }
-        | {
-              rootContext: FullTartanContext | Observable<FullTartanContext>;
-              parent?: ContextTreeNode;
-          }
-    ),
-): ContextTreeNode {
+export function loadContextTreeNode(params: {
+    directory: string;
+    filename?: string;
+    rootContext: FullTartanContext | Observable<FullTartanContext>;
+    parent?: ContextTreeNode;
+}): ContextTreeNode {
     const { directory, parent, filename } = params;
     const thisNode: Subjectify<ContextTreeNode> = {
         inheritableContext: new ReplaySubject(),
@@ -145,6 +136,7 @@ export function loadContextTreeNode(
                                   loadContextTreeNode({
                                       directory: childDir,
                                       parent: thisNode,
+                                      rootContext: params.rootContext,
                                   })
                               );
                           }),
