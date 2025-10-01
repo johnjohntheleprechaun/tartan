@@ -1,6 +1,5 @@
 import {
     combineLatestWith,
-    identity,
     map,
     Observable,
     of,
@@ -10,11 +9,7 @@ import {
     switchMap,
 } from "rxjs";
 import { FullTartanContext, PartialTartanContext } from "./tartan-context.js";
-import {
-    FileWatcher,
-    loadObjectFromFile,
-    skipFirstFileChange,
-} from "./inputs/files.js";
+import { FileWatcher, loadObjectFromFile } from "./inputs/files.js";
 import path from "node:path";
 import fs from "fs/promises";
 import { minimatch } from "minimatch";
