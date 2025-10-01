@@ -17,6 +17,7 @@ import {
 } from "./inputs/files.js";
 import path from "node:path";
 import fs from "fs/promises";
+import { minimatch } from "minimatch";
 
 export type NodeType = "page" | "asset" | "handoff";
 export type ContextTreeNode = {
@@ -119,45 +120,45 @@ export function loadContextTreeNode(
               startWith(undefined),
               combineLatestWith(context),
               switchMap(async ([, context]) => {
-                  switch (context.pageMode) {
-                      case "directory":
-                          // watch all subDirectories
-                          watcher.setWatchedPaths([path.join(directory, "*")]);
-                          const subDirs = await fs
-                              .readdir(directory, { withFileTypes: true })
-                              .then((entries) =>
-                                  entries.filter((entry) =>
-                                      entry.isDirectory(),
-                                  ),
-                              );
-                          return new Set(
-                              subDirs.map((dir) => {
-                                  const childDir = path.join(
-                                      dir.parentPath,
-                                      dir.name,
-                                  );
-                                  const cacheKey = JSON.stringify({
-                                      entry: childDir,
-                                      pageMode: context.pageMode,
-                                  });
-
-                                  return (
-                                      childCache.get(cacheKey) ||
-                                      loadContextTreeNode({
-                                          directory: childDir,
-                                          parent: thisNode,
-                                      })
-                                  );
-                              }),
+                  const { pageMode } = context;
+                  if (pageMode === "directory") {
+                      // watch all subDirectories
+                      watcher.setWatchedPaths([path.join(directory, "*")]);
+                      const subDirs = await fs
+                          .readdir(directory, { withFileTypes: true })
+                          .then((entries) =>
+                              entries.filter((entry) => entry.isDirectory()),
                           );
-                      case "file":
-                          return new Set<ContextTreeNode>();
-                      case "asset":
-                          return new Set<ContextTreeNode>();
-                      case "mock":
-                          return new Set<ContextTreeNode>();
-                      case "handoff":
-                          return new Set<ContextTreeNode>();
+                      return new Set(
+                          subDirs.map((dir) => {
+                              const childDir = path.join(
+                                  dir.parentPath,
+                                  dir.name,
+                              );
+                              const cacheKey = JSON.stringify({
+                                  entry: childDir,
+                                  pageMode: context.pageMode,
+                              });
+
+                              return (
+                                  childCache.get(cacheKey) ||
+                                  loadContextTreeNode({
+                                      directory: childDir,
+                                      parent: thisNode,
+                                  })
+                              );
+                          }),
+                      );
+                  } else if (pageMode === "file") {
+                      return new Set<ContextTreeNode>();
+                  } else if (pageMode === "asset") {
+                      return new Set<ContextTreeNode>();
+                  } else if (pageMode === "mock") {
+                      return new Set<ContextTreeNode>();
+                  } else if (pageMode === "handoff") {
+                      return new Set<ContextTreeNode>();
+                  } else {
+                      return new Set<ContextTreeNode>();
                   }
               }),
           );
