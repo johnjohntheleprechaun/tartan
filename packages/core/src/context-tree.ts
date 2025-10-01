@@ -136,13 +136,66 @@ export function loadContextTreeNode(params: {
                                   loadContextTreeNode({
                                       directory: childDir,
                                       parent: thisNode,
-                                      rootContext: params.rootContext,
+                                      rootContext: rootContext,
                                   })
                               );
                           }),
                       );
                   } else if (pageMode === "file") {
-                      return new Set<ContextTreeNode>();
+                      watcher.setWatchedPaths([path.join(directory, "*")]);
+                      const entries = await fs.readdir(directory, {
+                          withFileTypes: true,
+                      });
+                      const matchedFiles = entries.filter(
+                          (val) =>
+                              val.isFile() &&
+                              minimatch(val.name, context.pagePattern),
+                      );
+                      const subDirs = entries.filter((val) =>
+                          val.isDirectory(),
+                      );
+
+                      const childSet: Set<ContextTreeNode> = new Set();
+
+                      // add files to set
+                      matchedFiles.forEach((val) => {
+                          const cacheKey = JSON.stringify({
+                              entry: path.join(val.parentPath, val.name),
+                              pageMode,
+                          });
+
+                          childSet.add(
+                              childCache.get(cacheKey) ||
+                                  loadContextTreeNode({
+                                      directory: val.parentPath,
+                                      filename: val.name,
+                                      parent: thisNode,
+                                      rootContext,
+                                  }),
+                          );
+                      });
+                      subDirs.forEach((val) => {
+                          const cacheKey = JSON.stringify({
+                              entry: path.join(val.parentPath, val.name),
+                              pageMode: "directory", // any subdirectory is gonna be treated exactly the same, so it should be cached the same.
+                              // basically if you changed from directory pageMode to file pageMode, only on the local context, the sub directories wouldn't be affected.
+                              // any changes that would happen would happen because of inherited context attributes.
+                          });
+
+                          childSet.add(
+                              childCache.get(cacheKey) ||
+                                  loadContextTreeNode({
+                                      directory: path.join(
+                                          val.parentPath,
+                                          val.name,
+                                      ),
+                                      rootContext,
+                                      parent: thisNode,
+                                  }),
+                          );
+                      });
+
+                      return childSet;
                   } else if (pageMode === "asset") {
                       return new Set<ContextTreeNode>();
                   } else if (pageMode === "mock") {

@@ -1,13 +1,4 @@
-import {
-    firstValueFrom,
-    Observable,
-    of,
-    shareReplay,
-    skip,
-    Subject,
-    take,
-    toArray,
-} from "rxjs";
+import { firstValueFrom, of, skip, Subject } from "rxjs";
 import { ContextTreeNode, loadContextTreeNode } from "../src/context-tree";
 import { FullTartanContext, PartialTartanContext } from "../src/tartan-context";
 import {
@@ -332,6 +323,115 @@ describe("The context tree loader", () => {
                 ]);
             expect(children[0]).toHaveSize(1);
             expect(children[1]).toHaveSize(2);
+        });
+    });
+    describe("when `pageMode` is `file`", () => {
+        it("should load children", async () => {
+            const rootContext: FullTartanContext = {
+                pageMode: "file",
+                pagePattern: "*.md",
+            };
+            const tmpDir = await makeTempFiles({
+                "test.md": "hewwo world",
+                "nibbledoober.md": "haiii kawaii uwu",
+            });
+            const node = loadContextTreeNode({
+                directory: tmpDir,
+                rootContext,
+            });
+
+            expect(await firstValueFrom(node.children)).toHaveSize(2);
+        });
+        it("should add a child after a new file is created", async () => {
+            const rootContext: FullTartanContext = {
+                pageMode: "file",
+                pagePattern: "*.md",
+            };
+            const first = await makeTempFile("first.md", "uwuw");
+            const node = loadContextTreeNode({
+                directory: globalThis.tmpDir,
+                rootContext,
+            });
+
+            const results: Set<ContextTreeNode>[] =
+                await performOperationAfterEachEmission(node.children, [
+                    async () => makeTempFile("second.md", "asdfjasnldjkn"),
+                ]);
+
+            expect(results[0]).toHaveSize(1);
+            expect(results[1]).toHaveSize(2);
+        });
+        it("should still add sub directories as children", async () => {
+            const rootContext: FullTartanContext = {
+                pageMode: "file",
+                pagePattern: "*.md",
+            };
+            const tmpDir = await makeTempFiles({
+                "first.md": "asdflkjncksjan",
+                "second.md": "adkfnasdlknnncaklsdjnlka",
+                "sub-dir/poo.md": "adkfjlkncnl",
+            });
+
+            const node = loadContextTreeNode({
+                directory: tmpDir,
+                rootContext,
+            });
+
+            expect(await firstValueFrom(node.children)).toHaveSize(3);
+        });
+        it("should add files as children when switched form `directory` to `file` page mode", async () => {
+            // for some reason this test fails if I try to create a context file
+            const rootContext: FullTartanContext = {
+                pageMode: "directory",
+                pageSource: "index.md",
+            };
+            const tmpDir = await makeTempFiles({
+                "first.md": "asdflkjncksjan",
+                "second.md": "adkfnasdlknnncaklsdjnlka",
+                "sub-dir/poo.md": "adkfjlkncnl",
+            });
+
+            const node = loadContextTreeNode({
+                directory: tmpDir,
+                rootContext,
+            });
+
+            const results = await performOperationAfterEachEmission(
+                node.children,
+                [
+                    async () =>
+                        makeTempFile(
+                            "tartan.context.json",
+                            JSON.stringify({
+                                pageMode: "file",
+                                pagePattern: "*.md",
+                            }),
+                        ),
+                    () => {},
+                ],
+            );
+            expect(results[0]).toHaveSize(1);
+            // double emission for some reason?
+            // seems to be because you get a trigger from watching the dir for children
+            // and another trigger from watching the dir for context files
+            expect(results[2]).toHaveSize(3);
+        });
+        it("shouldn't add unmatching files as children", async () => {
+            const rootContext: FullTartanContext = {
+                pageMode: "file",
+                pagePattern: "*.md",
+            };
+            const tmpDir = await makeTempFiles({
+                "file.md": "uwu",
+                "ignored.txt": "ignore me uwu :3",
+            });
+
+            const node = loadContextTreeNode({
+                directory: tmpDir,
+                rootContext,
+            });
+
+            expect(await firstValueFrom(node.children)).toHaveSize(1);
         });
     });
 });
