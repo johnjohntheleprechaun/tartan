@@ -248,9 +248,9 @@ export function loadContextTreeNode(params: {
                           );
                       });
                       return childSet;
-                  } else if (pageMode === "mock") {
-                      return new Set<ContextTreeNode>();
                   } else if (pageMode === "handoff") {
+                      // you just can't have children lol
+                      // I don't even think I need to write tests for this
                       return new Set<ContextTreeNode>();
                   } else {
                       return new Set<ContextTreeNode>();

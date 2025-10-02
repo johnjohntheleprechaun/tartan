@@ -13,7 +13,7 @@ export const tartanContextSchema = {
                 "Whether or not to inherit values from `tartan.context.default` files.",
         },
         pageMode: {
-            enum: ["directory", "file", "asset", "mock", "handoff"],
+            enum: ["directory", "file", "asset", "handoff"],
         },
         pagePattern: {
             type: "string",
