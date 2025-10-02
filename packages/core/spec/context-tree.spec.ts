@@ -195,7 +195,7 @@ describe("The context tree loader", () => {
             } as FullTartanContext),
             context: of(),
             children: of(),
-            type: of(),
+            type: "page",
             attached: of(),
         };
 
@@ -223,7 +223,7 @@ describe("The context tree loader", () => {
             } as FullTartanContext),
             context: of(),
             children: of(),
-            type: of(),
+            type: "page",
             attached: of(),
         };
         await makeTempFile(

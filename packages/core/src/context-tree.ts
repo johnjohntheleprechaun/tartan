@@ -18,7 +18,7 @@ export type NodeType = "page" | "asset" | "handoff";
 export type ContextTreeNode = {
     inheritableContext: Observable<FullTartanContext>;
     context: Observable<FullTartanContext>;
-    type: Observable<NodeType>;
+    type: NodeType; // a node can't change it's type lol
     children: Observable<Set<ContextTreeNode>>; // this is a set so that it's trivial to tell if a node is attached to the tree
     attached: Observable<boolean>;
 };
@@ -33,12 +33,13 @@ export function loadContextTreeNode(params: {
     filename?: string;
     rootContext: FullTartanContext | Observable<FullTartanContext>;
     parent?: ContextTreeNode;
+    type?: NodeType;
 }): ContextTreeNode {
-    const { directory, parent, filename, rootContext } = params;
+    const { directory, parent, filename, rootContext, type = "page" } = params;
     const thisNode: Subjectify<ContextTreeNode> = {
         inheritableContext: new ReplaySubject(),
         context: new ReplaySubject(),
-        type: new ReplaySubject(),
+        type,
         attached: new ReplaySubject(),
         children: new ReplaySubject(),
     };
@@ -131,7 +132,8 @@ export function loadContextTreeNode(params: {
                                   loadContextTreeNode({
                                       directory: childDir,
                                       parent: thisNode,
-                                      rootContext: rootContext,
+                                      rootContext,
+                                      type: "page",
                                   })
                               );
                           }),
@@ -166,6 +168,7 @@ export function loadContextTreeNode(params: {
                                       filename: val.name,
                                       parent: thisNode,
                                       rootContext,
+                                      type: "page",
                                   }),
                           );
                       });
@@ -186,6 +189,7 @@ export function loadContextTreeNode(params: {
                                       ),
                                       rootContext,
                                       parent: thisNode,
+                                      type: "page",
                                   }),
                           );
                       });
