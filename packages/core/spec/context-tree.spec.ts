@@ -8,8 +8,9 @@ import {
     makeTempFile,
     makeTempFiles,
     performOperationAfterEachEmission,
+    removeTempFile,
+    updateTempFile,
 } from "./utils";
-import fs from "fs/promises";
 import path from "path";
 
 describe("The context tree loader", () => {
@@ -137,17 +138,15 @@ describe("The context tree loader", () => {
             directory: globalThis.tmpDir,
         });
 
-        const results = await performOperationAfterEachEmission(
-            node.context.pipe(skip(2)),
-            [
-                async () => fs.writeFile(localFilename, JSON.stringify({})),
-                async () =>
-                    fs.writeFile(
-                        defaultFilename,
-                        JSON.stringify({ pageSource: "abcdefg" }),
-                    ),
-            ],
-        );
+        const results = await performOperationAfterEachEmission(node.context, [
+            async () =>
+                updateTempFile("tartan.context.json", JSON.stringify({})),
+            async () =>
+                updateTempFile(
+                    "tartan.context.default.json",
+                    JSON.stringify({ pageSource: "abcdefg" }),
+                ),
+        ]);
 
         expect(results).toEqual([
             { pageMode: "directory", pageSource: "index.md" },
@@ -511,7 +510,7 @@ describe("The context tree loader", () => {
 
             const results = await performOperationAfterEachEmission(
                 node.children,
-                [async () => fs.rm(path.join(globalThis.tmpDir, "two.png"))],
+                [async () => removeTempFile("two.png")],
             );
 
             expect(results[0]).toHaveSize(2);

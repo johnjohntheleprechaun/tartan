@@ -1,7 +1,10 @@
 import { firstValueFrom } from "rxjs";
-import { makeTempFile, performOperationAfterEachEmission } from "../utils";
+import {
+    makeTempFile,
+    performOperationAfterEachEmission,
+    updateTempFile,
+} from "../utils";
 import { loadModule } from "../../src/inputs/modules.ts";
-import fs from "fs/promises";
 
 describe("The module loader", () => {
     it("should load a module, once", async () => {
@@ -23,8 +26,8 @@ describe("The module loader", () => {
         const results: number[] = await performOperationAfterEachEmission(
             observable,
             [
-                () => fs.writeFile(testFile, "export default 20"),
-                () => fs.writeFile(testFile, "export default 30"),
+                () => updateTempFile("test.ts", "export default 20"),
+                () => updateTempFile("test.ts", "export default 30"),
             ],
         );
 
@@ -55,7 +58,7 @@ describe("The module loader", () => {
 
         const results: number[] = await performOperationAfterEachEmission(
             observable,
-            [() => fs.writeFile(dep, "export default 20")],
+            [() => updateTempFile("dep.ts", "export default 20")],
         );
 
         expect(results).toEqual([50, 20]);

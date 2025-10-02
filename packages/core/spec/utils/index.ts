@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import fsSync from "node:fs";
+import path, { dirname, join, resolve } from "node:path";
 import { bufferCount, concatMap, firstValueFrom, Observable } from "rxjs";
+import { fileChanged } from "../helpers/tmp-reset";
 
 export async function makeTempFile(
     name: string,
@@ -10,8 +12,50 @@ export async function makeTempFile(
         fail("no temp dir was provided");
     }
     const filePath = resolve(join(globalThis.tmpDir, name));
-    await fs.mkdir(dirname(filePath), { recursive: true });
+    const highestCreatedDir = await new Promise<string | undefined>((res) => {
+        fsSync.mkdir(dirname(filePath), { recursive: true }, (_, path) => {
+            res(path);
+        });
+    });
     await fs.writeFile(filePath, contents);
+
+    if (highestCreatedDir) {
+        const newPaths = path.dirname(
+            path.relative(path.join(highestCreatedDir, ".."), filePath),
+        );
+
+        const segments = newPaths.split(path.sep);
+
+        segments.forEach((_, i) =>
+            fileChanged(
+                path.resolve(
+                    path.join(globalThis.tmpDir, ...segments.slice(0, i + 1)),
+                ),
+                "create",
+            ),
+        );
+    }
+
+    fileChanged(filePath, "create");
+    return filePath;
+}
+
+export async function removeTempFile(name: string): Promise<void> {
+    if (!globalThis.tmpDir) {
+        fail("no temp dir was provided");
+    }
+    const filePath = resolve(join(globalThis.tmpDir, name));
+    await fs.rm(filePath);
+    fileChanged(filePath, "delete");
+}
+
+export async function updateTempFile(
+    name: string,
+    contents: string,
+): Promise<string> {
+    const filePath = resolve(join(globalThis.tmpDir, name));
+    await fs.writeFile(filePath, contents);
+    fileChanged(filePath, "update");
     return filePath;
 }
 

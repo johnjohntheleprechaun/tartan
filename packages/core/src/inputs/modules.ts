@@ -3,6 +3,7 @@ import rxjs, { filter, Observable, startWith, Subject, switchMap } from "rxjs"; 
 import esbuild from "esbuild";
 import { defaultFileOperationDebounce, FileWatcher } from "./files.js";
 import { Script } from "node:vm";
+import { Logger } from "../outputs/logger.js";
 
 const require = createRequire(import.meta.url);
 /**
@@ -56,15 +57,13 @@ export function loadModule<T>(
                                         },
                                     );
                                 // print logs
-                                console.log(
-                                    "==================================================\n",
-                                );
-                                console.log(
-                                    `Warnings while building ${modulePath}\n\n`,
-                                );
-                                console.log(formattedWarnings.join("\n"));
-                                console.log(
-                                    "==================================================",
+                                Logger.log(
+                                    [
+                                        "==================================================\n",
+                                        `Warnings while building ${modulePath}\n\n`,
+                                        formattedWarnings.join("\n"),
+                                        "==================================================",
+                                    ].join("\n"),
                                 );
                             }
                             if (result.outputFiles.length !== 1) {
@@ -118,18 +117,17 @@ export function loadModule<T>(
                                 });
 
                             // print logs
-                            console.log(
-                                "==================================================\n",
-                            );
-                            console.log(
-                                `Failed while building ${modulePath}\n\n`,
-                            );
-                            console.log(formattedErrors.join("\n"));
-                            formattedWarnings.length > 0
-                                ? console.log(formattedWarnings.join("\n"))
-                                : undefined;
-                            console.log(
-                                "==================================================",
+
+                            Logger.log(
+                                [
+                                    "==================================================\n",
+                                    `Failed while building ${modulePath}\n\n`,
+                                    formattedErrors.join("\n"),
+                                    ...(formattedWarnings.length > 0
+                                        ? [formattedWarnings.join("\n")]
+                                        : []),
+                                    "==================================================",
+                                ].join("\n"),
                             );
                         }),
                 ),
