@@ -1,20 +1,15 @@
-import {
-    async,
-    firstValueFrom,
-    of,
-    skip,
-    startWith,
-    Subject,
-    take,
-    timeout,
-} from "rxjs";
-import fs from "fs/promises";
+import { firstValueFrom, of, skip, Subject, take, timeout } from "rxjs";
 import {
     FileWatcher,
     loadFile,
     loadObjectFromFile,
 } from "../../src/inputs/files";
-import { makeTempFile, performOperationAfterEachEmission } from "../utils";
+import {
+    makeTempFile,
+    performOperationAfterEachEmission,
+    removeTempFile,
+    updateTempFile,
+} from "../utils";
 import path from "path";
 
 describe("The file loader", () => {
@@ -32,7 +27,7 @@ describe("The file loader", () => {
         const fileObservable = loadFile(filename);
         const results = await performOperationAfterEachEmission(
             fileObservable,
-            [async () => await fs.writeFile(filename, "2")],
+            [async () => await updateTempFile("changed-file.txt", "2")],
         );
         expect(results.map((val) => val.toString())).toEqual(["1", "2"]);
     });
@@ -44,14 +39,12 @@ describe("The file loader", () => {
 
         const results = await performOperationAfterEachEmission(
             f1Observable.pipe(
-                skip(1), // Gotta skip the first to test it, because the watcher will emit the creation of the new temp file, even though we started watching after it was created
-                take(2),
                 timeout({
                     each: 500,
                     with: () => of(Buffer.from("nothing changed")),
                 }),
             ),
-            [async () => fs.writeFile(f2, "asdf")],
+            [async () => updateTempFile("f2.txt", "asdf")],
         );
 
         expect(results.map((buf) => buf.toString())).toEqual([
@@ -70,9 +63,9 @@ describe("The file watcher", () => {
         watcher.setWatchedPaths([f1, f2]);
 
         const results = performOperationAfterEachEmission(changeSubject, [
-            async () => await fs.writeFile(f2, "asldkfjnlkjn"),
+            async () => await updateTempFile("file2.txt", "asldkfjnlkjn"),
         ]);
-        await fs.writeFile(f1, "asnlkjnclkjnas");
+        await updateTempFile("file1.txt", "asnlkjnclkjnas");
 
         expect(await results).toHaveSize(2);
     });
@@ -101,10 +94,10 @@ describe("The file watcher", () => {
                     with: () => of("hehe"),
                 }),
             ),
-            [async () => fs.writeFile(f2, "asdf")],
+            [async () => updateTempFile("f2.txt", "asdf")],
         );
 
-        expect(results).toEqual([undefined, "hehe"]);
+        expect(results).toEqual(["hehe"]);
     });
     it("should not emit when a file from another watcher instance changes", async () => {
         const f1: string = await makeTempFile("f1.txt", "1");
@@ -124,10 +117,10 @@ describe("The file watcher", () => {
                     with: () => of("hehe"),
                 }),
             ),
-            [async () => fs.writeFile(f2, "asdf")],
+            [async () => updateTempFile("f2.txt", "asdf")],
         );
 
-        expect(results).toEqual([undefined, "hehe"]);
+        expect(results).toEqual(["hehe"]);
     });
 });
 
@@ -240,7 +233,7 @@ describe("The object loader", () => {
 
         const results = await performOperationAfterEachEmission(
             objectObservable,
-            [async () => await fs.rm(tsFilename)],
+            [async () => await removeTempFile("object.ts")],
         );
         expect(results).toEqual([tsObject, jsonObject]);
     });
