@@ -196,7 +196,58 @@ export function loadContextTreeNode(params: {
 
                       return childSet;
                   } else if (pageMode === "asset") {
-                      return new Set<ContextTreeNode>();
+                      watcher.setWatchedPaths([path.join(directory, "*")]);
+                      const children = await fs.readdir(directory, {
+                          withFileTypes: true,
+                      });
+                      const assetFiles = children.filter(
+                          (child) =>
+                              child.isFile() &&
+                              minimatch(child.name, context.pagePattern),
+                      );
+                      const subDirs = children.filter((child) =>
+                          child.isDirectory(),
+                      );
+                      const childSet: Set<ContextTreeNode> = new Set();
+
+                      assetFiles.forEach((asset) => {
+                          const cacheKey = JSON.stringify({
+                              entry: path.join(asset.parentPath, asset.name),
+                              pageMode: "asset",
+                          });
+                          childSet.add(
+                              childCache.get(cacheKey) ||
+                                  loadContextTreeNode({
+                                      parent: thisNode,
+                                      directory: asset.parentPath,
+                                      rootContext,
+                                      filename: asset.name,
+                                      type: "asset",
+                                  }),
+                          );
+                      });
+                      subDirs.forEach((val) => {
+                          const cacheKey = JSON.stringify({
+                              entry: path.join(val.parentPath, val.name),
+                              pageMode: "directory", // any subdirectory is gonna be treated exactly the same, so it should be cached the same.
+                              // basically if you changed from directory pageMode to file pageMode, only on the local context, the sub directories wouldn't be affected.
+                              // any changes that would happen would happen because of inherited context attributes.
+                          });
+
+                          childSet.add(
+                              childCache.get(cacheKey) ||
+                                  loadContextTreeNode({
+                                      directory: path.join(
+                                          val.parentPath,
+                                          val.name,
+                                      ),
+                                      rootContext,
+                                      parent: thisNode,
+                                      type: "page",
+                                  }),
+                          );
+                      });
+                      return childSet;
                   } else if (pageMode === "mock") {
                       return new Set<ContextTreeNode>();
                   } else if (pageMode === "handoff") {

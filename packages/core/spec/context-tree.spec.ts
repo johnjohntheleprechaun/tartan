@@ -434,4 +434,85 @@ describe("The context tree loader", () => {
             expect(await firstValueFrom(node.children)).toHaveSize(1);
         });
     });
+    describe("when `pageMode` is `asset`", () => {
+        it("should load only matching files as assets", async () => {
+            const rootContext: FullTartanContext = {
+                pageMode: "asset",
+                pagePattern: "*.png",
+            };
+            const tmpDir = await makeTempFiles({
+                "one.png": "definteily png aatatddat",
+                "two.png": "aslos for sure png hmm",
+                "notapng.notpng": "wow lok im not a png",
+            });
+
+            const node = loadContextTreeNode({
+                directory: tmpDir,
+                rootContext,
+            });
+
+            expect(await firstValueFrom(node.children)).toHaveSize(2);
+        });
+        it("should still load sub directory as a child", async () => {
+            const rootContext: FullTartanContext = {
+                pageMode: "asset",
+                pagePattern: "*.png",
+            };
+            const tmpDir = await makeTempFiles({
+                "one.png": "adljnlkjasndf",
+                "two.png": "skdlafjnsd",
+                "child-dir/asdfkj.doesn;tatmtma": "asdf",
+            });
+
+            const node = loadContextTreeNode({
+                directory: tmpDir,
+                rootContext,
+            });
+
+            expect(await firstValueFrom(node.children)).toHaveSize(3);
+        });
+        it("should add new files as children on creation", async () => {
+            const rootContext: FullTartanContext = {
+                pageMode: "asset",
+                pagePattern: "*.png",
+            };
+            const tmpDir = await makeTempFiles({
+                "one.png": "uwu",
+            });
+            const node = loadContextTreeNode({
+                directory: tmpDir,
+                rootContext,
+            });
+
+            const results = await performOperationAfterEachEmission(
+                node.children,
+                [async () => makeTempFile("two.png", "askdfjnlakjn")],
+            );
+
+            expect(results[0]).toHaveSize(1);
+            expect(results[1]).toHaveSize(2);
+        });
+        it("should remove deleted files from the child set", async () => {
+            const rootContext: FullTartanContext = {
+                pageMode: "asset",
+                pagePattern: "*.png",
+            };
+            const tmpDir = await makeTempFiles({
+                "one.png": "uwu",
+                "two.png": "asdfasfffdjsk",
+            });
+            const node = loadContextTreeNode({
+                directory: tmpDir,
+                rootContext,
+            });
+
+            const results = await performOperationAfterEachEmission(
+                node.children,
+                [async () => fs.rm(path.join(globalThis.tmpDir, "two.png"))],
+            );
+
+            expect(results[0]).toHaveSize(2);
+            expect(results[1]).toHaveSize(1);
+        });
+    });
 });
