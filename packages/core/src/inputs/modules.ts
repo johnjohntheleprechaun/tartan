@@ -3,7 +3,7 @@ import rxjs, { filter, Observable, startWith, Subject, switchMap } from "rxjs"; 
 import esbuild from "esbuild";
 import { defaultFileOperationDebounce, FileWatcher } from "./files.js";
 import { Script } from "node:vm";
-import { Logger } from "../outputs/logger.js";
+import { Logger, LogLevel } from "../outputs/logger.js";
 
 const require = createRequire(import.meta.url);
 /**
@@ -64,6 +64,7 @@ export function loadModule<T>(
                                         formattedWarnings.join("\n"),
                                         "==================================================",
                                     ].join("\n"),
+                                    LogLevel.Warning,
                                 );
                             }
                             if (result.outputFiles.length !== 1) {
@@ -128,6 +129,7 @@ export function loadModule<T>(
                                         : []),
                                     "==================================================",
                                 ].join("\n"),
+                                LogLevel.Error,
                             );
                         }),
                 ),
