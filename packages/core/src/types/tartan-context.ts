@@ -1,7 +1,6 @@
 import { JSONSchema, FromSchema } from "json-schema-to-ts";
 import { ReplaceTypes } from "./util.js";
 import { SourceProcessor } from "./source-processor.js";
-import { MockGenerator } from "./mock-generator.js";
 import { HandoffHandler } from "./handoff-handler.js";
 
 export const tartanContextSchema = {
@@ -34,11 +33,6 @@ export const tartanContextSchema = {
             description:
                 "The file to use for the index of the current directory, *regardless of `pageMode`*.",
         },
-        mockGenerator: {
-            type: "string",
-            description:
-                "A module specifier for a module who's default export is a function that returns an object matching `DirectoryJSON`",
-        },
         handoffHandler: {
             type: "string",
             description:
@@ -67,7 +61,6 @@ export type PartialTartanContext = ReplaceTypes<
     {
         sourceProcessor?: SourceProcessor;
         template?: ReturnType<typeof Handlebars.compile>;
-        mockGenerator?: MockGenerator;
         handoffHandler?: HandoffHandler;
     }
 >;
@@ -83,10 +76,6 @@ export type FullTartanContext =
     | ReplaceTypes<
           PartialTartanContext,
           { pageMode: "asset"; pagePattern: string }
-      >
-    | ReplaceTypes<
-          PartialTartanContext,
-          { pageMode: "mock"; mockGenerator: MockGenerator }
       >
     | ReplaceTypes<
           PartialTartanContext,

@@ -1,6 +1,9 @@
 import { firstValueFrom, of, skip, Subject } from "rxjs";
 import { ContextTreeNode, loadContextTreeNode } from "../src/context-tree";
-import { FullTartanContext, PartialTartanContext } from "../src/tartan-context";
+import {
+    FullTartanContext,
+    PartialTartanContext,
+} from "../src/types/tartan-context";
 import {
     makeTempFile,
     makeTempFiles,

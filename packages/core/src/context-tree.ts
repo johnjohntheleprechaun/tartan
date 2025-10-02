@@ -8,7 +8,10 @@ import {
     Subject,
     switchMap,
 } from "rxjs";
-import { FullTartanContext, PartialTartanContext } from "./tartan-context.js";
+import {
+    FullTartanContext,
+    PartialTartanContext,
+} from "./types/tartan-context.js";
 import { FileWatcher, loadObjectFromFile } from "./inputs/files.js";
 import path from "node:path";
 import fs from "fs/promises";
