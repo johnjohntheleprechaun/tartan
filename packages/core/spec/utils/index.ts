@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import path, { dirname, join, resolve } from "node:path";
 import { bufferCount, concatMap, firstValueFrom, Observable } from "rxjs";
-import { fileChanged } from "../helpers/tmp-reset";
+import { fileChanged } from "../helpers/file-ops";
 
 export async function makeTempFile(
     name: string,
