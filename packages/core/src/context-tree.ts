@@ -1,5 +1,6 @@
 import {
     combineLatestWith,
+    distinctUntilChanged,
     map,
     Observable,
     of,
@@ -17,11 +18,12 @@ import path from "node:path";
 import fs from "fs/promises";
 import { minimatch } from "minimatch";
 
-export type NodeType = "page" | "asset" | "handoff";
+export type NodeType = "page" | "page.file" | "asset" | "handoff";
 export type ContextTreeNode = {
     inheritableContext: Observable<FullTartanContext>;
     context: Observable<FullTartanContext>;
-    type: NodeType; // a node can't change it's type lol
+    type: Observable<NodeType>;
+    path: string;
     children: Observable<Set<ContextTreeNode>>; // this is a set so that it's trivial to tell if a node is attached to the tree
     attached: Observable<boolean>;
 };
@@ -42,7 +44,8 @@ export function loadContextTreeNode(params: {
     const thisNode: Subjectify<ContextTreeNode> = {
         inheritableContext: new ReplaySubject(),
         context: new ReplaySubject(),
-        type,
+        type: new ReplaySubject(),
+        path: path.join(directory, filename || ""),
         attached: new ReplaySubject(),
         children: new ReplaySubject(),
     };
@@ -97,6 +100,16 @@ export function loadContextTreeNode(params: {
         ),
     );
     context.subscribe((val) => thisNode.context.next(val));
+
+    context
+        .pipe(
+            map(
+                (ctx): NodeType =>
+                    ctx.pageMode === "handoff" ? "handoff" : type,
+            ),
+            distinctUntilChanged(),
+        )
+        .subscribe((val) => thisNode.type.next(val));
 
     /*
      * Load children
@@ -171,7 +184,7 @@ export function loadContextTreeNode(params: {
                                       filename: val.name,
                                       parent: thisNode,
                                       rootContext,
-                                      type: "page",
+                                      type: "page.file",
                                   }),
                           );
                       });

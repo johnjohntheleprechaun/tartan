@@ -197,8 +197,9 @@ describe("The context tree loader", () => {
             } as FullTartanContext),
             context: of(),
             children: of(),
-            type: "page",
+            type: of("page"),
             attached: of(),
+            path: "",
         };
 
         const childNode = loadContextTreeNode({
@@ -225,8 +226,9 @@ describe("The context tree loader", () => {
             } as FullTartanContext),
             context: of(),
             children: of(),
-            type: "page",
+            type: of("page"),
             attached: of(),
+            path: "",
         };
         await makeTempFile(
             "tartan.context.json",
@@ -343,6 +345,24 @@ describe("The context tree loader", () => {
             });
 
             expect(await firstValueFrom(node.children)).toHaveSize(2);
+        });
+        it("should give children the proper type", async () => {
+            const rootContext: FullTartanContext = {
+                pageMode: "file",
+                pagePattern: "*.md",
+            };
+            const tmpDir = await makeTempFiles({
+                "test.md": "asdfjjjcnaksjdn",
+            });
+            const node = loadContextTreeNode({
+                directory: tmpDir,
+                rootContext,
+            });
+
+            const children = await firstValueFrom(node.children);
+            expect(await firstValueFrom(Array.from(children)[0].type)).toBe(
+                "page.file",
+            );
         });
         it("should add a child after a new file is created", async () => {
             const rootContext: FullTartanContext = {
