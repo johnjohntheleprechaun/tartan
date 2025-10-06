@@ -12,11 +12,13 @@ import {
 import {
     FullTartanContext,
     PartialTartanContext,
+    TartanContextFile,
 } from "./types/tartan-context.js";
 import { FileWatcher, loadObjectFromFile } from "./inputs/files.js";
 import path from "node:path";
 import fs from "fs/promises";
 import { minimatch } from "minimatch";
+import { initializeContextFile } from "./inputs/context.js";
 
 export type NodeType = "page" | "page.file" | "asset" | "handoff";
 export type ContextTreeNode = {
@@ -63,9 +65,17 @@ export function loadContextTreeNode(params: {
     );
 
     const defaultContextObservable: Observable<PartialTartanContext> =
-        loadObjectFromFile<PartialTartanContext>(defaultContextFilename, {});
+        loadObjectFromFile<TartanContextFile>(defaultContextFilename, {}).pipe(
+            switchMap((contextFile) =>
+                initializeContextFile(contextFile, defaultContextFilename),
+            ),
+        );
     const localContextObservable: Observable<PartialTartanContext> =
-        loadObjectFromFile<PartialTartanContext>(localContextFilename, {});
+        loadObjectFromFile<TartanContextFile>(localContextFilename, {}).pipe(
+            switchMap((contextFile) =>
+                initializeContextFile(contextFile, localContextFilename),
+            ),
+        );
 
     // inheritable context
     const inheritableContext: Observable<FullTartanContext> = (
