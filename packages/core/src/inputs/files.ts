@@ -103,8 +103,9 @@ export class FileWatcher {
      */
     private static subscription: watcher.AsyncSubscription; // I guess this isn't really used, but I'm keeping it in memory anyway idk
     private static callbacks: watcher.SubscribeCallback[] = [];
-    public static addCallback(callback: watcher.SubscribeCallback) {
+    public static addCallback(callback: watcher.SubscribeCallback): () => void {
         this.callbacks.push(callback);
+        return () => this.callbacks.filter((val) => val !== callback);
     }
     private static callback(...params: Parameters<watcher.SubscribeCallback>) {
         this.callbacks.forEach((callback) => callback(...params));
@@ -138,9 +139,10 @@ export class FileWatcher {
 
     private watchedPaths: readonly string[] = [];
     private subject: Subject<void>;
+    public dispose: () => void;
     constructor(subscriber: Subject<void>) {
         this.subject = subscriber;
-        FileWatcher.addCallback(this.localCallback.bind(this));
+        this.dispose = FileWatcher.addCallback(this.localCallback.bind(this));
     }
     setWatchedPaths(paths: string[]) {
         this.watchedPaths = Object.freeze(paths.map((p) => path.resolve(p)));
