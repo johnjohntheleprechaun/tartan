@@ -1,6 +1,7 @@
 import watcher from "@parcel/watcher";
 import path from "node:path";
 import {
+    combineLatestWith,
     debounceTime,
     filter,
     map,
@@ -18,14 +19,19 @@ export const DEBOUNCE_ENVIRONMENT_VARIABLE = "TARTAN_FILE_OPERATION_DEBOUNCE";
 export const defaultFileOperationDebounce = () =>
     debounceTime(parseInt(process.env[DEBOUNCE_ENVIRONMENT_VARIABLE] || "100"));
 
-export function loadFile(filename: string): Observable<Buffer> {
+export function loadFile(
+    filename: string,
+    onlyWhile: Observable<boolean>,
+): Observable<Buffer> {
     const reloadSubject = new Subject<void>();
     const watcher = new FileWatcher(reloadSubject);
     watcher.setWatchedPaths([filename]);
     return reloadSubject.pipe(
         startWith(undefined),
+        combineLatestWith(onlyWhile),
+        filter(([_, shouldEmit]) => shouldEmit),
         defaultFileOperationDebounce(),
-        switchMap((_) => fs.readFile(filename).catch((_) => Buffer.from([]))),
+        switchMap(() => fs.readFile(filename).catch(() => Buffer.from([]))),
     );
 }
 
@@ -42,6 +48,7 @@ const extensionIndexMap: { [key: string]: number } =
     );
 export function loadObjectFromFile<T>(
     basename: string,
+    onlyWhile: Observable<boolean>,
     defaultIfNoFileExists?: T,
 ): Observable<T> {
     const reloadSubject = new Subject<void>();
@@ -52,6 +59,8 @@ export function loadObjectFromFile<T>(
 
     return reloadSubject.pipe(
         startWith(undefined),
+        combineLatestWith(onlyWhile),
+        filter(([_, shouldEmit]) => shouldEmit),
         defaultFileOperationDebounce(),
         switchMap(async () => {
             const files = await fs.readdir(path.dirname(basename), {
@@ -83,9 +92,9 @@ export function loadObjectFromFile<T>(
                 path.join(matchingFiles[0].parentPath, matchingFiles[0].name),
             );
             if (moduleFileExtensions.has(pathToLoad.ext)) {
-                return loadModule(path.format(pathToLoad));
+                return loadModule(path.format(pathToLoad), onlyWhile);
             } else {
-                return loadFile(path.format(pathToLoad)).pipe(
+                return loadFile(path.format(pathToLoad), onlyWhile).pipe(
                     map((contents) => JSON.parse(contents.toString())),
                 );
             }

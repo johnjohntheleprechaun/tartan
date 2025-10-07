@@ -1,4 +1,5 @@
 import {
+    combineLatest,
     combineLatestWith,
     distinctUntilChanged,
     map,
@@ -53,6 +54,22 @@ export function loadContextTreeNode(params: {
     };
 
     /*
+     * Node attached
+     */
+    if (parent) {
+        combineLatest([parent.attached, parent.children])
+            .pipe(
+                map(
+                    ([parentAttached, parentChildren]) =>
+                        parentAttached && parentChildren.has(thisNode),
+                ),
+            )
+            .subscribe((attached) => thisNode.attached.next(attached));
+    } else {
+        thisNode.attached.next(true);
+    }
+
+    /*
      * Load context objects
      */
     const defaultContextFilename: string = path.join(
@@ -65,15 +82,31 @@ export function loadContextTreeNode(params: {
     );
 
     const defaultContextObservable: Observable<PartialTartanContext> =
-        loadObjectFromFile<TartanContextFile>(defaultContextFilename, {}).pipe(
+        loadObjectFromFile<TartanContextFile>(
+            defaultContextFilename,
+            thisNode.attached,
+            {},
+        ).pipe(
             switchMap((contextFile) =>
-                initializeContextFile(contextFile, defaultContextFilename),
+                initializeContextFile(
+                    contextFile,
+                    defaultContextFilename,
+                    thisNode.attached,
+                ),
             ),
         );
     const localContextObservable: Observable<PartialTartanContext> =
-        loadObjectFromFile<TartanContextFile>(localContextFilename, {}).pipe(
+        loadObjectFromFile<TartanContextFile>(
+            localContextFilename,
+            thisNode.attached,
+            {},
+        ).pipe(
             switchMap((contextFile) =>
-                initializeContextFile(contextFile, localContextFilename),
+                initializeContextFile(
+                    contextFile,
+                    localContextFilename,
+                    thisNode.attached,
+                ),
             ),
         );
 

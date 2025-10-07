@@ -11,11 +11,13 @@ import { HandoffHandler } from "../types/handoff-handler.js";
 export function initializeContextFile(
     contextFile: TartanContextFile,
     filePath: string,
+    onlyWhile: Observable<boolean>,
 ): Observable<FullTartanContext> {
     const sourceProcessor: Observable<SourceProcessor | undefined> =
         contextFile.sourceProcessor
             ? loadModule<SourceProcessor>(
                   contextFile.sourceProcessor,
+                  onlyWhile,
                   path.dirname(filePath),
               ).pipe(shareReplay(1))
             : of(undefined);
@@ -23,6 +25,7 @@ export function initializeContextFile(
         contextFile.handoffHandler
             ? loadModule<HandoffHandler>(
                   contextFile.handoffHandler,
+                  onlyWhile,
                   path.dirname(filePath),
               )
             : of(undefined);

@@ -1,4 +1,4 @@
-import { firstValueFrom } from "rxjs";
+import { firstValueFrom, of } from "rxjs";
 import {
     makeTempFile,
     performOperationAfterEachEmission,
@@ -12,7 +12,7 @@ describe("The module loader", () => {
             "test.ts",
             "export default 10",
         );
-        const observable = loadModule<number>(testFile);
+        const observable = loadModule<number>(testFile, of(true));
         const result: number = await firstValueFrom(observable);
 
         expect(result).toBe(10);
@@ -22,7 +22,7 @@ describe("The module loader", () => {
             "test.ts",
             "export default 10",
         );
-        const observable = loadModule<number>(testFile);
+        const observable = loadModule<number>(testFile, of(true));
         const results: number[] = await performOperationAfterEachEmission(
             observable,
             [
@@ -41,7 +41,7 @@ describe("The module loader", () => {
             `import num from "${dep}"; export default num;`,
         );
 
-        const observable = loadModule<number>(main);
+        const observable = loadModule<number>(main, of(true));
 
         const result: number = await firstValueFrom(observable);
 
@@ -54,7 +54,7 @@ describe("The module loader", () => {
             `import num from "${dep}"; export default num;`,
         );
 
-        const observable = loadModule<number>(main);
+        const observable = loadModule<number>(main, of(true));
 
         const results: number[] = await performOperationAfterEachEmission(
             observable,

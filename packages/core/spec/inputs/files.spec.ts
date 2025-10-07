@@ -18,13 +18,13 @@ describe("The file loader", () => {
             "filename.txt",
             "hello world",
         );
-        const fileObservable = loadFile(filename);
+        const fileObservable = loadFile(filename, of(true));
         const contents = await firstValueFrom(fileObservable);
         expect(contents.toString()).toBe("hello world");
     });
     it("should re-emit on file change", async () => {
         const filename: string = await makeTempFile("changed-file.txt", "1");
-        const fileObservable = loadFile(filename);
+        const fileObservable = loadFile(filename, of(true));
         const results = await performOperationAfterEachEmission(
             fileObservable,
             [async () => await updateTempFile("changed-file.txt", "2")],
@@ -35,7 +35,7 @@ describe("The file loader", () => {
         const f1: string = await makeTempFile("f1.txt", "1");
         const f2: string = await makeTempFile("f2.txt", "2");
 
-        const f1Observable = loadFile(f1);
+        const f1Observable = loadFile(f1, of(true));
 
         const results = await performOperationAfterEachEmission(
             f1Observable.pipe(
@@ -137,6 +137,7 @@ describe("The object loader", () => {
 
         const fileObservable = loadObjectFromFile(
             path.join(parsedFilename.dir, parsedFilename.name),
+            of(true),
         );
         const result = await firstValueFrom(fileObservable);
         expect(result).toEqual(object);
@@ -153,6 +154,7 @@ describe("The object loader", () => {
 
         const fileObservable = loadObjectFromFile(
             path.join(parsedFilename.dir, parsedFilename.name),
+            of(true),
         );
 
         const result = await firstValueFrom(fileObservable);
@@ -174,6 +176,7 @@ describe("The object loader", () => {
 
         const fileObservable = loadObjectFromFile(
             path.join(parsedFilename.dir, parsedFilename.name),
+            of(true),
         );
 
         const result = await firstValueFrom(fileObservable);
@@ -194,6 +197,7 @@ describe("The object loader", () => {
         const parsedFilename = path.parse(jsonFilename);
         const fileObservable = loadObjectFromFile(
             path.join(parsedFilename.dir, parsedFilename.name),
+            of(true),
         );
 
         const results = await performOperationAfterEachEmission(
@@ -229,6 +233,7 @@ describe("The object loader", () => {
 
         const objectObservable = loadObjectFromFile(
             path.join(parsedFilename.dir, parsedFilename.name),
+            of(true),
         );
 
         const results = await performOperationAfterEachEmission(
@@ -248,6 +253,7 @@ describe("The object loader", () => {
         }
         const objectObservable = loadObjectFromFile(
             path.join(globalThis.tmpDir, "not-a-real-basename"),
+            of(true),
             defaultObject,
         );
 
@@ -268,6 +274,7 @@ describe("The object loader", () => {
         }
         const objectObservable = loadObjectFromFile(
             path.join(globalThis.tmpDir, "object"),
+            of(true),
             defaultObject,
         );
 

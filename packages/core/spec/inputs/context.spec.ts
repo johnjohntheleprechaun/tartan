@@ -1,4 +1,4 @@
-import { firstValueFrom, Observable } from "rxjs";
+import { firstValueFrom, Observable, of } from "rxjs";
 import { initializeContextFile } from "../../src/inputs/context";
 import {
     FullTartanContext,
@@ -26,7 +26,11 @@ describe("The context initializer", () => {
         };
 
         const initializedTartanContext: Observable<FullTartanContext> =
-            initializeContextFile(context, path.join(tmpDir, "tartan.context"));
+            initializeContextFile(
+                context,
+                path.join(tmpDir, "tartan.context"),
+                of(true),
+            );
 
         const firstContext = await firstValueFrom(initializedTartanContext);
 
