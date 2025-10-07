@@ -205,7 +205,8 @@ export function loadContextTreeNode(params: {
                       const matchedFiles = entries.filter(
                           (val) =>
                               val.isFile() &&
-                              minimatch(val.name, context.pagePattern),
+                              minimatch(val.name, context.pagePattern) &&
+                              val.name !== context.pageSource,
                       );
                       const subDirs = entries.filter((val) =>
                           val.isDirectory(),
@@ -262,7 +263,8 @@ export function loadContextTreeNode(params: {
                       const assetFiles = children.filter(
                           (child) =>
                               child.isFile() &&
-                              minimatch(child.name, context.pagePattern),
+                              minimatch(child.name, context.pagePattern) &&
+                              child.name !== context.pageSource, // just in case lol. it's so unlikely this would happen for an asset dir
                       );
                       const subDirs = children.filter((child) =>
                           child.isDirectory(),

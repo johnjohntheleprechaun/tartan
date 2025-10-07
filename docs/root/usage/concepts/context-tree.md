@@ -16,9 +16,9 @@ However, `handoff` nodes aren't processed by Tartan at all. Instead, relevant in
 There's only a few context properties that control tree creation. The main one is the "Page Mode" (all the others are specific to certain page modes).
 We'll go over each one now.
 
-| Page Mode   | Behavior                                                                                                                         |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `directory` | This is the simplest page mode. Child nodes are created from sub-directories, and nothing else.                                  |
-| `file`      | In this mode, children are created from any files that match the `pagePattern` context property, as well as any sub-directories. |
-| `asset`     | This mode acts the same as the file mode, the only difference being that matched files are created as an `asset` node type.      |
-| `handoff`   | When a node has this type, it will have no children.                                                                             |
+| Page Mode   | Behavior                                                                                                                                                                       |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `directory` | This is the simplest page mode. Child nodes are created from sub-directories, and nothing else.                                                                                |
+| `file`      | In this mode, children are created from any files that match the `pagePattern` context property (except for the one provided by `pageSource`), as well as any sub-directories. |
+| `asset`     | This mode acts the same as the file mode, the only difference being that matched files are created as an `asset` node type.                                                    |
+| `handoff`   | When a node has this type, it will have no children.                                                                                                                           |

@@ -484,6 +484,25 @@ describe("The context tree loader", () => {
 
                 expect(await firstValueFrom(node.children)).toHaveSize(1);
             });
+            it("shouldn't add the file matched by `pageSource` as a child, even if it would otherwise be matched by `pagePattern`", async () => {
+                const rootContext: FullTartanContext = {
+                    pageMode: "file",
+                    pageSource: "index.md",
+                    pagePattern: "*.md",
+                };
+
+                const tmpDir = await makeTempFiles({
+                    "index.md": "I'm not a child >:3",
+                    "child.md": "I'm a child uwuwuwuwuwu",
+                });
+
+                const node = loadContextTreeNode({
+                    directory: tmpDir,
+                    rootContext,
+                });
+
+                expect(await firstValueFrom(node.children)).toHaveSize(1);
+            });
         });
         describe("when `pageMode` is `asset`", () => {
             it("should load only matching files as assets", async () => {
@@ -521,6 +540,25 @@ describe("The context tree loader", () => {
                 });
 
                 expect(await firstValueFrom(node.children)).toHaveSize(3);
+            });
+            it("should ignore the file matched by `pageSource`", async () => {
+                const rootContext: FullTartanContext = {
+                    pageMode: "asset",
+                    pageSource: "index.md",
+                    pagePattern: "*.md",
+                };
+
+                const tmpDir = await makeTempFiles({
+                    "index.md": "I'm not a child >:3",
+                    "child.md": "I'm a child uwuwuwuwuwu",
+                });
+
+                const node = loadContextTreeNode({
+                    directory: tmpDir,
+                    rootContext,
+                });
+
+                expect(await firstValueFrom(node.children)).toHaveSize(1);
             });
             it("should add new files as children on creation", async () => {
                 const rootContext: FullTartanContext = {
