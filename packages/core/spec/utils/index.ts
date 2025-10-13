@@ -2,16 +2,16 @@ import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import path, { dirname, join, resolve } from "node:path";
 import { bufferCount, concatMap, firstValueFrom, Observable } from "rxjs";
-import { fileChanged } from "../helpers/file-ops";
+import { fileChanged } from "../helpers/file-ops.js";
 
 export async function makeTempFile(
     name: string,
     contents: string,
 ): Promise<string> {
-    if (!globalThis.tmpDir) {
+    if (!process.env["TMP_DIR"]) {
         fail("no temp dir was provided");
     }
-    const filePath = resolve(join(globalThis.tmpDir, name));
+    const filePath = resolve(join(process.env["TMP_DIR"] as string, name));
     const highestCreatedDir = await new Promise<string | undefined>((res) => {
         fsSync.mkdir(dirname(filePath), { recursive: true }, (_, path) => {
             res(path);
@@ -29,7 +29,10 @@ export async function makeTempFile(
         segments.forEach((_, i) =>
             fileChanged(
                 path.resolve(
-                    path.join(globalThis.tmpDir, ...segments.slice(0, i + 1)),
+                    path.join(
+                        process.env["TMP_DIR"] as string,
+                        ...segments.slice(0, i + 1),
+                    ),
                 ),
                 "create",
             ),
@@ -41,10 +44,10 @@ export async function makeTempFile(
 }
 
 export async function removeTempFile(name: string): Promise<void> {
-    if (!globalThis.tmpDir) {
+    if (!process.env["TMP_DIR"]) {
         fail("no temp dir was provided");
     }
-    const filePath = resolve(join(globalThis.tmpDir, name));
+    const filePath = resolve(join(process.env["TMP_DIR"] as string, name));
     await fs.rm(filePath);
     fileChanged(filePath, "delete");
 }
@@ -53,7 +56,7 @@ export async function updateTempFile(
     name: string,
     contents: string,
 ): Promise<string> {
-    const filePath = resolve(join(globalThis.tmpDir, name));
+    const filePath = resolve(join(process.env["TMP_DIR"] as string, name));
     await fs.writeFile(filePath, contents);
     fileChanged(filePath, "update");
     return filePath;
@@ -67,7 +70,7 @@ export async function makeTempFiles(files: {
             makeTempFile(path, contents),
         ),
     );
-    return globalThis.tmpDir;
+    return process.env["TMP_DIR"] as string;
 }
 
 /**

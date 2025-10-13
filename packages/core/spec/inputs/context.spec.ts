@@ -1,15 +1,10 @@
 import { firstValueFrom, Observable, of } from "rxjs";
-import { initializeContextFile } from "../../src/inputs/context";
+import { initializeContextFile } from "../../src/inputs/context.js";
 import {
     FullTartanContext,
     TartanContextFile,
-} from "../../src/types/tartan-context";
-import {
-    makeTempFile,
-    makeTempFiles,
-    performOperationAfterEachEmission,
-    updateTempFile,
-} from "../utils";
+} from "../../src/types/tartan-context.js";
+import { makeTempFiles } from "../utils/index.js";
 import path from "node:path";
 
 describe("The context initializer", () => {

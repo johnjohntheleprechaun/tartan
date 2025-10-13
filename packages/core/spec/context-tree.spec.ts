@@ -1,16 +1,16 @@
-import { firstValueFrom, of, ReplaySubject, skip, Subject } from "rxjs";
-import { ContextTreeNode, loadContextTreeNode } from "../src/context-tree";
+import { firstValueFrom, of, ReplaySubject, Subject } from "rxjs";
+import { ContextTreeNode, loadContextTreeNode } from "../src/context-tree.js";
 import {
     FullTartanContext,
     PartialTartanContext,
-} from "../src/types/tartan-context";
+} from "../src/types/tartan-context.js";
 import {
     makeTempFile,
     makeTempFiles,
     performOperationAfterEachEmission,
     removeTempFile,
     updateTempFile,
-} from "./utils";
+} from "./utils/index.js";
 import path from "path";
 
 describe("The context tree loader", () => {
@@ -20,7 +20,7 @@ describe("The context tree loader", () => {
             pageSource: "yourmom.html",
         };
         const node = loadContextTreeNode({
-            directory: globalThis.tmpDir,
+            directory: process.env["TMP_DIR"] as string,
             rootContext,
         });
 
@@ -48,7 +48,7 @@ describe("The context tree loader", () => {
         );
 
         const node = loadContextTreeNode({
-            directory: globalThis.tmpDir,
+            directory: process.env["TMP_DIR"] as string,
             rootContext,
         });
 
@@ -65,7 +65,7 @@ describe("The context tree loader", () => {
         };
 
         const node = loadContextTreeNode({
-            directory: globalThis.tmpDir,
+            directory: process.env["TMP_DIR"] as string,
             rootContext,
         });
 
@@ -103,7 +103,7 @@ describe("The context tree loader", () => {
         );
 
         const node = loadContextTreeNode({
-            directory: globalThis.tmpDir,
+            directory: process.env["TMP_DIR"] as string,
             rootContext,
         });
 
@@ -135,7 +135,7 @@ describe("The context tree loader", () => {
 
         const node = loadContextTreeNode({
             rootContext: { pageMode: "directory", pageSource: "asdf" },
-            directory: globalThis.tmpDir,
+            directory: process.env["TMP_DIR"] as string,
         });
 
         const results = await performOperationAfterEachEmission(node.context, [
@@ -157,7 +157,7 @@ describe("The context tree loader", () => {
     it("should allow rootContext param to be observable", async () => {
         const rootContext: Subject<FullTartanContext> = new Subject();
         const node = loadContextTreeNode({
-            directory: globalThis.tmpDir,
+            directory: process.env["TMP_DIR"] as string,
             rootContext,
         });
         rootContext.next({
@@ -204,7 +204,7 @@ describe("The context tree loader", () => {
         };
 
         const childNode = loadContextTreeNode({
-            directory: globalThis.tmpDir,
+            directory: process.env["TMP_DIR"] as string,
             parent,
             rootContext,
         });
@@ -241,7 +241,7 @@ describe("The context tree loader", () => {
         );
 
         const childNode = loadContextTreeNode({
-            directory: globalThis.tmpDir,
+            directory: process.env["TMP_DIR"] as string,
             parent,
             rootContext,
         });
@@ -272,7 +272,7 @@ describe("The context tree loader", () => {
 
             const child: ContextTreeNode = (await firstValueFrom(node.children))
                 .values()
-                .next().value;
+                .next().value as ContextTreeNode;
 
             const results = await performOperationAfterEachEmission(
                 child.attached,
@@ -400,7 +400,7 @@ describe("The context tree loader", () => {
                 };
                 const first = await makeTempFile("first.md", "uwuw");
                 const node = loadContextTreeNode({
-                    directory: globalThis.tmpDir,
+                    directory: process.env["TMP_DIR"] as string,
                     rootContext,
                 });
 

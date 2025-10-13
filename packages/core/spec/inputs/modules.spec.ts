@@ -3,8 +3,8 @@ import {
     makeTempFile,
     performOperationAfterEachEmission,
     updateTempFile,
-} from "../utils";
-import { loadModule } from "../../src/inputs/modules.ts";
+} from "../utils/index.js";
+import { loadModule } from "../../src/inputs/modules.js";
 
 describe("The module loader", () => {
     it("should load a module, once", async () => {

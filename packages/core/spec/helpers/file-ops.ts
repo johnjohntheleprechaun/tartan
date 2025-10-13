@@ -1,6 +1,6 @@
 import ParcelWatcher, { EventType } from "@parcel/watcher";
 import fs from "fs/promises";
-import { FileWatcher } from "../../src/inputs/files";
+import { FileWatcher } from "../../src/inputs/files.js";
 
 let callbacks: ParcelWatcher.SubscribeCallback[] = [];
 export function fileChanged(path: string, type: EventType) {
@@ -40,5 +40,5 @@ beforeAll(async () => {
 beforeEach(async () => {
     await FileWatcher.reload();
     const tmpDir = await fs.mkdtemp(".tmp/tartan-test-");
-    globalThis.tmpDir = tmpDir;
+    process.env["TMP_DIR"] = tmpDir;
 });

@@ -3,13 +3,13 @@ import {
     FileWatcher,
     loadFile,
     loadObjectFromFile,
-} from "../../src/inputs/files";
+} from "../../src/inputs/files.js";
 import {
     makeTempFile,
     performOperationAfterEachEmission,
     removeTempFile,
     updateTempFile,
-} from "../utils";
+} from "../utils/index.js";
 import path from "path";
 
 describe("The file loader", () => {
@@ -72,7 +72,9 @@ describe("The file watcher", () => {
     it("should watch a glob pattern", async () => {
         const changeSubject: Subject<void> = new Subject();
         const watcher = new FileWatcher(changeSubject);
-        watcher.setWatchedPaths([path.join(globalThis.tmpDir, "*.txt")]);
+        watcher.setWatchedPaths([
+            path.join(process.env["TMP_DIR"] as string, "*.txt"),
+        ]);
         const res = performOperationAfterEachEmission(changeSubject, []);
         await makeTempFile("poopshit.txt", "asdlfkjansldfjn");
 
@@ -247,12 +249,8 @@ describe("The object loader", () => {
             key: "value",
         };
 
-        if (!globalThis.tmpDir) {
-            fail("no tmpDir was provided, but it definitely should've been");
-            return;
-        }
         const objectObservable = loadObjectFromFile(
-            path.join(globalThis.tmpDir, "not-a-real-basename"),
+            path.join(process.env["TMP_DIR"] as string, "not-a-real-basename"),
             of(true),
             defaultObject,
         );
@@ -268,12 +266,8 @@ describe("The object loader", () => {
             key: "JSON object",
         };
 
-        if (!globalThis.tmpDir) {
-            fail("no tmpDir was provided, but it definitely should've been");
-            return;
-        }
         const objectObservable = loadObjectFromFile(
-            path.join(globalThis.tmpDir, "object"),
+            path.join(process.env["TMP_DIR"] as string, "object"),
             of(true),
             defaultObject,
         );
