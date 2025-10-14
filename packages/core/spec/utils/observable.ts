@@ -1,4 +1,10 @@
-import { bufferCount, concatMap, firstValueFrom, Observable } from "rxjs";
+import {
+    bufferCount,
+    concatMap,
+    firstValueFrom,
+    Observable,
+    Subject,
+} from "rxjs";
 
 /**
  * useful to perform filesystem operations only after the full observable flow has been processed
@@ -23,4 +29,19 @@ export async function performOperationAfterEachEmission<T>(
             bufferCount(operations.length + 1),
         ),
     );
+}
+
+/**
+ * Just like rxjs.from, except that it uses setTimout to break out of the regular event loop.
+ */
+export function asyncFrom<T>(input: T[]): Observable<T> {
+    const subj: Subject<T> = new Subject();
+
+    const func = (i: number) => {
+        subj.next(input[i]);
+        if (i + 1 < input.length) setTimeout(func, 0, i + 1);
+    };
+    setTimeout(func, 0, 0);
+
+    return subj;
 }
