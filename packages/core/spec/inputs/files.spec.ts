@@ -40,7 +40,7 @@ describe("The file loader", () => {
         const results = await performOperationAfterEachEmission(
             f1Observable.pipe(
                 timeout({
-                    each: 500,
+                    each: 100,
                     with: () => of(Buffer.from("nothing changed")),
                 }),
             ),
