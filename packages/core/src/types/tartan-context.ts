@@ -2,6 +2,8 @@ import { JSONSchema, FromSchema } from "json-schema-to-ts";
 import { ReplaceTypes } from "./util.js";
 import { SourceProcessor } from "./source-processor.js";
 import { HandoffHandler } from "./handoff-handler.js";
+import { TemplateDelegate } from "handlebars";
+import { HandlebarsInput } from "./handlebars.js";
 
 export const tartanContextSchema = {
     type: "object",
@@ -19,9 +21,11 @@ export const tartanContextSchema = {
             description:
                 "A blob pattern to match files when `pageMode` is `file` or `asset`.",
         },
-        handlebarsParameters: {
+        extraContext: {
             type: "object",
             additionalProperties: true,
+            description:
+                "A JSON object that contains arbitrary information to be passed to source processors and templates.",
         },
         template: {
             type: "string",
@@ -60,7 +64,7 @@ export type PartialTartanContext = ReplaceTypes<
     TartanContextFile,
     {
         sourceProcessor?: SourceProcessor;
-        template?: ReturnType<typeof Handlebars.compile>;
+        template?: TemplateDelegate<HandlebarsInput>;
         handoffHandler?: HandoffHandler;
     }
 >;

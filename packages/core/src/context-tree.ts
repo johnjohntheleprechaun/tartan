@@ -19,7 +19,7 @@ import { FileWatcher, loadObjectFromFile } from "./inputs/files.js";
 import path from "node:path";
 import fs from "fs/promises";
 import { minimatch } from "minimatch";
-import { initializeContextFile } from "./inputs/context.js";
+import { initializeContext } from "./inputs/context.js";
 
 export type NodeType = "page" | "page.file" | "asset" | "handoff";
 export type ContextTreeNode = {
@@ -86,29 +86,13 @@ export function loadContextTreeNode(params: {
             defaultContextFilename,
             thisNode.attached,
             {},
-        ).pipe(
-            switchMap((contextFile) =>
-                initializeContextFile(
-                    contextFile,
-                    defaultContextFilename,
-                    thisNode.attached,
-                ),
-            ),
-        );
+        ).pipe(initializeContext(defaultContextFilename, thisNode.attached));
     const localContextObservable: Observable<PartialTartanContext> =
         loadObjectFromFile<TartanContextFile>(
             localContextFilename,
             thisNode.attached,
             {},
-        ).pipe(
-            switchMap((contextFile) =>
-                initializeContextFile(
-                    contextFile,
-                    localContextFilename,
-                    thisNode.attached,
-                ),
-            ),
-        );
+        ).pipe(initializeContext(localContextFilename, thisNode.attached));
 
     // inheritable context
     const inheritableContext: Observable<FullTartanContext> = (
@@ -144,6 +128,9 @@ export function loadContextTreeNode(params: {
     );
     context.subscribe((val) => thisNode.context.next(val));
 
+    /*
+     * Set node type
+     */
     context
         .pipe(
             map(

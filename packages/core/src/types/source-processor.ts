@@ -1,75 +1,45 @@
-import { FullTartanContext } from "./tartan-context.js";
+import { ProcessedNode } from "../processors/index.js";
 
-export type SourceType = "page" | "asset";
-/**
- * Information about a processed page.
- */
-export type SourceMeta = {
+export type SourceProcessorInput = {
     /**
-     * The type of this source
+     * The distance from the root node.
      */
-    sourceType: SourceType;
+    depth: number;
     /**
-     * The source file used (relative to rootDir).
+     * Extra context provided by the node's context object.
+     */
+    extraContext: {
+        [key: string]: any;
+    };
+    /**
+     * The contents of the source file, as a Buffer.
+     */
+    sourceFile: Buffer;
+    /**
+     * The location of the source file, relative to the root directory.
      */
     sourcePath: string;
     /**
-     * The path this source was outputted to (relative to outputDir). This will be a directory if sourceType is "page", file if it's "file".
+     * Processed children.
      */
-    outputPath: string;
-    /**
-     * The full context object for this page.
-     */
-    context: FullTartanContext;
-    /**
-     * Any extra metadata provided by the sourceProcessor.
-     */
-    extra?: any;
-};
-/**
- * The meta for a page, in the context of being a sub-page.
- */
-export type SubSourceMeta = SourceMeta & {
-    /**
-     * The number of levels away this page is from the one currently being processed.
-     * This will never be 0, because meta from pages on the same level is not accessible.
-     */
-    distance: number;
-    /**
-     * The depth of the page (effectively the distance from root).
-     */
-    depth: number;
-};
-/**
- * The data passed to a source processor.
- */
-export type SourceProcessorInput = {
-    /**
-     * The contents of the source file, as a string.
-     */
-    sourceContents: Buffer;
-    /**
-     * The fully processed context object for this page.
-     */
-    context: FullTartanContext;
-    /**
-     * Metadata from all subpages.
-     * When pageMode is `file`, all pages matched by `pagePattern` are considered to be on the same level, and the page matched by `pageSource` is one level above them.
-     */
-    subpageMeta: SubSourceMeta[];
-    /**
-     * The depth of this page within the root dir.
-     */
-    depth: number;
+    children: ProcessedNode[];
 };
 export type SourceProcessorOutput = {
+    /**
+     * The processed contents.
+     */
     processedContents: Buffer;
     /**
-     * Source processors are allowed to change the directory the page is outputted to.
-     * This directory is relative to the parent, so effectively it's just *renaming* the page.
+     * Any extra information that you'd like to provide to the template or parent nodes
      */
-    outputDir?: string;
-    extraMeta?: any;
+    extraMetadata: {
+        [key: string]: any;
+    };
+    /**
+     * A list of paths that should trigger a re-execution when changed.
+     * (This should *not* including the source file.)
+     */
+    dependencies: string[];
 };
 export type SourceProcessor = (
     input: SourceProcessorInput,

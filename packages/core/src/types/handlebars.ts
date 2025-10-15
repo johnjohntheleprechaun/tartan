@@ -1,20 +1,32 @@
-import { SourceMeta, SubSourceMeta } from "./source-processor.js";
+import { ProcessedNode } from "../processors/index.js";
 
-export interface HandlebarsContext {
+export type HandlebarsInput = {
     /**
-     * The fully processed page content, it's assumed that this is a safe string.
+     * The processed file contents as a string.
      */
-    pageContent: string;
+    sourceContents: string;
     /**
-     * Extra context provided by the tartan page's context.
+     * The distance from the root node.
      */
-    extraContext: any;
+    depth: number;
     /**
-     * The current page's meta.
+     *  Extra context provided by the node's context.
      */
-    pageMeta: SourceMeta;
+    extraContext: {
+        [key: string]: any;
+    };
     /**
-     * Metadata from all the sub pages.
+     * Extra metadata provided by source processors.
      */
-    subPageMeta: SubSourceMeta[];
-}
+    extraMetadata: {
+        [key: string]: any;
+    };
+    /**
+     * The file path of the source file, relative to the root directory.
+     */
+    sourcePath: string;
+    /**
+     * Results from processed children.
+     */
+    children: ProcessedNode[];
+};
