@@ -1,6 +1,5 @@
 import {
     combineLatest,
-    combineLatestWith,
     exhaustMap,
     filter,
     map,
@@ -12,6 +11,9 @@ import {
     tap,
 } from "rxjs";
 
+export function efficientConcatMap<F extends (...params: any) => any>(
+    mapFunc: F | Observable<F>,
+): OperatorFunction<Parameters<F>, Awaited<ReturnType<F>>>;
 export function efficientConcatMap<
     F extends (...params: any) => any,
     P extends Parameters<F>,
@@ -41,7 +43,7 @@ export function efficientConcatMap<
                 .pipe(
                     // allow either params or the completion subject to trigger a re-execution.
                     // (or at least, an evaluation of whether it needs to be re-executed)
-                    exhaustMap(async ([params, func, rerun]) => {
+                    exhaustMap(async ([params, func]) => {
                         let shouldCallFunc: boolean =
                             previousInput === undefined ||
                             previousInput[1] !== func ||
