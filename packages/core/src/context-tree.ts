@@ -21,7 +21,12 @@ import fs from "fs/promises";
 import { minimatch } from "minimatch";
 import { initializeContext } from "./inputs/context.js";
 
-export type NodeType = "page" | "page.file" | "asset" | "handoff";
+export type NodeType =
+    | "page"
+    | "page.file"
+    | "asset"
+    | "handoff"
+    | "handoff.file";
 export type ContextTreeNode = {
     inheritableContext: Observable<FullTartanContext>;
     context: Observable<FullTartanContext>;
@@ -135,7 +140,11 @@ export function loadContextTreeNode(params: {
         .pipe(
             map(
                 (ctx): NodeType =>
-                    ctx.pageMode === "handoff" ? "handoff" : type,
+                    ctx.pageMode === "handoff"
+                        ? type === "page.file"
+                            ? "handoff.file"
+                            : "handoff"
+                        : type,
             ),
             distinctUntilChanged(),
         )

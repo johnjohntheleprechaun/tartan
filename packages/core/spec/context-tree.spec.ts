@@ -3,6 +3,7 @@ import { ContextTreeNode, loadContextTreeNode } from "../src/context-tree.js";
 import {
     FullTartanContext,
     PartialTartanContext,
+    TartanContextFile,
 } from "../src/types/tartan-context.js";
 import {
     makeTempFile,
@@ -602,6 +603,55 @@ describe("The context tree loader", () => {
 
                 expect(results[0]).toHaveSize(2);
                 expect(results[1]).toHaveSize(1);
+            });
+        });
+        describe("when `pageMode` is `handoff`", () => {
+            it("should set the node type to be `handoff`", async () => {
+                const rootContext: FullTartanContext = {
+                    pageMode: "directory",
+                    pageSource: "index.html",
+                };
+
+                const localContext: TartanContextFile = {
+                    pageMode: "handoff",
+                };
+
+                const tmpDir = await makeTempFiles({
+                    "tartan.context.json": JSON.stringify(localContext),
+                });
+
+                const node = loadContextTreeNode({
+                    directory: tmpDir,
+                    rootContext,
+                });
+
+                const result = await firstValueFrom(node.type);
+                expect(result).toBe("handoff");
+            });
+            it("should set the node type to be `handoff.file` if the context that declares handoff is for a file", async () => {
+                const rootContext: FullTartanContext = {
+                    pageMode: "file",
+                    pagePattern: "*.md",
+                };
+
+                const localContext: TartanContextFile = {
+                    pageMode: "handoff",
+                };
+
+                const tmpDir = await makeTempFiles({
+                    "test.md": "uwu",
+                    "test.md.context.json": JSON.stringify(localContext),
+                });
+
+                const node = loadContextTreeNode({
+                    directory: tmpDir,
+                    rootContext,
+                });
+
+                const children = await firstValueFrom(node.children);
+                expect(children).toHaveSize(1);
+                const child = Array.from(children)[0];
+                expect(await firstValueFrom(child.type)).toBe("handoff.file");
             });
         });
     });
