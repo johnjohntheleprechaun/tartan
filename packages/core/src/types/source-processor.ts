@@ -32,14 +32,19 @@ export type SourceProcessorOutput = {
     /**
      * Any extra information that you'd like to provide to the template or parent nodes
      */
-    extraMetadata: {
+    extraMetadata?: {
         [key: string]: any;
     };
     /**
      * A list of paths that should trigger a re-execution when changed.
-     * (This should *not* including the source file.)
+     * (This should *not* include the source file, or any assets that would be automatically discovered)
      */
-    dependencies: string[];
+    dependencies?: string[];
+    /**
+     * Source processors are allowed to change the directory the page is outputted to.
+     * This directory is relative to the parent, so effectively it's just *renaming* the page.
+     */
+    outputDirectory?: string;
 };
 export type SourceProcessor = (
     input: SourceProcessorInput,
