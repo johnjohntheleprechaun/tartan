@@ -17,6 +17,24 @@ import { randomUUID } from "crypto";
 
 describe("The context tree loader", () => {
     describe("when loading context objects", () => {
+        it("should load a module context", async () => {
+            const rootContext: FullTartanContext = {
+                pageMode: "directory",
+                pageSource: "index.html",
+            };
+            const tmpDir = await makeTempFiles({
+                "tartan.context.js": 'export default {pageSource: "uwu.md"}',
+            });
+            const node = loadContextTreeNode({
+                directory: tmpDir,
+                rootContext,
+            });
+
+            expect(await firstValueFrom(node.context)).toEqual({
+                pageMode: "directory",
+                pageSource: "uwu.md",
+            });
+        });
         it("should return the root context when no context files are on disk", async () => {
             const rootContext: FullTartanContext = {
                 pageMode: "directory",

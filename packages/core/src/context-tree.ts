@@ -97,7 +97,7 @@ export function loadContextTreeNode(params: {
 
     const defaultContextObservable: Observable<PartialTartanContext> =
         loadObjectFromFile<TartanContextFile>(
-            defaultContextFilename,
+            path.resolve(defaultContextFilename),
             thisNode.attached,
             {},
         ).pipe(
@@ -110,7 +110,7 @@ export function loadContextTreeNode(params: {
         );
     const localContextObservable: Observable<PartialTartanContext> =
         loadObjectFromFile<TartanContextFile>(
-            localContextFilename,
+            path.resolve(localContextFilename),
             thisNode.attached,
             {},
         ).pipe(
