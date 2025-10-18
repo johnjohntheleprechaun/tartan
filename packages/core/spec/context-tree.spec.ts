@@ -16,245 +16,261 @@ import path from "path";
 import { randomUUID } from "crypto";
 
 describe("The context tree loader", () => {
-    it("should return the root context when no context files are on disk", async () => {
-        const rootContext: FullTartanContext = {
-            pageMode: "directory",
-            pageSource: "yourmom.html",
-        };
-        const node = loadContextTreeNode({
-            directory: process.env["TMP_DIR"] as string,
-            rootContext,
+    describe("when loading context objects", () => {
+        it("should return the root context when no context files are on disk", async () => {
+            const rootContext: FullTartanContext = {
+                pageMode: "directory",
+                pageSource: "yourmom.html",
+            };
+            const node = loadContextTreeNode({
+                directory: process.env["TMP_DIR"] as string,
+                rootContext,
+            });
+
+            const emittedContext: FullTartanContext = await firstValueFrom(
+                node.context,
+            );
+            expect(emittedContext).toEqual(rootContext);
         });
+        it("should overlay a local context file on the root context", async () => {
+            const rootContext: FullTartanContext = {
+                pageMode: "directory",
+                pageSource: "fuck.html",
+            };
+            const localContextFile: PartialTartanContext = {
+                pageSource: "chickennugget.html",
+            };
+            const expectedResult: FullTartanContext = {
+                pageMode: "directory",
+                pageSource: "chickennugget.html",
+            };
 
-        const emittedContext: FullTartanContext = await firstValueFrom(
-            node.context,
-        );
-        expect(emittedContext).toEqual(rootContext);
-    });
-    it("should overlay a local context file on the root context", async () => {
-        const rootContext: FullTartanContext = {
-            pageMode: "directory",
-            pageSource: "fuck.html",
-        };
-        const localContextFile: PartialTartanContext = {
-            pageSource: "chickennugget.html",
-        };
-        const expectedResult: FullTartanContext = {
-            pageMode: "directory",
-            pageSource: "chickennugget.html",
-        };
+            await makeTempFile(
+                "tartan.context.json",
+                JSON.stringify(localContextFile),
+            );
 
-        await makeTempFile(
-            "tartan.context.json",
-            JSON.stringify(localContextFile),
-        );
+            const node = loadContextTreeNode({
+                directory: process.env["TMP_DIR"] as string,
+                rootContext,
+            });
 
-        const node = loadContextTreeNode({
-            directory: process.env["TMP_DIR"] as string,
-            rootContext,
+            const localContext = await firstValueFrom(node.context);
+            expect(localContext).toEqual(expectedResult);
         });
-
-        const localContext = await firstValueFrom(node.context);
-        expect(localContext).toEqual(expectedResult);
-    });
-    it("should overlay a local context on the root context when a new local context file is created", async () => {
-        const rootContext: FullTartanContext = {
-            pageMode: "directory",
-            pageSource: "root.html",
-        };
-        const localContextFile: PartialTartanContext = {
-            pageSource: "local.html",
-        };
-
-        const node = loadContextTreeNode({
-            directory: process.env["TMP_DIR"] as string,
-            rootContext,
-        });
-
-        const results = await performOperationAfterEachEmission(node.context, [
-            async () =>
-                makeTempFile(
-                    "tartan.context.json",
-                    JSON.stringify(localContextFile),
-                ),
-        ]);
-
-        expect(results).toEqual([
-            {
+        it("should overlay a local context on the root context when a new local context file is created", async () => {
+            const rootContext: FullTartanContext = {
                 pageMode: "directory",
                 pageSource: "root.html",
-            },
-            {
-                pageMode: "directory",
+            };
+            const localContextFile: PartialTartanContext = {
                 pageSource: "local.html",
-            },
-        ]);
-    });
-    it("should use a default context file as both inheritable and local contexts", async () => {
-        const rootContext: FullTartanContext = {
-            pageMode: "directory",
-            pageSource: "index.html",
-        };
-        const defaultContextFile: PartialTartanContext = {
-            pageSource: "overridden.uwu",
-        };
+            };
 
-        await makeTempFile(
-            "tartan.context.default.json",
-            JSON.stringify(defaultContextFile),
-        );
+            const node = loadContextTreeNode({
+                directory: process.env["TMP_DIR"] as string,
+                rootContext,
+            });
 
-        const node = loadContextTreeNode({
-            directory: process.env["TMP_DIR"] as string,
-            rootContext,
-        });
+            const results = await performOperationAfterEachEmission(
+                node.context,
+                [
+                    async () =>
+                        makeTempFile(
+                            "tartan.context.json",
+                            JSON.stringify(localContextFile),
+                        ),
+                ],
+            );
 
-        const expectedOutput: FullTartanContext = {
-            pageMode: "directory",
-            pageSource: "overridden.uwu",
-        };
-        expect(await firstValueFrom(node.inheritableContext)).toEqual(
-            expectedOutput,
-        );
-        expect(await firstValueFrom(node.context)).toEqual(expectedOutput);
-    });
-    it("should reload contexts when file changes", async () => {
-        const defaultContextFile: PartialTartanContext = {
-            pageSource: "index.html",
-        };
-        const localContextFile: PartialTartanContext = {
-            pageSource: "index.md",
-        };
-
-        const defaultFilename = await makeTempFile(
-            "tartan.context.default.json",
-            JSON.stringify(defaultContextFile),
-        );
-        const localFilename = await makeTempFile(
-            "tartan.context.json",
-            JSON.stringify(localContextFile),
-        );
-
-        const node = loadContextTreeNode({
-            rootContext: { pageMode: "directory", pageSource: "asdf" },
-            directory: process.env["TMP_DIR"] as string,
-        });
-
-        const results = await performOperationAfterEachEmission(node.context, [
-            async () =>
-                updateTempFile("tartan.context.json", JSON.stringify({})),
-            async () =>
-                updateTempFile(
-                    "tartan.context.default.json",
-                    JSON.stringify({ pageSource: "abcdefg" }),
-                ),
-        ]);
-
-        expect(results).toEqual([
-            { pageMode: "directory", pageSource: "index.md" },
-            { pageMode: "directory", pageSource: "index.html" },
-            { pageMode: "directory", pageSource: "abcdefg" },
-        ]);
-    });
-    it("should allow rootContext param to be observable", async () => {
-        const rootContext: Subject<FullTartanContext> = new Subject();
-        const node = loadContextTreeNode({
-            directory: process.env["TMP_DIR"] as string,
-            rootContext,
-        });
-        rootContext.next({
-            pageMode: "directory",
-            pageSource: "source1",
-        });
-
-        const results = await performOperationAfterEachEmission(node.context, [
-            async () => {
-                rootContext.next({
+            expect(results).toEqual([
+                {
                     pageMode: "directory",
-                    pageSource: "source2",
-                });
-            },
-        ]);
+                    pageSource: "root.html",
+                },
+                {
+                    pageMode: "directory",
+                    pageSource: "local.html",
+                },
+            ]);
+        });
+        it("should use a default context file as both inheritable and local contexts", async () => {
+            const rootContext: FullTartanContext = {
+                pageMode: "directory",
+                pageSource: "index.html",
+            };
+            const defaultContextFile: PartialTartanContext = {
+                pageSource: "overridden.uwu",
+            };
 
-        expect(results).toEqual([
-            {
+            await makeTempFile(
+                "tartan.context.default.json",
+                JSON.stringify(defaultContextFile),
+            );
+
+            const node = loadContextTreeNode({
+                directory: process.env["TMP_DIR"] as string,
+                rootContext,
+            });
+
+            const expectedOutput: FullTartanContext = {
+                pageMode: "directory",
+                pageSource: "overridden.uwu",
+            };
+            expect(await firstValueFrom(node.inheritableContext)).toEqual(
+                expectedOutput,
+            );
+            expect(await firstValueFrom(node.context)).toEqual(expectedOutput);
+        });
+        it("should reload contexts when file changes", async () => {
+            const defaultContextFile: PartialTartanContext = {
+                pageSource: "index.html",
+            };
+            const localContextFile: PartialTartanContext = {
+                pageSource: "index.md",
+            };
+
+            const defaultFilename = await makeTempFile(
+                "tartan.context.default.json",
+                JSON.stringify(defaultContextFile),
+            );
+            const localFilename = await makeTempFile(
+                "tartan.context.json",
+                JSON.stringify(localContextFile),
+            );
+
+            const node = loadContextTreeNode({
+                rootContext: { pageMode: "directory", pageSource: "asdf" },
+                directory: process.env["TMP_DIR"] as string,
+            });
+
+            const results = await performOperationAfterEachEmission(
+                node.context,
+                [
+                    async () =>
+                        updateTempFile(
+                            "tartan.context.json",
+                            JSON.stringify({}),
+                        ),
+                    async () =>
+                        updateTempFile(
+                            "tartan.context.default.json",
+                            JSON.stringify({ pageSource: "abcdefg" }),
+                        ),
+                ],
+            );
+
+            expect(results).toEqual([
+                { pageMode: "directory", pageSource: "index.md" },
+                { pageMode: "directory", pageSource: "index.html" },
+                { pageMode: "directory", pageSource: "abcdefg" },
+            ]);
+        });
+        it("should allow rootContext param to be observable", async () => {
+            const rootContext: Subject<FullTartanContext> = new Subject();
+            const node = loadContextTreeNode({
+                directory: process.env["TMP_DIR"] as string,
+                rootContext,
+            });
+            rootContext.next({
                 pageMode: "directory",
                 pageSource: "source1",
-            },
-            {
+            });
+
+            const results = await performOperationAfterEachEmission(
+                node.context,
+                [
+                    async () => {
+                        rootContext.next({
+                            pageMode: "directory",
+                            pageSource: "source2",
+                        });
+                    },
+                ],
+            );
+
+            expect(results).toEqual([
+                {
+                    pageMode: "directory",
+                    pageSource: "source1",
+                },
+                {
+                    pageMode: "directory",
+                    pageSource: "source2",
+                },
+            ]);
+        });
+        it("should inherit context from a parent if provided", async () => {
+            const rootContext: FullTartanContext = {
                 pageMode: "directory",
-                pageSource: "source2",
-            },
-        ]);
-    });
-    it("should inherit context from a parent if provided", async () => {
-        const rootContext: FullTartanContext = {
-            pageMode: "directory",
-            pageSource: "aldkfjnaslkdjfn",
-        };
-        const childSubject: Subject<Set<ContextTreeNode>> = new ReplaySubject();
-        const parent: ContextTreeNode = {
-            inheritableContext: of({
+                pageSource: "aldkfjnaslkdjfn",
+            };
+            const childSubject: Subject<Set<ContextTreeNode>> =
+                new ReplaySubject();
+            const parent: ContextTreeNode = {
+                inheritableContext: of({
+                    pageMode: "directory",
+                    pageSource: "index.html",
+                } as FullTartanContext),
+                context: of(),
+                children: childSubject,
+                type: of("page"),
+                attached: of(true),
+                path: "",
+                id: randomUUID(),
+            };
+
+            const childNode = loadContextTreeNode({
+                directory: process.env["TMP_DIR"] as string,
+                parent,
+                rootContext,
+            });
+            childSubject.next(new Set([childNode]));
+
+            const childContext = await firstValueFrom(childNode.context);
+            expect(childContext).toEqual({
                 pageMode: "directory",
                 pageSource: "index.html",
-            } as FullTartanContext),
-            context: of(),
-            children: childSubject,
-            type: of("page"),
-            attached: of(true),
-            path: "",
-            id: randomUUID(),
-        };
-
-        const childNode = loadContextTreeNode({
-            directory: process.env["TMP_DIR"] as string,
-            parent,
-            rootContext,
+            });
         });
-        childSubject.next(new Set([childNode]));
-
-        const childContext = await firstValueFrom(childNode.context);
-        expect(childContext).toEqual({
-            pageMode: "directory",
-            pageSource: "index.html",
-        });
-    });
-    it("should override parent context when parent is provided", async () => {
-        const rootContext: FullTartanContext = {
-            pageMode: "directory",
-            pageSource: "aldkfjnaslkdjfn",
-        };
-        const childSubject: Subject<Set<ContextTreeNode>> = new ReplaySubject();
-        const parent: ContextTreeNode = {
-            inheritableContext: of({
+        it("should override parent context when parent is provided", async () => {
+            const rootContext: FullTartanContext = {
                 pageMode: "directory",
-                pageSource: "index.html",
-            } as FullTartanContext),
-            context: of(),
-            children: childSubject,
-            type: of("page"),
-            attached: of(true),
-            path: "",
-            id: randomUUID(),
-        };
-        await makeTempFile(
-            "tartan.context.json",
-            JSON.stringify({
+                pageSource: "aldkfjnaslkdjfn",
+            };
+            const childSubject: Subject<Set<ContextTreeNode>> =
+                new ReplaySubject();
+            const parent: ContextTreeNode = {
+                inheritableContext: of({
+                    pageMode: "directory",
+                    pageSource: "index.html",
+                } as FullTartanContext),
+                context: of(),
+                children: childSubject,
+                type: of("page"),
+                attached: of(true),
+                path: "",
+                id: randomUUID(),
+            };
+            await makeTempFile(
+                "tartan.context.json",
+                JSON.stringify({
+                    pageSource: "index.md",
+                }),
+            );
+
+            const childNode = loadContextTreeNode({
+                directory: process.env["TMP_DIR"] as string,
+                parent,
+                rootContext,
+            });
+            childSubject.next(new Set([childNode]));
+
+            const childContext = await firstValueFrom(childNode.context);
+            expect(childContext).toEqual({
+                pageMode: "directory",
                 pageSource: "index.md",
-            }),
-        );
-
-        const childNode = loadContextTreeNode({
-            directory: process.env["TMP_DIR"] as string,
-            parent,
-            rootContext,
-        });
-        childSubject.next(new Set([childNode]));
-
-        const childContext = await firstValueFrom(childNode.context);
-        expect(childContext).toEqual({
-            pageMode: "directory",
-            pageSource: "index.md",
+            });
         });
     });
 
