@@ -40,6 +40,7 @@ export function asyncFrom<T>(input: T[]): Observable<T> {
     const func = (i: number) => {
         subj.next(input[i]);
         if (i + 1 < input.length) setTimeout(func, 0, i + 1);
+        else subj.complete();
     };
     setTimeout(func, 0, 0);
 
