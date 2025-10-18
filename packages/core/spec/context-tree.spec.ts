@@ -13,6 +13,7 @@ import {
     updateTempFile,
 } from "./utils/index.js";
 import path from "path";
+import { randomUUID } from "crypto";
 
 describe("The context tree loader", () => {
     it("should return the root context when no context files are on disk", async () => {
@@ -202,6 +203,7 @@ describe("The context tree loader", () => {
             type: of("page"),
             attached: of(true),
             path: "",
+            id: randomUUID(),
         };
 
         const childNode = loadContextTreeNode({
@@ -233,6 +235,7 @@ describe("The context tree loader", () => {
             type: of("page"),
             attached: of(true),
             path: "",
+            id: randomUUID(),
         };
         await makeTempFile(
             "tartan.context.json",

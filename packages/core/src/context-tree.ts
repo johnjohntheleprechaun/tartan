@@ -20,6 +20,8 @@ import path from "node:path";
 import fs from "fs/promises";
 import { minimatch } from "minimatch";
 import { initializeContext } from "./inputs/context.js";
+import { randomUUID } from "node:crypto";
+import { gracefulError } from "./outputs/error.js";
 
 export type NodeType =
     | "page"
@@ -34,6 +36,7 @@ export type ContextTreeNode = {
     path: string;
     children: Observable<Set<ContextTreeNode>>; // this is a set so that it's trivial to tell if a node is attached to the tree
     attached: Observable<boolean>;
+    id: string;
 };
 
 type Subjectify<T> = {
@@ -56,6 +59,7 @@ export function loadContextTreeNode(params: {
         path: path.join(directory, filename || ""),
         attached: new ReplaySubject(),
         children: new ReplaySubject(),
+        id: randomUUID(),
     };
 
     /*
@@ -67,6 +71,11 @@ export function loadContextTreeNode(params: {
                 map(
                     ([parentAttached, parentChildren]) =>
                         parentAttached && parentChildren.has(thisNode),
+                ),
+                gracefulError(
+                    thisNode.id,
+                    thisNode.path,
+                    "setting the node attached state",
                 ),
             )
             .subscribe((attached) => thisNode.attached.next(attached));
@@ -91,13 +100,27 @@ export function loadContextTreeNode(params: {
             defaultContextFilename,
             thisNode.attached,
             {},
-        ).pipe(initializeContext(defaultContextFilename, thisNode.attached));
+        ).pipe(
+            initializeContext(defaultContextFilename, thisNode.attached),
+            gracefulError(
+                thisNode.id,
+                thisNode.path,
+                "loading the default context object",
+            ),
+        );
     const localContextObservable: Observable<PartialTartanContext> =
         loadObjectFromFile<TartanContextFile>(
             localContextFilename,
             thisNode.attached,
             {},
-        ).pipe(initializeContext(localContextFilename, thisNode.attached));
+        ).pipe(
+            initializeContext(localContextFilename, thisNode.attached),
+            gracefulError(
+                thisNode.id,
+                thisNode.path,
+                "loading the local context object",
+            ),
+        );
 
     // inheritable context
     const inheritableContext: Observable<FullTartanContext> = (
@@ -115,6 +138,11 @@ export function loadContextTreeNode(params: {
                     ...localInheritable,
                 }) as FullTartanContext,
         ),
+        gracefulError(
+            thisNode.id,
+            thisNode.path,
+            "creating the full inheritable context object",
+        ),
     );
     inheritableContext.subscribe((val) =>
         thisNode.inheritableContext.next(val),
@@ -129,6 +157,11 @@ export function loadContextTreeNode(params: {
                     ...inheritable,
                     ...local,
                 }) as FullTartanContext,
+        ),
+        gracefulError(
+            thisNode.id,
+            thisNode.path,
+            "creating the full local context object",
         ),
     );
     context.subscribe((val) => thisNode.context.next(val));
@@ -147,6 +180,7 @@ export function loadContextTreeNode(params: {
                         : type,
             ),
             distinctUntilChanged(),
+            gracefulError(thisNode.id, thisNode.path, "setting the node type"),
         )
         .subscribe((val) => thisNode.type.next(val));
 
@@ -313,6 +347,11 @@ export function loadContextTreeNode(params: {
                       return new Set<ContextTreeNode>();
                   }
               }),
+              gracefulError(
+                  thisNode.id,
+                  thisNode.path,
+                  "finding and loading child nodes",
+              ),
           );
     children.subscribe((val) => thisNode.children.next(val));
 
