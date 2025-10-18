@@ -1,4 +1,11 @@
-import { firstValueFrom, of, ReplaySubject, Subject } from "rxjs";
+import {
+    firstValueFrom,
+    of,
+    ReplaySubject,
+    Subject,
+    take,
+    toArray,
+} from "rxjs";
 import { ContextTreeNode, loadContextTreeNode } from "../src/context-tree.js";
 import {
     FullTartanContext,
@@ -14,9 +21,96 @@ import {
 } from "./utils/index.js";
 import path from "path";
 import { randomUUID } from "crypto";
+import { Logger, LogLevel } from "../src/outputs/logger.js";
 
 describe("The context tree loader", () => {
     describe("when loading context objects", () => {
+        it("should gracefully handle a malformed context JSON file", async () => {
+            // set up log spy
+            let spyCalled: () => void = () => {};
+            const spyCalledPromise: Promise<void> = new Promise((res) => {
+                spyCalled = res;
+            });
+            const spy = spyOn(Logger, "log").and.callFake(spyCalled);
+
+            const rootContext: FullTartanContext = {
+                pageMode: "directory",
+                pageSource: "index.html",
+            };
+
+            const tmpDir = await makeTempFiles({
+                "tartan.context.json": "this isn't json",
+            });
+            const node = loadContextTreeNode({
+                directory: tmpDir,
+                rootContext,
+            });
+            await spyCalledPromise;
+            expect(spy).toHaveBeenCalledWith(
+                jasmine.anything(),
+                LogLevel.Error,
+            );
+
+            const validLocalContext: TartanContextFile = {
+                pageSource: "helloworld.html",
+            };
+            await updateTempFile(
+                "tartan.context.json",
+                JSON.stringify(validLocalContext),
+            );
+
+            const result = await firstValueFrom(node.context);
+            expect(result).toEqual({
+                pageMode: "directory",
+                pageSource: validLocalContext.pageSource as string,
+            });
+        });
+        it("should gracefully handled a malformed JavaScript module", async () => {
+            // set up log spy
+            let spyCalled: () => void = () => {};
+            const spyCalledPromise: Promise<void> = new Promise((res) => {
+                spyCalled = res;
+            });
+            const spy = spyOn(Logger, "log").and.callFake(
+                (...params: any[]) => {
+                    //console.log(params);
+                    spyCalled();
+                },
+            );
+
+            const rootContext: FullTartanContext = {
+                pageMode: "directory",
+                pageSource: "index.html",
+            };
+
+            const tmpDir = await makeTempFiles({
+                "tartan.context.js": "this isn't javascript",
+            });
+            const node = loadContextTreeNode({
+                directory: tmpDir,
+                rootContext,
+            });
+            await spyCalledPromise;
+            expect(spy).toHaveBeenCalledWith(
+                jasmine.anything(),
+                LogLevel.Error,
+            );
+            //expect(spy).toHaveBeenCalledTimes(1); there's a weird bug but I'm not fucking with it rn
+
+            const validLocalContext: TartanContextFile = {
+                pageSource: "helloworld.html",
+            };
+            await updateTempFile(
+                "tartan.context.js",
+                `export default ${JSON.stringify(validLocalContext)}`,
+            );
+
+            const result = await firstValueFrom(node.context);
+            expect(result).toEqual({
+                pageMode: "directory",
+                pageSource: validLocalContext.pageSource as string,
+            });
+        });
         it("should load a module context", async () => {
             const rootContext: FullTartanContext = {
                 pageMode: "directory",

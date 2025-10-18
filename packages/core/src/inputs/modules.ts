@@ -128,20 +128,17 @@ export function loadModule<T>(
                                     color: true,
                                 });
 
-                            // print logs
-
-                            Logger.log(
-                                [
-                                    "==================================================\n",
-                                    `Failed while building ${modulePath}\n\n`,
-                                    formattedErrors.join("\n"),
-                                    ...(formattedWarnings.length > 0
-                                        ? [formattedWarnings.join("\n")]
-                                        : []),
-                                    "==================================================",
-                                ].join("\n"),
-                                LogLevel.Error,
-                            );
+                            // throw the formatted error
+                            const formattedMessage = [
+                                "==================================================\n",
+                                `Failed while building ${modulePath}\n\n`,
+                                formattedErrors.join("\n"),
+                                ...(formattedWarnings.length > 0
+                                    ? [formattedWarnings.join("\n")]
+                                    : []),
+                                "==================================================",
+                            ].join("\n");
+                            throw formattedMessage;
                         }),
                 ),
                 filter((val) => val !== undefined),
