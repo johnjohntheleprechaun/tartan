@@ -4,9 +4,11 @@ import {
     map,
     Observable,
     of,
+    share,
     shareReplay,
     Subject,
     switchMap,
+    tap,
 } from "rxjs";
 import { ContextTreeNode } from "../context-tree.js";
 import { loadFile } from "../inputs/files.js";
@@ -21,6 +23,7 @@ import { efficientConcatMap } from "./operators.js";
 import { FullTartanContext } from "../types/tartan-context.js";
 import { TemplateDelegate } from "handlebars";
 import { HandlebarsInput } from "../types/handlebars.js";
+import { gracefulError } from "../outputs/error.js";
 
 export type PageProcessorInput = {
     node: ContextTreeNode;
@@ -91,6 +94,7 @@ export function processPage(
             children,
             node.context,
         ]).pipe(
+            share({ resetOnRefCountZero: false }),
             // create the source processor input object
             map<
                 [Buffer, string, ProcessedNode[], FullTartanContext],
@@ -107,6 +111,23 @@ export function processPage(
             // execute the source processor
             efficientConcatMap<SourceProcessor>(sourceProcessor),
             // check for errors
+            tap((output) => {
+                if (output.outputDirectory) {
+                    const relativeToOutput = path.relative(
+                        path.dirname(outputDirectory),
+                        path.join(
+                            path.dirname(outputDirectory),
+                            output.outputDirectory,
+                        ),
+                    );
+                    if (relativeToOutput.startsWith("..")) {
+                        throw new InvalidOutputDirectoryError(
+                            "Invalid modification to output directory. The modified path must reolve to *below* the original",
+                        );
+                    }
+                }
+            }),
+            gracefulError(node.id, node.path, "running the source processor"),
         );
 
     // run it through the template

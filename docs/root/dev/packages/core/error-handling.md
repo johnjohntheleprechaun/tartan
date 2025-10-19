@@ -1,0 +1,2 @@
+When using the `gracefulError` operator, the source observable must not have a any kind of replaying source upstream, like a `ReplaySubject` or observable created with `of`. If that _does_ exist upstream, the error will be continuously replayed in an infinite loop, rather than simply making the stream halt if a value from upstream caused an error, and waiting for a new value from upstream.
+If you do have a replaying source upstream, you can mitigate it by simply putting `share({ resetOnRefCountZero: false })` at the beginning of the pipe you'd like to error handle.

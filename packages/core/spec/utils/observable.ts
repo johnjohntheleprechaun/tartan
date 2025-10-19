@@ -5,6 +5,7 @@ import {
     Observable,
     Subject,
 } from "rxjs";
+import { Logger, LogLevel } from "../../src/outputs/logger.js";
 
 /**
  * useful to perform filesystem operations only after the full observable flow has been processed
@@ -45,4 +46,14 @@ export function asyncFrom<T>(input: T[]): Observable<T> {
     setTimeout(func, 0, 0);
 
     return subj;
+}
+
+export function errorPromise(): Promise<void> {
+    return new Promise((res) => {
+        spyOn(Logger, "log").and.callFake((_, level) => {
+            if (level === LogLevel.Error) {
+                res();
+            }
+        });
+    });
 }
