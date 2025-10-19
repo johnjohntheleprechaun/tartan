@@ -133,12 +133,15 @@ export function processPage(
     // run it through the template
     const templateFunction: Observable<TemplateDelegate<HandlebarsInput>> =
         node.context.pipe(map((ctx) => ctx.template || noopHandlebarsTemplate));
-    const templatedPage: Observable<string> = combineLatest([
+    const renderedTemplate: Observable<string> = combineLatest([
         sourceProcessorOutput,
         sourceFilePath,
         children,
         node.context,
     ]).pipe(
+        share({
+            resetOnRefCountZero: false,
+        }),
         map<
             [SourceProcessorOutput, string, ProcessedNode[], FullTartanContext],
             HandlebarsInput
@@ -154,6 +157,7 @@ export function processPage(
             (input) => [input],
         ),
         efficientConcatMap(templateFunction),
+        gracefulError(node.id, node.path, "rendering the template"),
     );
 
     // check for assets
