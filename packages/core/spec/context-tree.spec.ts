@@ -45,7 +45,7 @@ describe("The context tree loader", () => {
                 directory: tmpDir,
                 rootContext,
             });
-            await spyCalledPromise;
+            await expectAsync(spyCalledPromise).toBeResolved();
             expect(spy).toHaveBeenCalledWith(
                 jasmine.anything(),
                 LogLevel.Error,
