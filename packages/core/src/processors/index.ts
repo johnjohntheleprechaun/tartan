@@ -29,18 +29,19 @@ export type ProcessedNode = {
      */
     derivedChildren: ProcessedNode[];
 };
-export type NodeProcessor = (params: {
+
+export type NodeProcessorInput = {
     node: ContextTreeNode;
     depth: number;
     outputDirectory: string;
     rootContext: FullTartanContext | Observable<FullTartanContext>;
     children: Observable<ProcessedNode[]>;
-}) => Observable<ProcessedNode>;
-/*
-export function processTreeNode(
-    node: ContextTreeNode,
-    depth: number,
-): Observable<ProcessedNode> {
+};
+export type NodeProcessorOutput = {
+    nodeInfo: Observable<ProcessedNode>;
+    change: Observable<void>;
+};
+export type NodeProcessor = (params: NodeProcessorInput) => NodeProcessorOutput;
     const processedChildren: Observable<ProcessedNode[]> = combineLatest([
         node.children,
         node.attached,

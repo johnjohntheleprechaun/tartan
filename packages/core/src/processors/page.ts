@@ -229,27 +229,41 @@ export const processPage: NodeProcessor = (params) => {
         map(([document]) => serialize(document)),
     );
 
-    // TODO: write files
-
-    // return info
-    return combineLatest([sourceProcessorOutput, assets, children]).pipe(
-        map<
-            [SourceProcessorOutput, ProcessedNode[], ProcessedNode[]],
-            ProcessedNode
-        >(([sourceProcessorOutput, assets, baseChildren]) => ({
-            type: "page",
-            depth,
-            outputPath: sourceProcessorOutput.outputDirectory
+    // write files
+    const outputPath: Observable<string> = sourceProcessorOutput.pipe(
+        map((output) =>
+            output.outputDirectory
                 ? path.join(
                       path.dirname(outputDirectory),
-                      sourceProcessorOutput.outputDirectory,
+                      output.outputDirectory,
                   )
                 : outputDirectory,
+        ),
+    );
+
+    // return info
+    const nodeInfo: Observable<ProcessedNode> = combineLatest([
+        sourceProcessorOutput,
+        assets,
+        children,
+        outputPath,
+    ]).pipe(
+        map<
+            [SourceProcessorOutput, ProcessedNode[], ProcessedNode[], string],
+            ProcessedNode
+        >(([sourceProcessorOutput, assets, baseChildren, outputPath]) => ({
+            type: "page",
+            depth,
+            outputPath: outputPath,
             extraMetadata: sourceProcessorOutput.extraMetadata || {},
             baseChildren: baseChildren,
             derivedChildren: assets,
         })),
     );
+    return {
+        nodeInfo,
+        change: nodeUpdateSubject,
+    };
 };
 
 function nodeIsTemplate(node: TreeTypes.Node): node is TreeTypes.Template {
