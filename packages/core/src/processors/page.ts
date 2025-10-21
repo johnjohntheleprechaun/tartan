@@ -6,13 +6,12 @@ import {
     of,
     share,
     shareReplay,
-    Subject,
     switchMap,
     tap,
 } from "rxjs";
-import { ContextTreeNode } from "../context-tree.js";
+import { ContextTreeNode, loadContextTreeNode } from "../context-tree.js";
 import { loadFile } from "../inputs/files.js";
-import { ProcessedAsset, ProcessedNode } from "./index.js";
+import { NodeProcessor, ProcessedNode } from "./index.js";
 import {
     SourceProcessor,
     SourceProcessorInput,
@@ -24,6 +23,14 @@ import { FullTartanContext } from "../types/tartan-context.js";
 import { TemplateDelegate } from "handlebars";
 import { HandlebarsInput } from "../types/handlebars.js";
 import { gracefulError } from "../outputs/error.js";
+import {
+    parse,
+    defaultTreeAdapter as adapter,
+    DefaultTreeAdapterTypes as TreeTypes,
+    Token,
+    serialize,
+} from "parse5";
+import { processAsset } from "./asset.js";
 
 export type PageProcessorInput = {
     node: ContextTreeNode;
@@ -40,32 +47,11 @@ const noopHandlebarsTemplate: TemplateDelegate<HandlebarsInput> = (
 export type ProcessedPage = {
     outputDirectory: string;
     extraMetadata: { [key: string]: any };
-    assets: ProcessedAsset[];
+    derivedChildren: ProcessedNode[];
 };
 
-type FileToBeWritten = {
-    path: string;
-    contents: Buffer;
-};
-export function processPage(
-    /**
-     * The node being processed
-     */
-    node: ContextTreeNode,
-    /**
-     * Distance from the root node
-     */
-    depth: number,
-    /**
-     * Fully processed child nodes
-     */
-    children: Observable<ProcessedNode[]>,
-    /**
-     * The fully resolved directory that everything should be outputted to
-     */
-    outputDirectory: string,
-): Observable<ProcessedPage> {
-    const fileOutputSubject: Subject<FileToBeWritten> = new Subject();
+export const processPage: NodeProcessor = (params) => {
+    const { node, depth, children, outputDirectory } = params;
 
     // create an observable for the resolved source file path
     const sourceFilePath = combineLatest([node.type, node.context]).pipe(
@@ -161,23 +147,118 @@ export function processPage(
     );
 
     // check for assets
-    const assets = of([]); // we'll do this in a bit
+    const documentAndAssets = renderedTemplate.pipe(
+        map((rendered) => parse(rendered)),
+        switchMap(
+            (
+                parsedDocument: TreeTypes.Document,
+            ): Observable<[TreeTypes.Document, ProcessedNode[]]> => {
+                const queue: TreeTypes.Node[] = [
+                    ...adapter.getChildNodes(parsedDocument),
+                ];
+                let i: number = 0;
+                const derivedNodes: Observable<ProcessedNode>[] = [];
 
-    // write files
+                // Go through all the nodes in the document
+                while (i < queue.length) {
+                    const node = queue[i];
+                    // only element nodes would have dependencies
+                    if (adapter.isElementNode(node)) {
+                        /*
+                         * discover referenced assets
+                         */
+                        const attrList: Token.Attribute[] =
+                            adapter.getAttrList(node);
+                        attrList.forEach((attr) => {
+                            /*
+                             * Right now we're just checking the standard attributes that define dependencies
+                             * Eventually I'll figure out how to get information on web components that might use different attributes
+                             */
+                            if (attr.name === "src" || attr.name === "href") {
+                                /*
+                                 * load an asset node for the dependency
+                                 */
+                                const assetNode = loadContextTreeNode({
+                                    rootContext: params.rootContext,
+                                    directory: params.node.path, // the node path should be a directory because we're processing a page
+                                    filename: attr.value,
+                                    type: "asset",
+                                    parent: params.node,
+                                });
+                                derivedNodes.push(
+                                    processAsset({
+                                        node: assetNode,
+                                        depth: params.depth + 1,
+                                        rootContext: params.rootContext,
+                                        children: of([]),
+                                        outputDirectory: params.outputDirectory,
+                                    }).pipe(
+                                        tap(
+                                            (result) =>
+                                                (attr.value =
+                                                    result.outputPath),
+                                        ),
+                                    ),
+                                );
+                            }
+                            // TODO: srcset support
+                        });
+                    }
+
+                    // add children to the queue
+                    if (adapter.isElementNode(node)) {
+                        queue.push(...adapter.getChildNodes(node));
+                    }
+                    if (nodeIsTemplate(node)) {
+                        queue.push(...adapter.getChildNodes(node.content));
+                    }
+
+                    i++;
+                }
+
+                return (
+                    derivedNodes.length > 0
+                        ? combineLatest(derivedNodes)
+                        : of([])
+                ).pipe(
+                    map<ProcessedNode[], [TreeTypes.Document, ProcessedNode[]]>(
+                        (assets: ProcessedNode[]) => [parsedDocument, assets],
+                    ),
+                );
+            },
+        ),
+        gracefulError(node.id, node.path, "scanning for assets"),
+    );
+    const assets = documentAndAssets.pipe(map(([, assets]) => assets));
+    const fullProcesseDocument: Observable<string> = documentAndAssets.pipe(
+        map(([document]) => serialize(document)),
+    );
+
+    // TODO: write files
 
     // return info
-    return combineLatest([sourceProcessorOutput, assets]).pipe(
-        map(([sourceProcessorOutput, assets]) => ({
-            outputDirectory: sourceProcessorOutput.outputDirectory
+    return combineLatest([sourceProcessorOutput, assets, children]).pipe(
+        map<
+            [SourceProcessorOutput, ProcessedNode[], ProcessedNode[]],
+            ProcessedNode
+        >(([sourceProcessorOutput, assets, baseChildren]) => ({
+            type: "page",
+            depth,
+            outputPath: sourceProcessorOutput.outputDirectory
                 ? path.join(
                       path.dirname(outputDirectory),
                       sourceProcessorOutput.outputDirectory,
                   )
                 : outputDirectory,
-            assets: assets,
             extraMetadata: sourceProcessorOutput.extraMetadata || {},
+            baseChildren: baseChildren,
+            derivedChildren: assets,
         })),
     );
+};
+
+function nodeIsTemplate(node: TreeTypes.Node): node is TreeTypes.Template {
+    return adapter.isElementNode(node) && node.nodeName === "template";
 }
 
 /*

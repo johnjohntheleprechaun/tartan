@@ -1,14 +1,6 @@
-import {
-    combineLatest,
-    distinctUntilChanged,
-    filter,
-    map,
-    Observable,
-    of,
-    switchMap,
-} from "rxjs";
+import { Observable } from "rxjs";
 import { ContextTreeNode, NodeType } from "../context-tree.js";
-import { processPage } from "./page.js";
+import { FullTartanContext } from "../types/tartan-context.js";
 
 export type ProcessedNode = {
     /*
@@ -27,26 +19,23 @@ export type ProcessedNode = {
     /*
      * Any extra metadata provided by the source processors.
      */
-    extraMeta: { [key: string]: any };
+    extraMetadata: { [key: string]: any };
     /*
-     * Any assets attached to this node
+     * Child nodes that existed before processing
      */
-    assets: ProcessedAsset[];
+    baseChildren: ProcessedNode[];
     /*
-     * Child nodes.
+     * Child nodes that were created during processing
      */
-    processedChildren: ProcessedNode[];
+    derivedChildren: ProcessedNode[];
 };
-export type ProcessedAsset = {
-    /*
-     * The filepath this asset was outputted to.
-     */
-    outputPath: string;
-    /*
-     * Metadata provided by asset processors.
-     */
-    extraMeta: { [key: string]: any };
-};
+export type NodeProcessor = (params: {
+    node: ContextTreeNode;
+    depth: number;
+    outputDirectory: string;
+    rootContext: FullTartanContext | Observable<FullTartanContext>;
+    children: Observable<ProcessedNode[]>;
+}) => Observable<ProcessedNode>;
 /*
 export function processTreeNode(
     node: ContextTreeNode,

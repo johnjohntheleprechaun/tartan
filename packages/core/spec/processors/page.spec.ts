@@ -5,7 +5,6 @@ import { SourceProcessorInput } from "../../src/types/source-processor.js";
 import { processPage } from "../../src/processors/page.js";
 import { makeTempFiles } from "../utils/filesystem.js";
 import path from "node:path";
-import { asyncFrom, errorPromise } from "../utils/observable.js";
 import { Logger, LogLevel } from "../../src/outputs/logger.js";
 
 describe("The page processor", () => {
@@ -34,12 +33,13 @@ describe("The page processor", () => {
             "index.md": "uwu this doesn't matter uwu",
         });
 
-        const processedPage = processPage(
+        const processedPage = processPage({
             node,
-            0,
-            of([]),
-            path.join(tmpDir, "output"),
-        );
+            depth: 0,
+            children: of([]),
+            outputDirectory: path.join(tmpDir, "output"),
+            rootContext: context,
+        });
 
         const result = await firstValueFrom(processedPage);
         expect(result.extraMetadata).toEqual({
@@ -68,15 +68,16 @@ describe("The page processor", () => {
             "index.md": "uwu this doesn't matter uwu",
         });
 
-        const processedPage = processPage(
+        const processedPage = processPage({
             node,
-            0,
-            of([]),
-            path.join(tmpDir, "output"),
-        );
+            depth: 0,
+            children: of([]),
+            outputDirectory: path.join(tmpDir, "output"),
+            rootContext: context,
+        });
 
         const result = await firstValueFrom(processedPage);
-        expect(result.outputDirectory).toBe(path.join(tmpDir, "chickennugget"));
+        expect(result.outputPath).toBe(path.join(tmpDir, "chickennugget"));
     });
     it("should block output directory modifications that go above the node's directory", async () => {
         let spyCalled: () => void = () => {};
@@ -119,12 +120,13 @@ describe("The page processor", () => {
         const tmpDir = await makeTempFiles({
             "index.md": "uwu this doesn't matter uwu",
         });
-        const processedPage = processPage(
+        const processedPage = processPage({
             node,
-            0,
-            of([]),
-            path.join(tmpDir, "output"),
-        );
+            depth: 0,
+            children: of([]),
+            outputDirectory: path.join(tmpDir, "output"),
+            rootContext: first,
+        });
         processedPage.subscribe();
         await expectAsync(spyCalledPromise).toBeResolved();
         expect(spy).toHaveBeenCalledWith(jasmine.anything(), LogLevel.Error);
