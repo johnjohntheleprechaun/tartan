@@ -44,12 +44,6 @@ const noopHandlebarsTemplate: TemplateDelegate<HandlebarsInput> = (
     input: HandlebarsInput,
 ) => input.sourceContents;
 
-export type ProcessedPage = {
-    outputDirectory: string;
-    extraMetadata: { [key: string]: any };
-    derivedChildren: ProcessedNode[];
-};
-
 export const processPage: NodeProcessor = (params) => {
     const { node, depth, children, outputDirectory } = params;
 
@@ -148,6 +142,7 @@ export const processPage: NodeProcessor = (params) => {
 
     // check for assets
     const documentAndAssets = renderedTemplate.pipe(
+        share({ resetOnRefCountZero: false }),
         map((rendered) => parse(rendered)),
         switchMap(
             (
