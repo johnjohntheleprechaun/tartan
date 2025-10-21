@@ -131,75 +131,90 @@ export function getProperty(object: any, path: (string | symbol)[]): any {
 }
 
 export const rootDependencySymbol = Symbol("root");
-function watchObject<T extends object>(
+export function watchObject<T extends object>(
     obj: T,
     callback: (propPath: (string | symbol)[]) => void,
 ): T {
-    const root: T = Object.create(Object.getPrototypeOf(obj));
-    for (const prop of Object.getOwnPropertyNames(obj)) {
-        const descriptor = Object.getOwnPropertyDescriptor(
-            obj,
-            prop,
-        ) as PropertyDescriptor; // it shouldn't be possible to be undefined?
-        if (typeof descriptor.value === "object" && descriptor.value !== null) {
-            Object.defineProperty(root, prop, {
-                ...descriptor,
-                value: watchObject(descriptor.value, (propPath) =>
-                    callback([prop, ...propPath]),
-                ),
-            });
-        } else {
-            Object.defineProperty(root, prop, descriptor);
-        }
-    }
-    Object.freeze(root);
-
-    // Some proxy methods aren't implemented, since the object is set to be read-only
-    // every get operation on a property is considered to be rootDependency, *unless* the return value of the regular get is an object.
-    return new Proxy(root, {
-        apply(target, thisArg, argArray) {
-            callback([rootDependencySymbol]);
-            return Reflect.apply(target as Function, thisArg, argArray);
-        },
-        construct(target, argArray, newTarget) {
-            callback([rootDependencySymbol]);
-            return Reflect.construct(
-                target as (this: any, ...args: any) => any, // fuckin trust me bro
-                argArray,
-                newTarget,
-            );
-        },
-        // defineProperty() not implemented
-        // deleteProperty() not implemented
-        get(target, property, receiver) {
-            const val = Reflect.get(target, property, receiver);
-            if (typeof val === "object" && val !== null) {
-                // nothing
-                // just don't do anything unless it's a real dependency
+    const prototype = Object.getPrototypeOf(obj);
+    /*
+     * It turns out that things get really complicated and messy when you start screwing with buffers (and probably other native types).
+     * Since my use case is pretty much exclusively basic objects that could've been created from JSON, there's no point in messing with anything more complex.
+     */
+    if (prototype === Object.prototype) {
+        const root: T = Object.create(Object.getPrototypeOf(obj));
+        for (const prop of Object.getOwnPropertyNames(obj)) {
+            const descriptor = Object.getOwnPropertyDescriptor(
+                obj,
+                prop,
+            ) as PropertyDescriptor; // it shouldn't be possible to be undefined since the prop is guaranteed to exist
+            if (
+                typeof descriptor.value === "object" &&
+                descriptor.value !== null
+            ) {
+                Object.defineProperty(root, prop, {
+                    ...descriptor,
+                    value: watchObject(descriptor.value, (propPath) =>
+                        callback([prop, ...propPath]),
+                    ),
+                });
             } else {
-                callback([property, rootDependencySymbol]);
+                Object.defineProperty(root, prop, descriptor);
             }
-            return val;
-        },
-        getOwnPropertyDescriptor(target, property) {
-            callback([property, rootDependencySymbol]);
-            return Reflect.getOwnPropertyDescriptor(target, property);
-        },
-        getPrototypeOf(target) {
-            callback([rootDependencySymbol]);
-            return Reflect.getPrototypeOf(target);
-        },
-        has(target, property) {
-            callback([property, rootDependencySymbol]);
-            return Reflect.has(target, property);
-        },
-        // isExtensible() not implemented
-        ownKeys(target) {
-            callback([rootDependencySymbol]);
-            return Reflect.ownKeys(target);
-        },
-        // preventExtensions() not implemented
-        // set() not implemented
-        // setPrototypeOf() not implemented
-    });
+        }
+        Object.freeze(root);
+        // Some proxy methods aren't implemented, since the object is set to be read-only
+        // every get operation on a property is considered to be rootDependency, *unless* the return value of the regular get is an object.
+        return new Proxy(root, {
+            apply(target, thisArg, argArray) {
+                callback([rootDependencySymbol]);
+                return Reflect.apply(target as Function, thisArg, argArray);
+            },
+            construct(target, argArray, newTarget) {
+                callback([rootDependencySymbol]);
+                return Reflect.construct(
+                    target as (this: any, ...args: any) => any, // fuckin trust me bro
+                    argArray,
+                    newTarget,
+                );
+            },
+            // defineProperty() not implemented
+            // deleteProperty() not implemented
+            get(target, property, receiver) {
+                const val = Reflect.get(target, property, receiver);
+                if (
+                    typeof val === "object" &&
+                    val !== null &&
+                    Object.getPrototypeOf(val) === Object.prototype
+                ) {
+                    // nothing
+                    // just don't do anything unless it's a real dependency
+                } else {
+                    callback([property, rootDependencySymbol]);
+                }
+                return val;
+            },
+            getOwnPropertyDescriptor(target, property) {
+                callback([property, rootDependencySymbol]);
+                return Reflect.getOwnPropertyDescriptor(target, property);
+            },
+            getPrototypeOf(target) {
+                callback([rootDependencySymbol]);
+                return Reflect.getPrototypeOf(target);
+            },
+            has(target, property) {
+                callback([property, rootDependencySymbol]);
+                return Reflect.has(target, property);
+            },
+            // isExtensible() not implemented
+            ownKeys(target) {
+                callback([rootDependencySymbol]);
+                return Reflect.ownKeys(target);
+            },
+            // preventExtensions() not implemented
+            // set() not implemented
+            // setPrototypeOf() not implemented
+        });
+    } else {
+        return obj;
+    }
 }
