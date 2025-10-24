@@ -1,6 +1,21 @@
-import { firstValueFrom, Observable, of, take, timeout, toArray } from "rxjs";
-import { efficientConcatMap } from "../../src/processors/operators.js";
-import { asyncFrom } from "../utils/observable.js";
+import {
+    firstValueFrom,
+    map,
+    Observable,
+    of,
+    Subject,
+    take,
+    timeout,
+    toArray,
+} from "rxjs";
+import {
+    efficientConcatMap,
+    watchObject,
+} from "../../src/processors/operators.js";
+import {
+    asyncFrom,
+    performOperationAfterEachEmission,
+} from "../utils/observable.js";
 
 describe("The efficient concat map operator", () => {
     it("should at least execute the function once", async () => {
@@ -155,5 +170,55 @@ describe("The efficient concat map operator", () => {
             observable.pipe(take(2), toArray()),
         );
         expect(results).toEqual([2, 10]);
+    });
+    it("should treat objects with prototypes as values, not objects", async () => {
+        type Param = {
+            objectWithProto: Buffer; // cause that's what is gonna occur usually
+            objectWithoutProto: { [key: string]: string };
+        };
+
+        const first: Param = {
+            objectWithProto: Buffer.from("hello world"),
+            objectWithoutProto: {
+                hello: "world",
+            },
+        };
+        const func = (input: Param) => {
+            `hello ${input.objectWithoutProto.hello}`;
+            `${input.objectWithProto.toString()}`;
+        };
+
+        const paramSubject: Subject<Param> = new Subject();
+        const observable = paramSubject.pipe(
+            map((param) => [param] as [input: Param]),
+            efficientConcatMap(func),
+            timeout({
+                each: 50,
+                with: () => of(Infinity),
+            }),
+        );
+        setTimeout(() => paramSubject.next(first));
+        let buff = Buffer.from("");
+        const results = await performOperationAfterEachEmission(observable, [
+            () => {
+                paramSubject.next({
+                    objectWithProto: buff,
+                    objectWithoutProto: {
+                        hello: "world",
+                    },
+                });
+            },
+            () => {
+                // this should not result in a recall
+                paramSubject.next({
+                    objectWithProto: buff,
+                    objectWithoutProto: {
+                        hello: "world",
+                    },
+                });
+            },
+        ]);
+
+        expect(results).toEqual([undefined, undefined, Infinity]);
     });
 });
