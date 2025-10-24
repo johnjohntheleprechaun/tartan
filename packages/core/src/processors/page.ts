@@ -180,14 +180,18 @@ export const processPage: NodeProcessor = (params) => {
                                     type: "asset",
                                     parent: params.node,
                                 });
+                                const processedAsset = processAsset({
+                                    node: assetNode,
+                                    depth: params.depth + 1,
+                                    rootContext: params.rootContext,
+                                    children: of([]),
+                                    outputDirectory: outputDirectory,
+                                });
+                                processedAsset.change.subscribe(
+                                    nodeUpdateSubject,
+                                );
                                 derivedNodes.push(
-                                    processAsset({
-                                        node: assetNode,
-                                        depth: params.depth + 1,
-                                        rootContext: params.rootContext,
-                                        children: of([]),
-                                        outputDirectory: params.outputDirectory,
-                                    }).pipe(
+                                    processedAsset.nodeInfo.pipe(
                                         tap(
                                             (result) =>
                                                 (attr.value =
