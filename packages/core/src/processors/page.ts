@@ -6,12 +6,14 @@ import {
     of,
     share,
     shareReplay,
+    Subject,
     switchMap,
     tap,
 } from "rxjs";
 import { ContextTreeNode, loadContextTreeNode } from "../context-tree.js";
 import { loadFile } from "../inputs/files.js";
 import { NodeProcessor, ProcessedNode } from "./index.js";
+import { FileToBeWritten } from "../outputs/fs.js";
 import {
     SourceProcessor,
     SourceProcessorInput,
@@ -31,6 +33,7 @@ import {
     serialize,
 } from "parse5";
 import { processAsset } from "./asset.js";
+import { writeFile } from "../outputs/fs.js";
 
 export type PageProcessorInput = {
     node: ContextTreeNode;
@@ -46,6 +49,10 @@ const noopHandlebarsTemplate: TemplateDelegate<HandlebarsInput> = (
 
 export const processPage: NodeProcessor = (params) => {
     const { node, depth, children, outputDirectory } = params;
+
+    const nodeUpdateSubject: Subject<void> = new Subject();
+    const fileOutputSubject: Subject<FileToBeWritten> = new Subject();
+    fileOutputSubject.pipe(writeFile()).subscribe(nodeUpdateSubject);
 
     // create an observable for the resolved source file path
     const sourceFilePath = combineLatest([node.type, node.context]).pipe(
@@ -109,6 +116,17 @@ export const processPage: NodeProcessor = (params) => {
             }),
             gracefulError(node.id, node.path, "running the source processor"),
         );
+    const resolvedOutputDirectory: Observable<string> =
+        sourceProcessorOutput.pipe(
+            map((output) =>
+                output.outputDirectory
+                    ? path.join(
+                          path.dirname(outputDirectory),
+                          output.outputDirectory,
+                      )
+                    : outputDirectory,
+            ),
+        );
 
     // run it through the template
     const templateFunction: Observable<TemplateDelegate<HandlebarsInput>> =
@@ -141,13 +159,20 @@ export const processPage: NodeProcessor = (params) => {
     );
 
     // check for assets
-    const documentAndAssets = renderedTemplate.pipe(
+    const documentAndAssets = combineLatest([
+        renderedTemplate,
+        resolvedOutputDirectory,
+    ]).pipe(
         share({ resetOnRefCountZero: false }),
-        map((rendered) => parse(rendered)),
+        map(
+            ([rendered, outputPath]) =>
+                [parse(rendered), outputPath] as [TreeTypes.Document, string],
+        ),
         switchMap(
-            (
-                parsedDocument: TreeTypes.Document,
-            ): Observable<[TreeTypes.Document, ProcessedNode[]]> => {
+            ([parsedDocument, outputDirectory]: [
+                TreeTypes.Document,
+                string,
+            ]): Observable<[TreeTypes.Document, ProcessedNode[]]> => {
                 const queue: TreeTypes.Node[] = [
                     ...adapter.getChildNodes(parsedDocument),
                 ];
@@ -234,23 +259,24 @@ export const processPage: NodeProcessor = (params) => {
     );
 
     // write files
-    const outputPath: Observable<string> = sourceProcessorOutput.pipe(
-        map((output) =>
-            output.outputDirectory
-                ? path.join(
-                      path.dirname(outputDirectory),
-                      output.outputDirectory,
-                  )
-                : outputDirectory,
-        ),
-    );
+    combineLatest([fullProcesseDocument, resolvedOutputDirectory])
+        .pipe(
+            map(
+                ([document, outputDir]): FileToBeWritten => ({
+                    contents: Buffer.from(document),
+                    path: path.join(outputDir, "index.html"),
+                }),
+            ),
+            writeFile(),
+        )
+        .subscribe(nodeUpdateSubject);
 
     // return info
     const nodeInfo: Observable<ProcessedNode> = combineLatest([
         sourceProcessorOutput,
         assets,
         children,
-        outputPath,
+        resolvedOutputDirectory,
     ]).pipe(
         map<
             [SourceProcessorOutput, ProcessedNode[], ProcessedNode[], string],

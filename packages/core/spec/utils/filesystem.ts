@@ -3,6 +3,10 @@ import fsSync from "node:fs";
 import path, { dirname, join, resolve } from "node:path";
 import { fileChanged } from "../helpers/file-ops.js";
 
+export async function getTempFile(name: string): Promise<Buffer> {
+    return fs.readFile(join(process.env["TMP_DIR"] || "", name));
+}
+
 export async function makeTempFile(
     name: string,
     contents: string,

@@ -3,13 +3,17 @@ import {
     ContextTreeNode,
     loadContextTreeNode,
 } from "../../src/context-tree.js";
-import { FullTartanContext } from "../../src/types/tartan-context.js";
+import {
+    FullTartanContext,
+    TartanContextFile,
+} from "../../src/types/tartan-context.js";
 import { SourceProcessorInput } from "../../src/types/source-processor.js";
 import { processPage } from "../../src/processors/page.js";
-import { makeTempFiles } from "../utils/filesystem.js";
+import { getTempFile, makeTempFiles } from "../utils/filesystem.js";
 import path from "node:path";
 import { Logger, LogLevel } from "../../src/outputs/logger.js";
-import { ProcessedNode } from "../../src/index.js";
+import { ProcessedNode } from "../../src/processors/index.js";
+import { parse, serialize } from "parse5";
 
 describe("The page processor", () => {
     it("should return metadata from the source processor", async () => {
@@ -135,6 +139,100 @@ describe("The page processor", () => {
         await expectAsync(spyCalledPromise).toBeResolved();
         expect(spy).toHaveBeenCalledWith(jasmine.anything(), LogLevel.Error);
     });
+    it("should write the page to the output directory", async () => {
+        const rootContext: FullTartanContext = {
+            pageMode: "directory",
+            pageSource: "index.html",
+        };
+
+        const tmpDir = await makeTempFiles({
+            "index.html": "<p>hello world</p>",
+        });
+        const node = loadContextTreeNode({
+            directory: tmpDir,
+            rootContext,
+        });
+        const processedNode = processPage({
+            node,
+            depth: 0,
+            rootContext,
+            outputDirectory: path.join(tmpDir, "output"),
+            children: of([]),
+        });
+
+        await firstValueFrom(processedNode.change);
+        const tempFile = await getTempFile("output/index.html");
+        expect(tempFile.toString()).toEqual(
+            serialize(parse("<p>hello world</p>")),
+        );
+    });
+    it("should render the template properly", async () => {
+        const rootContext: FullTartanContext = {
+            pageMode: "directory",
+            pageSource: "index.txt",
+        };
+        const localContext: TartanContextFile = {
+            template: "./templ.hbs",
+        };
+        const tmpDir = await makeTempFiles({
+            "index.txt": "hello world",
+            "templ.hbs": "<p>{{sourceContents}}</p>",
+            "tartan.context.json": JSON.stringify(localContext),
+        });
+
+        const node = loadContextTreeNode({
+            directory: tmpDir,
+            rootContext,
+        });
+
+        const processedNode = processPage({
+            node,
+            depth: 0,
+            rootContext,
+            outputDirectory: path.join(tmpDir, "output"),
+            children: of([]),
+        });
+
+        await firstValueFrom(processedNode.change);
+        const outputtedPage = await getTempFile("output/index.html");
+        expect(outputtedPage.toString()).toBe(
+            serialize(parse("<p>hello world</p>")),
+        );
+    });
+    it("should use the output from the source processor", async () => {
+        const rootContext: FullTartanContext = {
+            pageMode: "directory",
+            pageSource: "index.txt",
+        };
+        const localContext: TartanContextFile = {
+            sourceProcessor: "./processor.ts",
+        };
+        const tmpDir = await makeTempFiles({
+            "index.txt": "hello world",
+            "processor.ts":
+                'export default () => ({processedContents: "source processor output"})',
+            "tartan.context.json": JSON.stringify(localContext),
+        });
+
+        const node = loadContextTreeNode({
+            directory: tmpDir,
+            rootContext,
+        });
+
+        const processedNode = processPage({
+            node,
+            depth: 0,
+            rootContext,
+            outputDirectory: path.join(tmpDir, "output"),
+            children: of([]),
+        });
+
+        await firstValueFrom(processedNode.change);
+        const outputtedPage = await getTempFile("output/index.html");
+        expect(outputtedPage.toString()).toBe(
+            serialize(parse("source processor output")),
+        );
+    });
     describe("when checking for assets", () => {
         it("should load an asset as a derived child", async () => {
             const rootContext: FullTartanContext = {
@@ -157,7 +255,7 @@ describe("The page processor", () => {
                     children: of([]),
                     depth: 0,
                     rootContext,
-                    outputDirectory: "dummy",
+                    outputDirectory: path.join(tmpDir, "output"),
                 }).nodeInfo,
             );
 
