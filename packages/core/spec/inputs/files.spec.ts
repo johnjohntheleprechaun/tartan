@@ -139,6 +139,7 @@ describe("The object loader", () => {
         const fileObservable = loadObjectFromFile(
             path.join(parsedFilename.dir, parsedFilename.name),
             of(true),
+            {},
         );
         const result = await firstValueFrom(fileObservable);
         expect(result).toEqual(object);
@@ -156,6 +157,7 @@ describe("The object loader", () => {
         const fileObservable = loadObjectFromFile(
             path.join(parsedFilename.dir, parsedFilename.name),
             of(true),
+            {},
         );
 
         const result = await firstValueFrom(fileObservable);
@@ -178,6 +180,7 @@ describe("The object loader", () => {
         const fileObservable = loadObjectFromFile(
             path.join(parsedFilename.dir, parsedFilename.name),
             of(true),
+            {},
         );
 
         const result = await firstValueFrom(fileObservable);
@@ -199,6 +202,7 @@ describe("The object loader", () => {
         const fileObservable = loadObjectFromFile(
             path.join(parsedFilename.dir, parsedFilename.name),
             of(true),
+            {},
         );
 
         const results = await performOperationAfterEachEmission(
@@ -235,6 +239,7 @@ describe("The object loader", () => {
         const objectObservable = loadObjectFromFile(
             path.join(parsedFilename.dir, parsedFilename.name),
             of(true),
+            {},
         );
 
         const results = await performOperationAfterEachEmission(

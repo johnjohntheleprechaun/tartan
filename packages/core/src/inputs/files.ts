@@ -49,7 +49,7 @@ const extensionIndexMap: { [key: string]: number } =
 export function loadObjectFromFile<T>(
     basename: string,
     onlyWhile: Observable<boolean>,
-    defaultIfNoFileExists?: T,
+    defaultIfNoFileExists: T,
 ): Observable<T> {
     const reloadSubject = new Subject<void>();
     const watcher = new FileWatcher(reloadSubject);
@@ -83,9 +83,7 @@ export function loadObjectFromFile<T>(
             // parse the file
             if (!matchingFiles[0]) {
                 // No available matched files, return the default if none existed
-                return defaultIfNoFileExists
-                    ? of(defaultIfNoFileExists)
-                    : undefined;
+                return of(defaultIfNoFileExists);
             }
 
             const pathToLoad = path.parse(
