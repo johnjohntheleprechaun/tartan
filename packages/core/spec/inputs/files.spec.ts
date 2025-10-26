@@ -8,6 +8,7 @@ import {
     makeTempFile,
     performOperationAfterEachEmission,
     removeTempFile,
+    tempDir,
     updateTempFile,
 } from "../utils/index.js";
 import path from "path";
@@ -72,9 +73,7 @@ describe("The file watcher", () => {
     it("should watch a glob pattern", async () => {
         const changeSubject: Subject<void> = new Subject();
         const watcher = new FileWatcher(changeSubject);
-        watcher.setWatchedPaths([
-            path.join(process.env["TMP_DIR"] as string, "*.txt"),
-        ]);
+        watcher.setWatchedPaths([path.join(tempDir(), "*.txt")]);
         const res = performOperationAfterEachEmission(changeSubject, []);
         await makeTempFile("poopshit.txt", "asdlfkjansldfjn");
 
@@ -250,7 +249,7 @@ describe("The object loader", () => {
         };
 
         const objectObservable = loadObjectFromFile(
-            path.join(process.env["TMP_DIR"] as string, "not-a-real-basename"),
+            path.join(tempDir(), "not-a-real-basename"),
             of(true),
             defaultObject,
         );
@@ -267,7 +266,7 @@ describe("The object loader", () => {
         };
 
         const objectObservable = loadObjectFromFile(
-            path.join(process.env["TMP_DIR"] as string, "object"),
+            path.join(tempDir(), "object"),
             of(true),
             defaultObject,
         );

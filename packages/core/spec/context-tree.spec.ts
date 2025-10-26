@@ -13,6 +13,7 @@ import {
     TartanContextFile,
 } from "../src/types/tartan-context.js";
 import {
+    tempDir,
     makeTempFile,
     makeTempFiles,
     performOperationAfterEachEmission,
@@ -135,7 +136,7 @@ describe("The context tree loader", () => {
                 pageSource: "yourmom.html",
             };
             const node = loadContextTreeNode({
-                directory: process.env["TMP_DIR"] as string,
+                directory: tempDir(),
                 rootContext,
             });
 
@@ -163,7 +164,7 @@ describe("The context tree loader", () => {
             );
 
             const node = loadContextTreeNode({
-                directory: process.env["TMP_DIR"] as string,
+                directory: tempDir(),
                 rootContext,
             });
 
@@ -180,7 +181,7 @@ describe("The context tree loader", () => {
             };
 
             const node = loadContextTreeNode({
-                directory: process.env["TMP_DIR"] as string,
+                directory: tempDir(),
                 rootContext,
             });
 
@@ -221,7 +222,7 @@ describe("The context tree loader", () => {
             );
 
             const node = loadContextTreeNode({
-                directory: process.env["TMP_DIR"] as string,
+                directory: tempDir(),
                 rootContext,
             });
 
@@ -253,7 +254,7 @@ describe("The context tree loader", () => {
 
             const node = loadContextTreeNode({
                 rootContext: { pageMode: "directory", pageSource: "asdf" },
-                directory: process.env["TMP_DIR"] as string,
+                directory: tempDir(),
             });
 
             const results = await performOperationAfterEachEmission(
@@ -281,7 +282,7 @@ describe("The context tree loader", () => {
         it("should allow rootContext param to be observable", async () => {
             const rootContext: Subject<FullTartanContext> = new Subject();
             const node = loadContextTreeNode({
-                directory: process.env["TMP_DIR"] as string,
+                directory: tempDir(),
                 rootContext,
             });
             rootContext.next({
@@ -333,7 +334,7 @@ describe("The context tree loader", () => {
             };
 
             const childNode = loadContextTreeNode({
-                directory: process.env["TMP_DIR"] as string,
+                directory: tempDir(),
                 parent,
                 rootContext,
             });
@@ -372,7 +373,7 @@ describe("The context tree loader", () => {
             );
 
             const childNode = loadContextTreeNode({
-                directory: process.env["TMP_DIR"] as string,
+                directory: tempDir(),
                 parent,
                 rootContext,
             });
@@ -532,7 +533,7 @@ describe("The context tree loader", () => {
                 };
                 const first = await makeTempFile("first.md", "uwuw");
                 const node = loadContextTreeNode({
-                    directory: process.env["TMP_DIR"] as string,
+                    directory: tempDir(),
                     rootContext,
                 });
 

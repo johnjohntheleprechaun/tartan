@@ -9,7 +9,7 @@ import {
 } from "../../src/types/tartan-context.js";
 import { SourceProcessorInput } from "../../src/types/source-processor.js";
 import { processPage } from "../../src/processors/page.js";
-import { getTempFile, makeTempFiles } from "../utils/filesystem.js";
+import { getTempFile, makeTempFiles, tempDir } from "../utils/filesystem.js";
 import path from "node:path";
 import { Logger, LogLevel } from "../../src/outputs/logger.js";
 import { ProcessedNode } from "../../src/processors/index.js";
@@ -31,7 +31,7 @@ describe("The page processor", () => {
         const node: ContextTreeNode = {
             type: of("page"),
             children: of(),
-            path: "doesn't matter",
+            path: tempDir(),
             context: of(context),
             inheritableContext: of({} as FullTartanContext),
             attached: of(true),
@@ -66,7 +66,7 @@ describe("The page processor", () => {
         const node: ContextTreeNode = {
             type: of("page"),
             children: of(),
-            path: "doesn't matter",
+            path: tempDir(),
             context: of(context),
             inheritableContext: of({} as FullTartanContext),
             attached: of(true),

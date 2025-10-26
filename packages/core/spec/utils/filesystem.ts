@@ -6,6 +6,9 @@ import { fileChanged } from "../helpers/file-ops.js";
 export async function getTempFile(name: string): Promise<Buffer> {
     return fs.readFile(join(process.env["TMP_DIR"] || "", name));
 }
+export function tempDir(): string {
+    return process.env["TMP_DIR"] as string;
+}
 
 export async function makeTempFile(
     name: string,
