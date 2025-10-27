@@ -1,4 +1,4 @@
-import { firstValueFrom, of } from "rxjs";
+import { firstValueFrom, of, timeout } from "rxjs";
 import {
     makeTempFile,
     performOperationAfterEachEmission,
@@ -62,5 +62,25 @@ describe("The module loader", () => {
         );
 
         expect(results).toEqual([50, 20]);
+    });
+    it("should apply onlyWhile", async () => {
+        const file: string = await makeTempFile(
+            "file",
+            'export default "file contents"',
+        );
+        const first = loadModule(file, of(true));
+        const second = loadModule(file, of(false));
+
+        expect(await firstValueFrom(first)).toEqual("file contents");
+        expect(
+            await firstValueFrom(
+                second.pipe(
+                    timeout({
+                        each: 100,
+                        with: () => of("timeout"),
+                    }),
+                ),
+            ),
+        ).toEqual("timeout");
     });
 });

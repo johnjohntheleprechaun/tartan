@@ -1,12 +1,16 @@
 import watcher from "@parcel/watcher";
-import path from "node:path";
+import path, { ParsedPath } from "node:path";
 import {
+    combineLatest,
     combineLatestWith,
     debounceTime,
+    distinctUntilChanged,
     filter,
     map,
+    MonoTypeOperatorFunction,
     Observable,
     of,
+    shareReplay,
     startWith,
     Subject,
     switchMap,
@@ -16,25 +20,46 @@ import { loadModule } from "./modules.js";
 import { minimatch } from "minimatch";
 
 export const DEBOUNCE_ENVIRONMENT_VARIABLE = "TARTAN_FILE_OPERATION_DEBOUNCE";
-export const defaultFileOperationDebounce = () =>
-    debounceTime(parseInt(process.env[DEBOUNCE_ENVIRONMENT_VARIABLE] || "100"));
+export function defaultFileOperationDebounce<T>(): MonoTypeOperatorFunction<T> {
+    return debounceTime(
+        parseInt(process.env[DEBOUNCE_ENVIRONMENT_VARIABLE] || "100"),
+    );
+}
 
+const fileCache: Map<string, Observable<Buffer>> = new Map();
 export function loadFile(
     filename: string,
     onlyWhile: Observable<boolean>,
 ): Observable<Buffer> {
+    const resolvedPath = path.resolve(filename);
+
+    const cachedObservable = fileCache.get(resolvedPath);
+    if (cachedObservable) {
+        return combineLatest([cachedObservable, onlyWhile]).pipe(
+            filter(([, shouldEmit]) => shouldEmit),
+            map(([a]) => a),
+        );
+    }
     const reloadSubject = new Subject<void>();
     const watcher = new FileWatcher(reloadSubject);
     watcher.setWatchedPaths([filename]);
-    return reloadSubject.pipe(
+    const fileObservable = reloadSubject.pipe(
         startWith(undefined),
-        combineLatestWith(onlyWhile),
-        filter(([_, shouldEmit]) => shouldEmit),
         defaultFileOperationDebounce(),
         switchMap(() => fs.readFile(filename).catch(() => Buffer.from([]))),
+        shareReplay({
+            refCount: false,
+            bufferSize: 1,
+        }),
+    );
+    fileCache.set(resolvedPath, fileObservable);
+    return combineLatest([fileObservable, onlyWhile]).pipe(
+        filter(([, shouldEmit]) => shouldEmit),
+        map(([a]) => a),
     );
 }
 
+const objectCache: Map<string, Observable<any>> = new Map();
 const objectFileExtensionOrder = [".ts", ".mts", ".js", ".mjs", ".json"];
 const objectFileExtensionSet = new Set(objectFileExtensionOrder);
 const moduleFileExtensions = new Set(objectFileExtensionOrder.slice(0, -1));
@@ -51,17 +76,29 @@ export function loadObjectFromFile<T>(
     onlyWhile: Observable<boolean>,
     defaultIfNoFileExists: T,
 ): Observable<T> {
+    const resolvedBasename = path.resolve(basename);
+    const cachedObject = objectCache.get(resolvedBasename);
+    if (cachedObject) {
+        return combineLatest([cachedObject, onlyWhile]).pipe(
+            filter(([_, shouldEmit]) => shouldEmit),
+            map(([a]) => a),
+        );
+    }
+
     const reloadSubject = new Subject<void>();
     const watcher = new FileWatcher(reloadSubject);
     watcher.setWatchedPaths(
         objectFileExtensionOrder.map((extension) => `${basename}${extension}`), // watch all relevant extensions
     );
 
-    return reloadSubject.pipe(
-        startWith(undefined),
+    let lastPath: string | undefined = undefined;
+    const objectObservable = reloadSubject.pipe(
         combineLatestWith(onlyWhile),
         filter(([_, shouldEmit]) => shouldEmit),
+        map(([a]) => a),
+        startWith(undefined),
         defaultFileOperationDebounce(),
+        // considering it safe to use concatMap for Promises
         switchMap(async () => {
             const files = await fs.readdir(path.dirname(basename), {
                 withFileTypes: true,
@@ -80,27 +117,43 @@ export function loadObjectFromFile<T>(
                     return aNum - bNum;
                 });
 
-            // parse the file
-            if (!matchingFiles[0]) {
-                // No available matched files, return the default if none existed
+            return matchingFiles[0]
+                ? path.parse(
+                      path.join(
+                          matchingFiles[0].parentPath,
+                          matchingFiles[0].name,
+                      ),
+                  )
+                : undefined;
+        }),
+        distinctUntilChanged(
+            (prev, curr) =>
+                (prev === undefined ? prev : path.format(prev)) ===
+                (curr === undefined ? curr : path.format(curr)),
+        ),
+        switchMap((pathToLoad: ParsedPath | undefined) => {
+            if (pathToLoad === undefined) {
                 return of(defaultIfNoFileExists);
             }
+            lastPath = path.format(pathToLoad);
 
-            const pathToLoad = path.parse(
-                path.join(matchingFiles[0].parentPath, matchingFiles[0].name),
-            );
             if (moduleFileExtensions.has(pathToLoad.ext)) {
                 return loadModule(path.format(pathToLoad), onlyWhile);
             } else {
                 return loadFile(path.format(pathToLoad), onlyWhile).pipe(
-                    map((contents) => JSON.parse(contents.toString())),
+                    map((buff) => JSON.parse(buff.toString())),
                 );
             }
         }),
-        // just don't emit if there's no matching files (and no default object was set)
-        // I'll add an error warning eventually
-        filter((val) => val !== undefined),
-        switchMap((val) => val),
+        shareReplay({
+            refCount: false,
+            bufferSize: 1,
+        }),
+    );
+    objectCache.set(resolvedBasename, objectObservable);
+    return combineLatest([objectObservable, onlyWhile]).pipe(
+        filter(([_, shouldEmit]) => shouldEmit),
+        map(([a]) => a),
     );
 }
 

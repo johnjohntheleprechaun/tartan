@@ -13,6 +13,13 @@ import {
 } from "../utils/index.js";
 import path from "path";
 
+/*
+ * I'm not going to test caching since it's an implementation detail.
+ * As long as all other tests work fine.
+ *
+ * (Also it'll just be hard to test since)
+ */
+
 describe("The file loader", () => {
     it("should load a file", async () => {
         const filename: string = await makeTempFile(
@@ -52,6 +59,25 @@ describe("The file loader", () => {
             "1",
             "nothing changed",
         ]);
+    });
+    it("should apply onlyWhile", async () => {
+        const file: string = await makeTempFile("file", "file contents");
+        const first = loadFile(file, of(true));
+        const second = loadFile(file, of(false));
+
+        expect(await firstValueFrom(first)).toEqual(
+            Buffer.from("file contents"),
+        );
+        expect(
+            await firstValueFrom(
+                second.pipe(
+                    timeout({
+                        each: 100,
+                        with: () => of(Buffer.from("timeout")),
+                    }),
+                ),
+            ),
+        ).toEqual(Buffer.from("timeout"));
     });
 });
 
@@ -284,5 +310,35 @@ describe("The object loader", () => {
             ],
         );
         expect(results).toEqual([defaultObject, fileObject]);
+    });
+    it("should apply onlyWhile", async () => {
+        const file: string = await makeTempFile(
+            "file.json",
+            JSON.stringify({ hello: "world" }),
+        );
+        const first = loadObjectFromFile(
+            path.join(tempDir(), "file"),
+            of(true),
+            {},
+        );
+        const second = loadObjectFromFile(
+            path.join(tempDir(), "file"),
+            of(false),
+            {},
+        );
+
+        expect(await firstValueFrom(first)).toEqual({ hello: "world" });
+        expect(
+            await firstValueFrom(
+                second.pipe(
+                    timeout({
+                        each: 100,
+                        with: () => of({ goodbye: "world" }),
+                    }),
+                ),
+            ),
+        ).toEqual({
+            goodbye: "world",
+        });
     });
 });
