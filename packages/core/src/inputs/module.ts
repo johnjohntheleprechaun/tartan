@@ -4,16 +4,9 @@ import esbuild from "esbuild";
 import { Script } from "node:vm";
 import { Logger, LogLevel } from "../outputs/logger.js";
 
-const require = createRequire(import.meta.url);
-
 export async function loadModule<T>(
-    specifier: string,
-    relativeTo?: string,
+    modulePath: string,
 ): Promise<TartanInput<T>> {
-    const modulePath: string = require.resolve(specifier, {
-        paths: [relativeTo || process.cwd()],
-    });
-
     const result = await esbuild.build({
         entryPoints: [modulePath],
         platform: "node",

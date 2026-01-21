@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import path from "node:path";
 
 export type ReservedPrefix =
@@ -21,12 +22,21 @@ export type ReservedPrefix =
      * This prefix will only be used when discovering assets that need to be processed for a page, and only if that page used a source processor.
      * If the prefix was used in a bad context (or the page didn't use a source processor), an error will be thrown.
      */
-    | "~source-processor";
+    | "~source-processor"
+    /**
+     * If this prefix is present, the content after that will be resolved as if it were a module specifier rather than a regular path.
+     * This will *always* be an option, regardless of if it's actually specified in the prefix map. If it *is* specified, the value will be ignored.
+     */
+    | "~node-module";
 
-export type PrefixMap = {
-    [K in ReservedPrefix]: string | undefined; // the intention is that reserved prefixes must be explicitely defined, although they may not always be used
-} & { [key: string]: string | undefined };
+export type PrefixMap = Omit<
+    {
+        [K in ReservedPrefix]: string | undefined; // the intention is that reserved prefixes must be explicitely defined, although they may not always be used
+    },
+    "~node-module"
+> & { [key: string]: string | undefined };
 
+const require = createRequire(import.meta.url);
 export function resolvePath(
     /**
      * The path to resolve.
@@ -41,6 +51,12 @@ export function resolvePath(
      */
     prefixMap: PrefixMap,
 ): string {
+    if (pathToResolve.startsWith("~node-module")) {
+        require.resolve(pathToResolve.slice("~node-module".length), {
+            paths: [relativeTo || process.cwd()],
+        });
+    }
+
     for (const prefix of Object.keys(prefixMap)) {
         if (pathToResolve.startsWith(prefix)) {
             if (prefixMap[prefix] === undefined) {

@@ -80,7 +80,7 @@ export type PartialTartanContext = ReplaceTypes<
     {
         sourceProcessor?: TartanInput<SourceProcessor>;
         template?: TartanInput<PageTemplate>;
-        handoffHandler?: HandoffHandler;
+        handoffHandler?: TartanInput<HandoffHandler>;
         assetProcessors?: Record<string, TartanInput<SourceProcessor>>;
     }
 >;

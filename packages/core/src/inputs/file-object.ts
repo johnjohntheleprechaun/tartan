@@ -3,6 +3,7 @@ import fs from "fs/promises";
 import { loadModule } from "./module.js";
 import { Dirent } from "node:fs";
 import { TartanInput } from "../types/inputs.js";
+import { loadFile } from "./file.js";
 
 const objectFileExtensionOrder = [".ts", ".mts", ".js", ".mjs", ".json"];
 const objectFileExtensionSet = new Set(objectFileExtensionOrder);
@@ -68,7 +69,5 @@ export async function loadObject<T>(
 
 export async function loadJSON<T>(filepath: string): Promise<T> {
     // TODO: object cacheing to reduce disk io
-    return fs
-        .readFile(path.resolve(filepath))
-        .then((buff) => JSON.parse(buff.toString()));
+    return loadFile(filepath).then((val) => JSON.parse(val.value.toString()));
 }
