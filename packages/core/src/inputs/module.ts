@@ -5,7 +5,6 @@ import { Script } from "node:vm";
 import { Logger, LogLevel } from "../outputs/logger.js";
 
 const require = createRequire(import.meta.url);
-const moduleCache: Map<string, TartanInput<any>> = new Map();
 
 export async function loadModule<T>(
     specifier: string,
@@ -14,11 +13,6 @@ export async function loadModule<T>(
     const modulePath: string = require.resolve(specifier, {
         paths: [relativeTo || process.cwd()],
     });
-
-    const cachedModule = moduleCache.get(modulePath);
-    if (cachedModule) {
-        return cachedModule as TartanInput<T>;
-    }
 
     const result = await esbuild.build({
         entryPoints: [modulePath],
