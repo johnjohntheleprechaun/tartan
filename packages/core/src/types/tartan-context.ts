@@ -11,7 +11,7 @@ export const tartanContextSchema = {
         inherit: {
             type: "boolean",
             description:
-                "Whether or not to inherit values from `tartan.context.default` files.",
+                "Whether or not to inherit values from parent nodes and default context files.",
         },
         pageMode: {
             enum: ["directory", "file", "asset", "handoff"],
