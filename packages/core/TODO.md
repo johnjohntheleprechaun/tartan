@@ -1,8 +1,8 @@
-- Decide whether to remove the spec testing the order of priority of files when using `loadObjectFromFile`
-- Have some kind of prefix or something to let paths be relative to wherever the template you're using is located (but only for paths inside the template)
-- Register handlebars partials
 - the custom elements manifest is supposed to define elements in the exports section, but some things (like shoelace) have malformed manifests. This needs to be handled gracefully. Also, maybe I should make a pull request to shoelace.
-- Put custom element classes in the global scope and mark those imports as external when processing javascript
 - add comments goddamn bro
 - investigate switching to Node v22 (LTS) and builtin `fs.glob`
-- let asset handlers define dependencies of assets, maybe?
+- Restructure processing
+    - Source processors feed into each other
+    - Post processors exist
+    - Source processors can have query params passed into them, to tweak behavior of a general purpose source processor.
+- Harden node type setting (checking if node is file or directory)

@@ -1,40 +1,67 @@
+import { ResolvedNode } from "./nodes.js";
+import { FullTartanContext } from "./tartan-context.js";
+
+export type HandoffHandler = {
+    process?: (input: HandoffHandlerInput) => Promise<HandoffHandlerOutput>;
+    finalize?: (
+        input: HandoffFinalizerInput,
+    ) => Promise<HandoffFinalizerOutput>;
+};
+
 export type HandoffHandlerInput = {
     /**
-     * The distance from the root node.
+     * Extra context provided by the node's context object.
      */
-    depth: number;
+    extraContext: FullTartanContext["extraContext"];
     /**
-     * Extra context provided by the associated node's context object.
+     * Parameters provided by the module specifier that pointed to this handoff processor.
      */
-    extraContext: {
+    extraParameters: {
         [key: string]: any;
     };
     /**
-     * The path of the node that triggered handoff.
+     * The location of the node, relative to the root directory.
      */
-    sourcePath: string;
+    nodePath: string;
     /**
-     * Whether the node that triggered handoff was attached to a file or a directory.
+     * The path that content should be outputted to. This will *not* match the final output path, it's simply a staging directory.
+     * Keep in mind that the file/directory that's actually copied to the output directory should be at {stagingDirectory}/finalized
      */
-    sourceWasFile: boolean;
+    stagingDirectory: string;
     /**
-     * The path that content should be outputted to. This will be a file/directory depending on what the source was.
-     * Whether the type is respected however, is entirely up to the handler, so long as it doesn't write to anything above it's designated outputPath.
+     * Whether or not this node is the root node, which will affect some behaviors (for example, changes to the output path will throw a warning and then be ignored).
      */
-    outputPath: string;
+    isRoot: boolean;
+    /**
+     * Whether the node is a file or not
+     */
+    isFile: boolean;
 };
 export type HandoffHandlerOutput = {
     /**
-     * A list of paths/globs, either absolute or relative to the CWD, that should trigger a re-execution when changed
+     * Any extra info about the node
      */
-    dependencies?: string[];
+    metadata?: {
+        [key: string]: any;
+    };
     /**
-     * Any extra info that the handler is providing to the parent
+     * The path, relative to the parent node, that this node should be outputted to.
      */
-    extraMeta?: { [key: string]: any };
-    outputWasFile?: boolean;
     outputPath?: string;
 };
-export type HandoffHandler = (
-    input: HandoffHandlerInput,
-) => void | HandoffHandlerOutput | Promise<HandoffHandlerOutput>;
+
+export type HandoffFinalizerInput = HandoffHandlerInput & {
+    /**
+     * The resolved output path, relative to the root of the output directory.
+     */
+    outputPath: string;
+    /**
+     * The processed and resolved node that's being handed off.
+     */
+    thisNode: ResolvedNode;
+    /**
+     * The fully processed and resolved root node.
+     */
+    rootNode: ResolvedNode;
+};
+export type HandoffFinalizerOutput = void;

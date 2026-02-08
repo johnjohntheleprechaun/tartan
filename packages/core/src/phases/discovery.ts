@@ -1,33 +1,18 @@
-import { randomUUID } from "node:crypto";
 import {
     FullTartanContext,
     PartialTartanContext,
     TartanContextFile,
-} from "./types/tartan-context.js";
+} from "../types/tartan-context.js";
 import path from "node:path";
-import { TartanInput } from "./types/inputs.js";
-import { loadObject } from "./inputs/file-object.js";
-import { initializeContext } from "./inputs/context.js";
-import { Logger, LogLevel } from "./outputs/logger.js";
+import { TartanInput } from "../types/inputs.js";
+import { loadObject } from "../inputs/file-object.js";
+import { initializeContext } from "../inputs/context.js";
+import { Logger, LogLevel } from "../outputs/logger.js";
 import { minimatch } from "minimatch";
 import { Dirent } from "node:fs";
 import fs from "fs/promises";
-
-export type NodeType =
-    | "page"
-    | "page.file"
-    | "asset"
-    | "handoff"
-    | "handoff.file";
-
-export type ContextTreeNode<T extends NodeType = NodeType> = {
-    id: string;
-    path: string;
-    type: T;
-    context: FullTartanContext;
-    inheritableContext: FullTartanContext;
-    children: ContextTreeNode[];
-};
+import { ContextTreeNode, NodeType } from "../types/nodes.js";
+import { randomUUID } from "node:crypto";
 
 export async function loadContextTreeNode(params: {
     directory: string;
@@ -37,7 +22,6 @@ export async function loadContextTreeNode(params: {
     parentContext?: FullTartanContext;
     type?: NodeType;
 }): Promise<ContextTreeNode<NodeType>> {
-    const nodeId = randomUUID();
     const nodePath = path.join(params.directory, params.filename ?? "");
     const rootDirectory = params.rootDirectory ?? params.directory;
 
@@ -88,9 +72,8 @@ export async function loadContextTreeNode(params: {
               }
     ) as FullTartanContext;
 
-    /**
-     * The node for the current type
-     */
+    // If the pageMode is handoff set to either handoff or handoff.file
+    // otherwise set to the type from params, and default to page type
     const type: NodeType =
         context.pageMode === "handoff"
             ? params.type === "page.file" || params.type === "asset"
@@ -109,9 +92,12 @@ export async function loadContextTreeNode(params: {
         params.directory,
     );
 
+    const id = randomUUID();
+    const stagingDirectory = path.join(".staging", id);
     return {
-        id: nodeId,
+        id: id,
         path: nodePath,
+        stagingDirectory: stagingDirectory,
         type: type,
         context: context,
         inheritableContext: inheritableContext,

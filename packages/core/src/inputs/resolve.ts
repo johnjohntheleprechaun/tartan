@@ -8,21 +8,9 @@ export type ReservedPrefix =
      */
     | "~root"
     /**
-     * The directory that the handlebars template that was used for the current page is in.
-     * This prefix will only be used when discovering assets that need to be processed for a page, and only if that page used a template.
-     * If the prefix was used in a bad context (or the page didn't use a template), an error will be thrown.
-     */
-    | "~template"
-    /**
      * The directory that the page source is in. This is derived from either the path specified by `pageSource` for a directory node, or the node path for a file node.
      */
     | "~page-source"
-    /**
-     * The directory that the source processor that was used for the current page is in.
-     * This prefix will only be used when discovering assets that need to be processed for a page, and only if that page used a source processor.
-     * If the prefix was used in a bad context (or the page didn't use a source processor), an error will be thrown.
-     */
-    | "~source-processor"
     /**
      * If this prefix is present, the content after that will be resolved as if it were a module specifier rather than a regular path.
      * This will *always* be an option, regardless of if it's actually specified in the prefix map. If it *is* specified, the value will be ignored.

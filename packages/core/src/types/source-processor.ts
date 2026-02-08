@@ -1,24 +1,50 @@
-import { ProcessedNode } from "../processors/index.js";
+import { Readable } from "stream";
+import { NodeType, ProcessedNode } from "../types/nodes.js";
+import { FullTartanContext } from "./tartan-context.js";
+import { ResolvedNode } from "./nodes.js";
+
+export type SourceProcessor = {
+    process?: (input: SourceProcessorInput) => Promise<SourceProcessorOutput>;
+    finalize?: (input: SourceFinalizerInput) => Promise<SourceFinalizerOutput>;
+};
 
 export type SourceProcessorInput = {
     /**
-     * The distance from the root node.
+     * Get the source file as a buffer.
      */
-    depth: number;
+    getSourceBuffer: () => Promise<Buffer>;
+    /**
+     * Get the source file as a readable stream.
+     */
+    getSourceStream: () => Promise<Readable>;
     /**
      * Extra context provided by the node's context object.
      */
-    extraContext: {
+    extraContext: FullTartanContext["extraContext"];
+    /**
+     * Parameters provided by the module specifier that pointed to this source processor.
+     */
+    extraParameters: {
         [key: string]: any;
     };
     /**
-     * The contents of the source file, as a Buffer.
+     * Metadata about the source, provided by other source processors.
      */
-    sourceContents: Buffer;
+    sourceMetadata: {
+        [key: string]: any;
+    };
     /**
      * The location of the source file, relative to the root directory.
      */
     sourcePath: string;
+    /**
+     * The output path (relative to the parent node) as defined by previous source processors.
+     */
+    outputPath: string | undefined;
+    /**
+     * Whether or not this node is the root node, which will affect some behaviors (for example, changes to the output path will throw a warning and then be ignored).
+     */
+    isRoot: boolean;
     /**
      * Processed children.
      */
@@ -28,27 +54,41 @@ export type SourceProcessorOutput = {
     /**
      * The processed contents.
      */
-    processedContents: Buffer;
+    processedContents: Buffer | Readable;
     /**
-     * Any extra information that you'd like to provide to the template or parent nodes
+     * Any extra info about the source
      */
-    extraMetadata?: {
+    sourceMetadata?: {
         [key: string]: any;
     };
     /**
-     * A list of paths that should trigger a re-execution when changed.
-     * (This should *not* include the source file, or any assets that would be automatically discovered)
+     * Paths to load extra nodes from (referred to as "derived nodes").
      */
     dependencies?: string[];
     /**
-     * Source processors are allowed to change file or directory that the thing they're processing is outputted to.
-     * If it's processing a page, this will be treated as a directory, and if it's processing an asset it'll be treated as a file.
-     *
-     * The outputted path is relative to the parent directory, meaning that outputPath is just renaming the page/asset
-     * (although it can be renamed to be multiple directories *below* the original)
+     * The path (relative to the parent node) that this node should be outputted to.
      */
     outputPath?: string;
 };
-export type SourceProcessor = (
-    input: SourceProcessorInput,
-) => SourceProcessorOutput | Promise<SourceProcessorOutput>;
+
+export type SourceFinalizerInput = Omit<
+    SourceProcessorInput,
+    "outputPath" | "children"
+> & {
+    /**
+     * The resolved output path, relative to the root of the output directory.
+     */
+    outputPath: string;
+    /**
+     * The processed and resolved node that's being post-processed.
+     */
+    thisNode: ResolvedNode;
+    /**
+     * The fully processed and resolved root node.
+     */
+    rootNode: ResolvedNode;
+};
+/**
+ * Either a buffer or a readable stream to write the contents of to a file.
+ */
+export type SourceFinalizerOutput = Buffer | Readable;

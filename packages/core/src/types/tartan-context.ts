@@ -2,7 +2,6 @@ import { JSONSchema, FromSchema } from "json-schema-to-ts";
 import { ReplaceTypes } from "./util.js";
 import { SourceProcessor } from "./source-processor.js";
 import { HandoffHandler } from "./handoff-handler.js";
-import { PageTemplate } from "./handlebars.js";
 import { TartanInput } from "./inputs.js";
 
 export const tartanContextSchema = {
@@ -27,31 +26,30 @@ export const tartanContextSchema = {
             description:
                 "A JSON object that contains arbitrary information to be passed to source processors and templates.",
         },
-        template: {
-            type: "string",
-            description:
-                "A path pointing to the handlebars template to use. If none is provided it's assumed that no template is used.",
-        },
         pageSource: {
             type: "string",
             description:
                 "The file to use for the index of the current directory, *regardless of `pageMode`*.",
         },
-        handoffHandler: {
+        handoffProcessor: {
             type: "string",
             description:
-                "A module specifier for a module who's default export is a function that simply takes an output directory and handles the rest.",
+                "A module specifier for a module who's default export is a `HandoffProcessor`",
         },
-        sourceProcessor: {
-            type: "string",
-            description:
-                "A module specifier for a module who's default export is a string to string mapping function. So that you can (for example) pre-process markdown, and translate it into HTML",
-        },
-        assetProcessors: {
-            description:
-                "A map of globs that match filenames to a module specifier that exports a source processor to be used for files that match the glob.",
-            additionalProperties: {
+        sourceProcessors: {
+            type: "array",
+            items: {
                 type: "string",
+            },
+            description:
+                "A list of specifiers for modules that export a source processor as their default export. If you include URL query params, they will be passed to the source processor as an object at runtime (in the `extraParameters` property of the parameter objects).",
+        },
+        assetProcessorsMap: {
+            description:
+                "A map of globs that match filenames to a list of module specifiers that export a source processor as their default export. Query params work the same here as they do for source processors.",
+            additionalProperties: {
+                type: "array",
+                items: { type: "string" },
             },
         },
         extraAssets: {
@@ -78,10 +76,9 @@ export type TartanContextFile = FromSchema<typeof tartanContextSchema>;
 export type PartialTartanContext = ReplaceTypes<
     TartanContextFile,
     {
-        sourceProcessor?: TartanInput<SourceProcessor>;
-        template?: TartanInput<PageTemplate>;
+        sourceProcessors?: TartanInput<SourceProcessor>[];
         handoffHandler?: TartanInput<HandoffHandler>;
-        assetProcessors?: Record<string, TartanInput<SourceProcessor>>;
+        assetProcessors?: Record<string, TartanInput<SourceProcessor>[]>;
     }
 >;
 export type FullTartanContext =
@@ -99,5 +96,15 @@ export type FullTartanContext =
       >
     | ReplaceTypes<
           PartialTartanContext,
-          { pageMode: "handoff"; handoffHandler: HandoffHandler }
+          {
+              pageMode: "handoff";
+              handoffHandler: TartanInput<HandoffHandler>;
+          }
+      >
+    | ReplaceTypes<
+          PartialTartanContext,
+          {
+              pageMode: "handoff.file";
+              handoffHandler: TartanInput<HandoffHandler>;
+          }
       >;
