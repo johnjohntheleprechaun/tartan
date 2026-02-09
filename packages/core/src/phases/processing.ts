@@ -25,6 +25,9 @@ import { Logger, LogLevel } from "../outputs/logger.js";
 export async function processNode(params: {
     node: ContextTreeNode;
     rootContext: FullTartanContext;
+    /**
+     * The directory the root node was loaded from.
+     */
     rootDirectory: string;
     /**
      * Whether this node is the root node.
