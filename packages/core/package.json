@@ -12,7 +12,8 @@
         "dist"
     ],
     "scripts": {
-        "build": "rm -r dist && npx tsc"
+        "build": "rm -r dist && npx tsc",
+        "test": "tsx ../../node_modules/jasmine/bin/jasmine.js"
     },
     "repository": {
         "type": "git",
