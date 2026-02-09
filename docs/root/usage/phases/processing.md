@@ -19,8 +19,9 @@ Follow steps 1 and 2 for each child node, so that results can be passed into sou
 Source processor outputs feed into each other in the order they're listed. This means the following things about a source processor's input object:
 
 - The `getSourceBuffer` and `getSourceStream` functions return the `processedContents` outputted by the previous source processor, converted into a buffer/stream if necessary.
-- The `sourceMetadata` property is the result of the corresponding output property of each processor being overlayed on each other. Later processors will overwrite properties from earlier ones, if duplicates exist.
+- The `sourceMetadata` property is the result of all the outputted metadata objects' top-level properties being overlayed on each other. Later processors will overwrite properties from earlier ones, if duplicates exist. This means that if a processor outputs `{a: "value"}` and a later one outputs `{a: "new value", b: "value"}`, the processed node will have the metadata `{a: "new value", b: "value"}`.
 - The `outputPath` property is also cumulative. If a source processor doesn't return a value (or returns undefined) for that property, it won't be overwritten. Otherwise it will be.
+- The `dependencies` property is the combination of all previously requested dependencies, de-duplicated.
 
 If the node is of type `page` the file contents provided to the first source processor are from the file at `pageSource`, resolved relative to the node path. Otherwise, if the node is `page.file` or `asset`, the file at the node path is used.
 
@@ -32,4 +33,5 @@ Handoff handlers are far simpler. Tartan will simply execute the `process` funct
 
 ## 3. Construct a Processed Node
 
-Use the `SourceProcessorOutput` or `HandoffHandlerOutput` object(s) to create a `ProcessedNode` object and return it.
+- Load the children specified by the cumulative `dependencies` property. If a node already exists at the path specified, it'll simply be linked.
+- Use the `SourceProcessorOutput` or `HandoffHandlerOutput` object(s), along with the result of processing `dependencies`, to create a `ProcessedNode` object and return it.

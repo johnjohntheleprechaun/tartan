@@ -1,3 +1,4 @@
+import { URLSearchParams } from "node:url";
 import { ResolvedNode } from "./nodes.js";
 import { FullTartanContext } from "./tartan-context.js";
 
@@ -16,9 +17,7 @@ export type HandoffHandlerInput = {
     /**
      * Parameters provided by the module specifier that pointed to this handoff processor.
      */
-    extraParameters: {
-        [key: string]: any;
-    };
+    extraParameters: URLSearchParams;
     /**
      * The location of the node, relative to the root directory.
      */

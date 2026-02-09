@@ -42,6 +42,10 @@ export type ProcessedNode = {
      */
     id: string;
     /**
+     * The path of this node, relative to the root directory.
+     */
+    path: string;
+    /**
      * The type of the node.
      */
     type: NodeType;

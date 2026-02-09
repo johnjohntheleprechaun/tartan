@@ -1,8 +1,4 @@
 - the custom elements manifest is supposed to define elements in the exports section, but some things (like shoelace) have malformed manifests. This needs to be handled gracefully. Also, maybe I should make a pull request to shoelace.
 - add comments goddamn bro
 - investigate switching to Node v22 (LTS) and builtin `fs.glob`
-- Restructure processing
-    - Source processors feed into each other
-    - Post processors exist
-    - Source processors can have query params passed into them, to tweak behavior of a general purpose source processor.
 - Harden node type setting (checking if node is file or directory)

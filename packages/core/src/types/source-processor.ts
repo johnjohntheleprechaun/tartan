@@ -1,7 +1,8 @@
 import { Readable } from "stream";
-import { NodeType, ProcessedNode } from "../types/nodes.js";
+import { ProcessedNode } from "../types/nodes.js";
 import { FullTartanContext } from "./tartan-context.js";
 import { ResolvedNode } from "./nodes.js";
+import { URLSearchParams } from "node:url";
 
 export type SourceProcessor = {
     process?: (input: SourceProcessorInput) => Promise<SourceProcessorOutput>;
@@ -24,9 +25,7 @@ export type SourceProcessorInput = {
     /**
      * Parameters provided by the module specifier that pointed to this source processor.
      */
-    extraParameters: {
-        [key: string]: any;
-    };
+    pathParameters: URLSearchParams;
     /**
      * Metadata about the source, provided by other source processors.
      */
@@ -49,6 +48,10 @@ export type SourceProcessorInput = {
      * Processed children.
      */
     children: ProcessedNode[];
+    /**
+     * The cumulative list of all dependencies specified by previous source processors
+     */
+    dependencies: string[];
 };
 export type SourceProcessorOutput = {
     /**
@@ -63,6 +66,7 @@ export type SourceProcessorOutput = {
     };
     /**
      * Paths to load extra nodes from (referred to as "derived nodes").
+     * These will all be loaded as `asset` type, although they might be switched to `handoff.file` depending on context.
      */
     dependencies?: string[];
     /**
