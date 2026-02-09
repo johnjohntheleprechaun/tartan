@@ -123,7 +123,11 @@ describe("The node processor", () => {
             const tmpDir = await makeTempFiles({
                 "source.txt": "hello world",
                 "tartan.context.json": JSON.stringify({
-                    sourceProcessors: ["./processor-a.js", "./processor-b.js"],
+                    sourceProcessors: [
+                        "./processor-a.js",
+                        "./processor-b.js",
+                        "./processor-c.js",
+                    ],
                 } as TartanContextFile),
                 "processor-a.js": `export default {process: async (input) => {
                     return {
@@ -139,6 +143,11 @@ describe("The node processor", () => {
                         sourceMetadata: {a: "newvalue", b: "value"},
                         outputPath: "finalpath",
                         dependencies: ["./a.png", "./b.png"],
+                    }
+                }}`,
+                "processor-c.js": `export default {process: async (input) => {
+                    return {
+                        processedContents: await input.getSourceStream(),
                     }
                 }}`,
                 "a.png": "",

@@ -192,7 +192,8 @@ export async function processNode(params: {
                     ...cumulative.sourceMetadata,
                     ...output.sourceMetadata,
                 };
-                cumulative.outputPath = output.outputPath;
+                cumulative.outputPath =
+                    output.outputPath ?? cumulative.outputPath;
                 cumulative.dependencies = Array.from(
                     new Set(
                         cumulative.dependencies.concat(
