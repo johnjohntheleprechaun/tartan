@@ -1,4 +1,5 @@
 import fs from "fs/promises";
+import path from "node:path";
 
 beforeAll(async () => {
     await fs.rm(".tmp", {
@@ -9,6 +10,6 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-    const tmpDir = await fs.mkdtemp(".tmp/tartan-test-");
+    const tmpDir = path.resolve(await fs.mkdtemp(".tmp/tartan-test-"));
     process.env["TMP_DIR"] = tmpDir;
 });

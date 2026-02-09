@@ -1,5 +1,6 @@
 import { makeTempFile } from "../utils/filesystem.js";
 import { loadModule } from "../../src/inputs/module.js";
+import path from "node:path";
 
 describe("The module loader", () => {
     it("should load a module, once", async () => {
@@ -7,7 +8,9 @@ describe("The module loader", () => {
             "test.ts",
             "export default 10",
         );
-        const module = await loadModule<number>(testFile);
+        const module = await loadModule<number>(
+            new URL(path.resolve(testFile), "file://"),
+        );
 
         expect(module.value).toBe(10);
     });
@@ -18,18 +21,21 @@ describe("The module loader", () => {
             `import num from "${dep}"; export default num;`,
         );
 
-        const result = await loadModule<number>(main).then((val) => val.value);
+        const result = await loadModule<number>(
+            new URL(path.resolve(main), "file://"),
+        ).then((val) => val.value);
 
         expect(result).toBe(50);
     });
     it("shouldn't hang when it's an async function", async () => {
+        // idk what this test is about imma be real
         const file = await makeTempFile(
             "test.js",
             "export default () => Promise.resolve()",
         );
-        const func = await loadModule<() => Promise<void>>(file).then(
-            (val) => val.value,
-        );
+        const func = await loadModule<() => Promise<void>>(
+            new URL(path.resolve(file), "file://"),
+        ).then((val) => val.value);
 
         return expectAsync(func()).toBeResolved();
     });

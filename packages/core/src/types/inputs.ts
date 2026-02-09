@@ -1,11 +1,9 @@
+import { URL } from "url";
+
 export type TartanInput<T> = {
     value: T;
     /**
-     * The path of the input
+     * the location of the input, as a `file:` url
      */
-    path: string;
-    /**
-     * the path as a file url
-     */
-    url: string;
+    url: URL;
 };

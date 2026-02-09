@@ -47,5 +47,5 @@ export async function makeTempFiles(files: {
             makeTempFile(path, contents),
         ),
     );
-    return process.env["TMP_DIR"] as string;
+    return tempDir();
 }

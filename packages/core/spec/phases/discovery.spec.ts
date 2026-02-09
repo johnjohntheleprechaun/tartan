@@ -1,16 +1,17 @@
-import { ContextTreeNode, loadContextTreeNode } from "../src/context-tree.js";
+import { loadContextTreeNode } from "../../src/phases/discovery.js";
 import {
     FullTartanContext,
     PartialTartanContext,
     TartanContextFile,
-} from "../src/types/tartan-context.js";
+} from "../../src/types/tartan-context.js";
 import {
     tempDir,
     makeTempFile,
     makeTempFiles,
     removeTempFile,
     updateTempFile,
-} from "./utils/filesystem.js";
+} from "../utils/filesystem.js";
+import { ContextTreeNode } from "../../src/types/nodes.js";
 import path from "path";
 
 describe("The context tree loader", () => {

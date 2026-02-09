@@ -3,12 +3,14 @@ import { createRequire } from "node:module";
 import esbuild from "esbuild";
 import { Script } from "node:vm";
 import { Logger, LogLevel } from "../outputs/logger.js";
+import { URL } from "node:url";
 
-export async function loadModule<T>(
-    modulePath: string,
-): Promise<TartanInput<T>> {
+/**
+ * @argument moduleURL A fully resolved file url
+ */
+export async function loadModule<T>(moduleURL: URL): Promise<TartanInput<T>> {
     const result = await esbuild.build({
-        entryPoints: [modulePath],
+        entryPoints: [moduleURL.pathname],
         platform: "node",
         bundle: true,
         write: false,
@@ -25,7 +27,7 @@ export async function loadModule<T>(
         Logger.log(
             [
                 "==================================================\n",
-                `Warnings while building ${modulePath}\n\n`,
+                `Warnings while building ${moduleURL}\n\n`,
                 formattedWarnings.join("\n"),
                 "==================================================",
             ].join("\n"),
@@ -42,7 +44,7 @@ export async function loadModule<T>(
      * Run the script and extract the output
      */
     const script = new Script(outputFile.text, {
-        filename: modulePath,
+        filename: moduleURL.pathname,
     });
     const context = {
         module: { exports: {} as { default: T } },
@@ -50,7 +52,7 @@ export async function loadModule<T>(
 
     script.runInNewContext(context);
     return {
-        path: modulePath,
+        url: moduleURL,
         value: context.module.exports.default,
     };
 }

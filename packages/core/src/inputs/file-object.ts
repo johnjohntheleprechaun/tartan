@@ -4,6 +4,8 @@ import { loadModule } from "./module.js";
 import { Dirent } from "node:fs";
 import { TartanInput } from "../types/inputs.js";
 import { loadFile } from "./file.js";
+import { URL } from "node:url";
+import { pathToFileURL } from "./resolve.js";
 
 const objectFileExtensionOrder = [".ts", ".mts", ".js", ".mjs", ".json"];
 const objectFileExtensionSet = new Set(objectFileExtensionOrder);
@@ -20,8 +22,8 @@ export async function loadObject<T>(
     basename: string,
     defaultIfNoFileExists: T,
 ): Promise<TartanInput<T>> {
-    const resolvedBasename = path.resolve(basename);
-    const files = await fs.readdir(path.dirname(basename), {
+    const resolvedBasename: URL = pathToFileURL(path.resolve(basename));
+    const files = await fs.readdir(path.dirname(resolvedBasename.pathname), {
         withFileTypes: true,
     });
     const matchingFiles: Dirent<string>[] = files
@@ -48,26 +50,28 @@ export async function loadObject<T>(
     if (pathToLoad === undefined) {
         return {
             value: defaultIfNoFileExists,
-            path: resolvedBasename,
+            url: resolvedBasename,
         };
     }
 
     if (moduleFileExtensions.has(pathToLoad.ext)) {
         return {
-            value: await loadModule<T>(path.format(pathToLoad)).then(
+            value: await loadModule<T>(
+                pathToFileURL(path.format(pathToLoad)),
+            ).then(
                 (val) => val.value as T, // ignore the module path, instead setting it to resolvedBasename
             ),
-            path: resolvedBasename,
+            url: resolvedBasename,
         };
     } else {
         return {
-            value: await loadJSON(path.format(pathToLoad)),
-            path: resolvedBasename,
+            value: await loadJSON(pathToFileURL(path.format(pathToLoad))),
+            url: resolvedBasename,
         };
     }
 }
 
-export async function loadJSON<T>(filepath: string): Promise<T> {
+export async function loadJSON<T>(fileURL: URL): Promise<T> {
     // TODO: object cacheing to reduce disk io
-    return loadFile(filepath).then((val) => JSON.parse(val.value.toString()));
+    return loadFile(fileURL).then((val) => JSON.parse(val.value.toString()));
 }

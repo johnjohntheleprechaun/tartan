@@ -1,5 +1,6 @@
 import { TartanInput } from "../types/inputs.js";
 import {
+    FullTartanContext,
     PartialTartanContext,
     TartanContextFile,
 } from "../types/tartan-context.js";
@@ -8,9 +9,6 @@ import { PrefixMap, resolvePath } from "./resolve.js";
 import { SourceProcessor } from "../types/source-processor.js";
 import { loadModule } from "./module.js";
 import { HandoffHandler } from "../types/handoff-handler.js";
-import { loadFile } from "./file.js";
-import { HandlebarsInput, PageTemplate } from "../types/handlebars.js";
-import Handlebars from "handlebars";
 
 export async function initializeContext(
     rootDir: string,
@@ -20,11 +18,9 @@ export async function initializeContext(
         Object.entries(contextFile.value.pathPrefixes ?? {}).map(
             ([key, val]) => [
                 key,
-                resolvePath(val, path.dirname(contextFile.path), {
+                resolvePath(val, path.dirname(contextFile.url.pathname), {
                     "~root": rootDir,
-                    "~template": undefined,
                     "~page-source": undefined,
-                    "~source-processor": undefined,
                 }),
             ],
         ),
@@ -33,66 +29,54 @@ export async function initializeContext(
     const prefixMap: PrefixMap = {
         ...resolvedPathPrefixes,
         "~root": rootDir,
-        "~template": undefined,
         "~page-source": undefined,
-        "~source-processor": undefined,
     };
 
-    const sourceProcessor: TartanInput<SourceProcessor> | undefined =
-        contextFile.value.sourceProcessor
-            ? await loadModule<SourceProcessor>(
-                  resolvePath(
-                      contextFile.value.sourceProcessor,
-                      path.dirname(contextFile.path),
-                      prefixMap,
+    const sourceProcessors: FullTartanContext["sourceProcessors"] = contextFile
+        .value.sourceProcessors
+        ? await Promise.all(
+              contextFile.value.sourceProcessors.map((processorPath) =>
+                  loadModule<SourceProcessor>(
+                      resolvePath(
+                          processorPath,
+                          path.dirname(contextFile.url.pathname),
+                          prefixMap,
+                      ),
                   ),
-              )
-            : undefined;
-    const handoffHandler: TartanInput<HandoffHandler> | undefined = contextFile
+              ),
+          )
+        : undefined;
+
+    const handoffHandler: FullTartanContext["handoffHandler"] = contextFile
         .value.handoffHandler
         ? await loadModule<HandoffHandler>(
               resolvePath(
                   contextFile.value.handoffHandler,
-                  path.dirname(contextFile.path),
+                  path.dirname(contextFile.url.pathname),
                   prefixMap,
               ),
           )
         : undefined;
-    const template: TartanInput<PageTemplate> | undefined = contextFile.value
-        .template
-        ? await loadFile(
-              resolvePath(
-                  contextFile.value.template,
-                  path.dirname(contextFile.path),
-                  prefixMap,
-              ),
-          ).then((templateFile) => ({
-              value: Handlebars.compile<HandlebarsInput>(
-                  templateFile.value.toString(),
-              ),
-              path: templateFile.path,
-          }))
-        : undefined;
-    const assetProcessors:
-        | Record<string, TartanInput<SourceProcessor>>
-        | undefined = contextFile.value.assetProcessors
+    const assetProcessors: FullTartanContext["assetProcessors"] = contextFile
+        .value.assetProcessors
         ? Object.fromEntries(
               await Promise.all(
                   Object.entries(contextFile.value.assetProcessors).map(
+                      // for each glob
                       ([key, val]) =>
-                          loadModule(
-                              resolvePath(
-                                  val,
-                                  path.dirname(contextFile.path),
-                                  prefixMap,
+                          Promise.all(
+                              val.map((url) =>
+                                  loadModule<SourceProcessor>(
+                                      resolvePath(
+                                          url,
+                                          path.dirname(
+                                              contextFile.url.pathname,
+                                          ),
+                                          prefixMap,
+                                      ),
+                                  ),
                               ),
-                          ).then(
-                              (module) =>
-                                  [key, module] as [
-                                      string,
-                                      TartanInput<SourceProcessor>,
-                                  ],
-                          ),
+                          ).then((module) => [key, module]),
                   ),
               ),
           )
@@ -101,11 +85,10 @@ export async function initializeContext(
     return {
         value: {
             ...contextFile.value,
-            ...(sourceProcessor ? { sourceProcessor } : {}),
+            ...(sourceProcessors ? { sourceProcessors } : {}),
             ...(handoffHandler ? { handoffHandler } : {}),
-            ...(template ? { template } : {}),
             ...(assetProcessors ? { assetProcessors } : {}),
         } as PartialTartanContext,
-        path: contextFile.path,
+        url: contextFile.url,
     };
 }

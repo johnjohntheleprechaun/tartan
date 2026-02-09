@@ -1,9 +1,10 @@
+import { URL } from "url";
 import { TartanInput } from "../types/inputs.js";
 import fs from "fs/promises";
 
-export async function loadFile(filepath: string): Promise<TartanInput<Buffer>> {
+export async function loadFile(url: URL): Promise<TartanInput<Buffer>> {
     return {
-        path: filepath,
-        value: await fs.readFile(filepath),
+        url,
+        value: await fs.readFile(url.pathname),
     };
 }

@@ -31,10 +31,10 @@ export const tartanContextSchema = {
             description:
                 "The file to use for the index of the current directory, *regardless of `pageMode`*.",
         },
-        handoffProcessor: {
+        handoffHandler: {
             type: "string",
             description:
-                "A module specifier for a module who's default export is a `HandoffProcessor`",
+                "A module specifier for a module who's default export is a `HandoffHandler`",
         },
         sourceProcessors: {
             type: "array",
@@ -44,7 +44,8 @@ export const tartanContextSchema = {
             description:
                 "A list of specifiers for modules that export a source processor as their default export. If you include URL query params, they will be passed to the source processor as an object at runtime (in the `extraParameters` property of the parameter objects).",
         },
-        assetProcessorsMap: {
+        assetProcessors: {
+            type: "object",
             description:
                 "A map of globs that match filenames to a list of module specifiers that export a source processor as their default export. Query params work the same here as they do for source processors.",
             additionalProperties: {
@@ -78,7 +79,9 @@ export type PartialTartanContext = ReplaceTypes<
     {
         sourceProcessors?: TartanInput<SourceProcessor>[];
         handoffHandler?: TartanInput<HandoffHandler>;
-        assetProcessors?: Record<string, TartanInput<SourceProcessor>[]>;
+        assetProcessors?: {
+            [key: string]: TartanInput<SourceProcessor>[];
+        };
     }
 >;
 export type FullTartanContext =

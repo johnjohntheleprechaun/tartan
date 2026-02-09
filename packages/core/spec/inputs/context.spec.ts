@@ -1,4 +1,5 @@
 import { initializeContext } from "../../src/inputs/context.js";
+import { pathToFileURL } from "../../src/inputs/resolve.js";
 import {
     PartialTartanContext,
     TartanContextFile,
@@ -8,38 +9,32 @@ import path from "node:path";
 import { TartanInput } from "../../src/types/inputs.js";
 
 describe("The context initializer", () => {
-    it("should load a source processor and handoff handler and template", async () => {
+    it("should load a source processor and handoff handler", async () => {
         const tmpDir = await makeTempFiles({
             // these are *not* the right format but I don't need them to be right now
-            "processor.js": "export default () => 42",
-            "handoff.js": "export default () => 84",
+            "processor.js": "export default {process: () => 42}",
+            "handoff.js": "export default {process: () => 84}",
             "template.hbs": "{{test}}",
         });
 
         const context: TartanContextFile = {
-            sourceProcessor: "./processor.js",
+            sourceProcessors: ["./processor.js"],
             handoffHandler: "./handoff.js",
-            template: "./template.hbs",
         };
 
         const tartanContextFile = {
             value: context,
-            path: path.join(tmpDir, "tartan.context"),
+            url: pathToFileURL(path.join(tmpDir, "tartan.context")),
         };
         const initialized: TartanInput<PartialTartanContext> =
             await initializeContext(tmpDir, tartanContextFile);
 
-        expect(initialized.value.sourceProcessor).toBeDefined();
+        expect(initialized.value.sourceProcessors).toBeDefined();
         expect(initialized.value.handoffHandler).toBeDefined();
-        expect(initialized.value.template).toBeDefined();
         // @ts-ignore
-        expect(initialized.value.sourceProcessor.value()).toBe(42); // the answer to life the universe and everything
+        expect(initialized.value.sourceProcessors[0].value.process()).toBe(42); // the answer to life the universe and everything
         // @ts-ignore
-        expect(initialized.value.handoffHandler.value()).toBe(84); // twice the answer idk lol
-        // @ts-ignore
-        expect(initialized.value.template.value({ test: "hewwo" })).toBe(
-            "hewwo",
-        );
+        expect(initialized.value.handoffHandler.value.process()).toBe(84); // twice the answer idk lol
     });
     it("should load the asset processors", async () => {
         const tmpDir = await makeTempFiles({
@@ -49,38 +44,38 @@ describe("The context initializer", () => {
 
         const context: TartanContextFile = {
             assetProcessors: {
-                png: "./png.js",
-                jpg: "./jpg.js",
+                png: ["./png.js"],
+                jpg: ["./jpg.js"],
             },
         };
 
-        const contextFile = {
+        const contextFile: TartanInput<TartanContextFile> = {
             value: context,
-            path: path.join(tmpDir, "tartan.context"),
+            url: new URL(path.join(tmpDir, "tartan.context"), "file://"),
         };
         const initialized: TartanInput<PartialTartanContext> =
             await initializeContext(tmpDir, contextFile);
 
         expect(initialized.value.assetProcessors).toBeDefined();
         expect(initialized.value.assetProcessors).toEqual({
-            png: jasmine.objectContaining({ value: jasmine.any(Function) }),
-            jpg: jasmine.objectContaining({ value: jasmine.any(Function) }),
+            png: [jasmine.objectContaining({ value: jasmine.any(Function) })],
+            jpg: [jasmine.objectContaining({ value: jasmine.any(Function) })],
         });
         expect(
             (
                 initialized.value.assetProcessors as Record<
                     string,
-                    TartanInput<Function>
+                    TartanInput<Function>[]
                 >
-            ).png.value(),
+            ).png[0].value(),
         ).toBe(42);
         expect(
             (
                 initialized.value.assetProcessors as Record<
                     string,
-                    TartanInput<Function>
+                    TartanInput<Function>[]
                 >
-            ).jpg.value(),
+            ).jpg[0].value(),
         ).toBe(21);
     });
 });
