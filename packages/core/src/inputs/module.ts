@@ -1,10 +1,15 @@
 import { TartanInput } from "../types/inputs.js";
-import { createRequire } from "node:module";
 import esbuild from "esbuild";
-import { Script } from "node:vm";
+import { runInThisContext, Script } from "node:vm";
 import { Logger, LogLevel } from "../outputs/logger.js";
 import { URL } from "node:url";
+import { createRequire } from "node:module";
 
+// put require in the global scope, if it's not already there.
+// this is just so that I can use imports in the loaded modules, and share the global scope
+if (!globalThis.require) {
+    globalThis.require = createRequire(import.meta.url);
+}
 /**
  * @argument moduleURL A fully resolved file url
  */
@@ -12,7 +17,10 @@ export async function loadModule<T>(moduleURL: URL): Promise<TartanInput<T>> {
     const result = await esbuild.build({
         entryPoints: [moduleURL.pathname],
         platform: "node",
+        format: "iife",
+        globalName: "exports",
         bundle: true,
+        packages: "external",
         write: false,
         metafile: true,
         logLevel: "silent",
@@ -38,21 +46,23 @@ export async function loadModule<T>(moduleURL: URL): Promise<TartanInput<T>> {
         throw `wrong number of output files. should be 1, was ${result.outputFiles.length}`;
     }
 
-    const outputFile = result.outputFiles[0];
+    const code = `${result.outputFiles[0].text}\nexports.default`;
 
     /*
-     * Run the script and extract the output
+     * Run the code and extract the default export
      */
-    const script = new Script(outputFile.text, {
-        filename: moduleURL.pathname,
-    });
-    const context = {
-        module: { exports: {} as { default: T } },
-    };
-
-    script.runInNewContext(context);
+    const defaultExport = runInThisContext(code);
     return {
         url: moduleURL,
-        value: context.module.exports.default,
+        value: defaultExport,
     };
 }
+
+/*
+ * Quick rant (with profanity):
+ * FUCK JS MODULES BRO 😭
+ * This piece of code is so fucking goddamn hacky dear fucking lord.
+ * I don't want to give imports access to the full global scope, but without *manually* listing *every fucking builtin* that's my only option.
+ * Genuinely, fuck javascript. People complain about the language, but I think really a lot of it makes sense internally. The nodejs module system? nope fuck you.
+ * Steaming pile of fucking garbage oh my fucking god.
+ */

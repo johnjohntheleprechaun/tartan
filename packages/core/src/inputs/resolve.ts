@@ -25,7 +25,9 @@ export type PrefixMap = Omit<
     "~node-module"
 > & { [key: string]: string | undefined };
 
-const require = createRequire(import.meta.url);
+if (!globalThis.require) {
+    globalThis.require = createRequire(import.meta.url);
+}
 /**
  * @returns A file url object
  */
