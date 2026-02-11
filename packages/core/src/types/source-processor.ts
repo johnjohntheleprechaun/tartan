@@ -77,7 +77,7 @@ export type SourceProcessorOutput = {
 
 export type SourceFinalizerInput = Omit<
     SourceProcessorInput,
-    "outputPath" | "children"
+    "outputPath" | "children" | "dependencies"
 > & {
     /**
      * The resolved output path, relative to the root of the output directory.
