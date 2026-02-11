@@ -79,9 +79,20 @@ export type ProcessedNode = {
     derivedChildren: ProcessedNode[];
 };
 
-export type ResolvedNode = Omit<ProcessedNode, "outputPath"> & {
+export type ResolvedNode = Omit<
+    ProcessedNode,
+    "outputPath" | "baseChildren" | "derivedChildren"
+> & {
     /**
      * The fully resolved output path of this node, relative to the root output directory
      */
     outputPath: string;
+    /**
+     * Child nodes that existed before processing.
+     */
+    baseChildren: ResolvedNode[];
+    /**
+     * Child nodes that were discovered during processing.
+     */
+    derivedChildren: ResolvedNode[];
 };

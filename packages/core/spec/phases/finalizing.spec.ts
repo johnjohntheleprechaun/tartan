@@ -14,6 +14,53 @@ import { finalizeNode } from "../../src/phases/finalizing.js";
 
 describe("The node finalizer", () => {
     describe("when executing source finalizers", () => {
+        it("should execute for all children", async () => {
+            const tmpDir = await makeTempFiles({
+                "source.txt": "hello world",
+                "tartan.context.default.json": JSON.stringify({
+                    pageMode: "file",
+                    pagePattern: "*.md",
+                } as TartanContextFile),
+                "a.md": "aaaa",
+            });
+
+            const node: ContextTreeNode = await loadContextTreeNode({
+                directory: tmpDir,
+                rootContext: {
+                    pageMode: "directory",
+                    pageSource: "source.txt",
+                },
+            });
+            const processedNode: ProcessedNode = await processNode({
+                node: node,
+                rootDirectory: tmpDir,
+                rootContext: {
+                    pageMode: "directory",
+                    pageSource: "source.txt",
+                },
+            });
+            const resolvedNode: ResolvedNode = resolveNode(processedNode);
+            const finalizedNode: ResolvedNode = await finalizeNode({
+                node: resolvedNode,
+                rootDirectory: tempDir(),
+            });
+
+            const outputtedContents = await fs
+                .readFile(
+                    path.join(finalizedNode.stagingDirectory, "finalized"),
+                )
+                .then((val) => val.toString());
+            const childOutput = await fs
+                .readFile(
+                    path.join(
+                        finalizedNode.baseChildren[0].stagingDirectory,
+                        "finalized",
+                    ),
+                )
+                .then((val) => val.toString());
+            expect(outputtedContents).toBe("hello world");
+            expect(childOutput).toBe("aaaa");
+        });
         it("should just copy if no source finalizers exist", async () => {
             const tmpDir = await makeTempFiles({
                 "source.txt": "hello world",

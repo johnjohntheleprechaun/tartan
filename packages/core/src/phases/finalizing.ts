@@ -147,5 +147,13 @@ export async function finalizeNode(params: {
             createWriteStream(path.join(node.stagingDirectory, "finalized")),
         );
     }
+
+    await Promise.all(
+        node.baseChildren
+            .concat(node.derivedChildren)
+            .map((child) =>
+                finalizeNode({ node: child, rootDirectory, rootNode }),
+            ),
+    );
     return node;
 }
