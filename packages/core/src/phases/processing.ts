@@ -20,7 +20,7 @@ import { loadContextTreeNode } from "./discovery.js";
 import { URL } from "node:url";
 import { pipeline } from "node:stream/promises";
 import { createWriteStream } from "node:fs";
-import { Logger, LogLevel } from "../outputs/logger.js";
+import { Logger, LogLevel } from "../logger.js";
 
 export async function processNode(params: {
     node: ContextTreeNode;

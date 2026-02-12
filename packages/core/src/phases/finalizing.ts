@@ -18,7 +18,7 @@ import { Readable } from "stream";
 import { URL } from "node:url";
 import { pipeline } from "node:stream/promises";
 import { createWriteStream } from "node:fs";
-import { Logger, LogLevel } from "../outputs/logger.js";
+import { Logger, LogLevel } from "../logger.js";
 
 export async function finalizeNode(params: {
     node: ResolvedNode;

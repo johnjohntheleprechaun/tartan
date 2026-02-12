@@ -1,7 +1,7 @@
 import { TartanInput } from "../types/inputs.js";
 import esbuild from "esbuild";
 import { runInThisContext, Script } from "node:vm";
-import { Logger, LogLevel } from "../outputs/logger.js";
+import { Logger, LogLevel } from "../logger.js";
 import { URL } from "node:url";
 import { createRequire } from "node:module";
 

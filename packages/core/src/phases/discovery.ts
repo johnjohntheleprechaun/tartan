@@ -7,7 +7,7 @@ import path from "node:path";
 import { TartanInput } from "../types/inputs.js";
 import { loadObject } from "../inputs/file-object.js";
 import { initializeContext } from "../inputs/context.js";
-import { Logger, LogLevel } from "../outputs/logger.js";
+import { Logger, LogLevel } from "../logger.js";
 import { minimatch } from "minimatch";
 import { Dirent } from "node:fs";
 import fs from "fs/promises";
