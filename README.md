@@ -1,3 +1,3 @@
 # Tartan
 
-Nothing much to say yet
+This repository contains two packages: core utilities and the CLI

@@ -1,7 +1,7 @@
-- Decide whether to remove the spec testing the order of priority of files when using `loadObjectFromFile`
-- Have some kind of prefix or something to let paths be relative to wherever the template you're using is located (but only for paths inside the template)
-- Register handlebars partials
 - the custom elements manifest is supposed to define elements in the exports section, but some things (like shoelace) have malformed manifests. This needs to be handled gracefully. Also, maybe I should make a pull request to shoelace.
-- Put custom element classes in the global scope and mark those imports as external when processing javascript
 - add comments goddamn bro
 - investigate switching to Node v22 (LTS) and builtin `fs.glob`
+- Harden node type setting (checking if node is file or directory)
+- At the moment, there's no handling of duplicate nodes, meaning that if two nodes both load the same path as a derived node, two separate nodes will be created. Tbh, I'm not sure if that's really a problem. I imagine that if a path is used in multiple places it should be put in an assets directory and loaded with the `asset` page mode. I should add a path prefix or some other way for a path to be marked as non-dependable. Individual source processors can ofc handle it on their own, but having a standard would be good.
+- Context inheritance should be better. Merging object like `assetProcessors` and `extraContext`.
+- What if there's no source file? Do I skip? Provide source processors with an empty buffer? Error?
